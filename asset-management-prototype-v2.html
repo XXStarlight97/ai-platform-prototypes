@@ -169,6 +169,13 @@ tailwind.config = {
               <option value="upload">本地上传(图片)</option>
               <option value="video_upload">本地上传(视频)</option>
             </select>
+            <div class="w-[1px] h-4 bg-border-default"></div>
+            <!-- Media Type Filter -->
+            <select v-model="mediaFilter" class="bg-transparent border-none text-[13px] text-text-secondary outline-none cursor-pointer hover:text-text-primary">
+              <option value="all">全部类型</option>
+              <option value="image">图片</option>
+              <option value="video">视频</option>
+            </select>
           </div>
 
           <div class="flex items-center gap-4">
@@ -311,6 +318,7 @@ createApp({
     const activeNav = ref('all'); // 'all', 'recent', or groupId
     const searchQuery = ref('');
     const sourceFilter = ref('all');
+    const mediaFilter = ref('all');
     const fileInput = ref(null);
 
     const toast = reactive({ show: false, msg: '' });
@@ -373,6 +381,11 @@ createApp({
       // Source filter
       if (sourceFilter.value !== 'all') {
         result = result.filter(a => a.source === sourceFilter.value);
+      }
+
+      // Media type filter
+      if (mediaFilter.value !== 'all') {
+        result = result.filter(a => a.mediaType === mediaFilter.value);
       }
 
       // Search
@@ -519,7 +532,7 @@ createApp({
     const isVideo = (asset) => asset.mediaType === 'video';
 
     return {
-      activeNav, currentNavTitle, searchQuery, sourceFilter, fileInput,
+      activeNav, currentNavTitle, searchQuery, sourceFilter, mediaFilter, fileInput,
       groups, assets, teamAssets, filteredAssets, selectedCount, getGroupCount,
       createGroup, triggerUpload, handleFileUpload, toggleSelect, clearSelection, handleAction,
       sourceText, sourceBadgeClass, isVideo, toast,
