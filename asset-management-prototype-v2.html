@@ -86,9 +86,9 @@ tailwind.config = {
         <!-- Upload Button -->
         <div class="p-4 border-b border-border-light">
           <button @click="triggerUpload" class="w-full h-[36px] rounded-lg bg-primary hover:bg-primary-hover active:bg-primary-active text-bg-base text-[13px] font-semibold transition-all flex items-center justify-center gap-2 shadow-[0_0_12px_rgba(245,158,11,0.2)] hover:shadow-[0_0_16px_rgba(245,158,11,0.4)]">
-            <i class="ph-bold ph-upload-simple"></i>上传图片
+            <i class="ph-bold ph-upload-simple"></i>上传素材
           </button>
-          <input type="file" ref="fileInput" class="hidden" multiple accept="image/*" @change="handleFileUpload">
+          <input type="file" ref="fileInput" class="hidden" multiple accept="image/*,video/*" @change="handleFileUpload">
         </div>
 
         <div class="flex-1 overflow-y-auto">
@@ -164,8 +164,10 @@ tailwind.config = {
             <select v-model="sourceFilter" class="bg-transparent border-none text-[13px] text-text-secondary outline-none cursor-pointer hover:text-text-primary">
               <option value="all">全部来源</option>
               <option value="image_gen">图像生成</option>
+              <option value="shot_gen">镜头生成</option>
               <option value="adaptation">素材适配</option>
-              <option value="upload">本地上传</option>
+              <option value="upload">本地上传(图片)</option>
+              <option value="video_upload">本地上传(视频)</option>
             </select>
           </div>
 
@@ -218,10 +220,12 @@ tailwind.config = {
                 </span>
               </div>
 
-              <!-- Image -->
+              <!-- Asset Preview -->
               <div class="w-full aspect-square bg-black/40 relative flex items-center justify-center overflow-hidden">
-                <img v-if="asset.url" :src="asset.url" class="w-full h-full object-cover">
-                <i v-else class="ph-duotone ph-image text-text-tertiary text-[40px]"></i>
+                <img v-if="asset.url && !isVideo(asset)" :src="asset.url" class="w-full h-full object-cover">
+                <video v-if="asset.url && isVideo(asset)" :src="asset.url" class="w-full h-full object-cover" muted></video>
+                <i v-if="!asset.url && isVideo(asset)" class="ph-duotone ph-video text-text-tertiary text-[40px]"></i>
+                <i v-else-if="!asset.url" class="ph-duotone ph-image text-text-tertiary text-[40px]"></i>
                 
                 <!-- Hover Overlay Actions -->
                 <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 backdrop-blur-[2px]" v-if="!asset.selected">
@@ -249,7 +253,7 @@ tailwind.config = {
                       <div class="absolute right-0 bottom-full mb-1 w-24 bg-bg-elevated border border-border-default rounded-lg shadow-xl opacity-0 invisible group-hover/menu:opacity-100 group-hover/menu:visible transition-all z-20 flex flex-col py-1 overflow-hidden">
                         <div class="px-3 py-1.5 text-[11px] text-text-secondary hover:bg-white/5 hover:text-text-primary cursor-pointer" @click.stop="openGroupModalForSingle(asset)">加入分组</div>
                         <div class="px-3 py-1.5 text-[11px] text-text-secondary hover:bg-white/5 hover:text-text-primary cursor-pointer" @click.stop="handleAction('share', asset)">分享至团队</div>
-                        <div class="px-3 py-1.5 text-[11px] text-text-secondary hover:bg-white/5 hover:text-text-primary cursor-pointer" @click.stop="handleAction('download', asset)">下载原图</div>
+                        <div class="px-3 py-1.5 text-[11px] text-text-secondary hover:bg-white/5 hover:text-text-primary cursor-pointer" @click.stop="handleAction('download', asset)">下载原文件</div>
                         <div class="px-3 py-1.5 text-[11px] text-red-400 hover:bg-red-500/10 cursor-pointer" @click.stop="handleAction('delete', asset)">删除</div>
                       </div>
                   </div>
@@ -336,12 +340,14 @@ createApp({
       targetAsset: null
     });
     const assets = ref([
-      { id: 1, name: 'LMP-001_Scene_Gen_01.jpg', source: 'image_gen', sku: 'LMP-001', date: '2026-06-25', groupId: 'g1', selected: false, url: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=400&q=80' },
-      { id: 2, name: 'LMP-001_Scene_Gen_02.jpg', source: 'image_gen', sku: 'LMP-001', date: '2026-06-25', groupId: 'g1', selected: false, url: 'https://images.unsplash.com/photo-1540932239986-30128078f3c5?w=400&q=80' },
-      { id: 3, name: 'SDC_Banner_OptionA.png', source: 'adaptation', sku: 'FAN-200', date: '2026-06-24', groupId: 'g2', selected: false, url: '' },
-      { id: 4, name: 'Shooting_Raw_05.jpg', source: 'upload', sku: '', date: '2026-06-23', groupId: null, selected: false, url: '' },
-      { id: 5, name: 'A_Plus_Module_1.jpg', source: 'adaptation', sku: 'LMP-001', date: '2026-06-22', groupId: 'g3', selected: false, url: '' },
-      { id: 6, name: 'Brand_KV_Summer.jpg', source: 'image_gen', sku: '', date: '2026-06-21', groupId: 'g2', selected: false, url: '' },
+      { id: 1, name: 'LMP-001_Scene_Gen_01.jpg', source: 'image_gen', sku: 'LMP-001', date: '2026-06-25', groupId: 'g1', selected: false, url: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=400&q=80', mediaType: 'image' },
+      { id: 2, name: 'LMP-001_Scene_Gen_02.jpg', source: 'image_gen', sku: 'LMP-001', date: '2026-06-25', groupId: 'g1', selected: false, url: 'https://images.unsplash.com/photo-1540932239986-30128078f3c5?w=400&q=80', mediaType: 'image' },
+      { id: 3, name: 'SDC_Banner_OptionA.png', source: 'adaptation', sku: 'FAN-200', date: '2026-06-24', groupId: 'g2', selected: false, url: '', mediaType: 'image' },
+      { id: 4, name: 'Shooting_Raw_05.jpg', source: 'upload', sku: '', date: '2026-06-23', groupId: null, selected: false, url: '', mediaType: 'image' },
+      { id: 5, name: 'A_Plus_Module_1.jpg', source: 'adaptation', sku: 'LMP-001', date: '2026-06-22', groupId: 'g3', selected: false, url: '', mediaType: 'image' },
+      { id: 6, name: 'Brand_KV_Summer.jpg', source: 'image_gen', sku: '', date: '2026-06-21', groupId: 'g2', selected: false, url: '', mediaType: 'image' },
+      { id: 7, name: 'Product_Demo_Video.mp4', source: 'upload', sku: 'LMP-001', date: '2026-06-20', groupId: 'g1', selected: false, url: '', mediaType: 'video' },
+      { id: 8, name: 'Scene_Shot_01.mp4', source: 'shot_gen', sku: 'LMP-001', date: '2026-06-19', groupId: 'g1', selected: false, url: '', mediaType: 'video' },
     ]);
 
     // Computed properties
@@ -441,17 +447,22 @@ createApp({
     const handleFileUpload = (e) => {
       const files = e.target.files;
       if (files.length > 0) {
-        const newAsset = {
-          id: Date.now(),
-          name: files[0].name,
-          source: 'upload',
-          sku: '',
-          date: new Date().toISOString().split('T')[0],
-          groupId: (activeNav.value !== 'all' && activeNav.value !== 'recent') ? activeNav.value : null,
-          selected: false,
-          url: ''
-        };
-        assets.value.unshift(newAsset);
+        const groupId = (activeNav.value !== 'all' && activeNav.value !== 'recent') ? activeNav.value : null;
+        for (const file of files) {
+          const isVideoFile = file.type.startsWith('video/');
+          const newAsset = {
+            id: Date.now() + Math.random(),
+            name: file.name,
+            source: sourceFilter.value === 'video' ? 'video_upload' : 'upload',
+            sku: '',
+            date: new Date().toISOString().split('T')[0],
+            groupId,
+            selected: false,
+            url: URL.createObjectURL(file),
+            mediaType: isVideoFile ? 'video' : 'image'
+          };
+          assets.value.unshift(newAsset);
+        }
         showToast(`成功上传 ${files.length} 个文件`);
       }
       e.target.value = '';
@@ -490,24 +501,28 @@ createApp({
     };
 
     const sourceText = (s) => {
-      const map = { 'image_gen': '图像生成', 'adaptation': '素材适配', 'upload': '本地上传' };
+      const map = { 'image_gen': '图像生成', 'shot_gen': '镜头生成', 'adaptation': '素材适配', 'upload': '本地上传', 'video_upload': '本地上传(视频)' };
       return map[s] || s;
     };
 
     const sourceBadgeClass = (s) => {
       const map = {
         'image_gen': 'bg-purple-500/20 text-purple-400 border border-purple-500/20',
+        'shot_gen': 'bg-pink-500/20 text-pink-400 border border-pink-500/20',
         'adaptation': 'bg-amber-500/20 text-amber-500 border border-amber-500/20',
-        'upload': 'bg-blue-500/20 text-blue-400 border border-blue-500/20'
+        'upload': 'bg-blue-500/20 text-blue-400 border border-blue-500/20',
+        'video_upload': 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/20'
       };
       return map[s] || '';
     };
+
+    const isVideo = (asset) => asset.mediaType === 'video';
 
     return {
       activeNav, currentNavTitle, searchQuery, sourceFilter, fileInput,
       groups, assets, teamAssets, filteredAssets, selectedCount, getGroupCount,
       createGroup, triggerUpload, handleFileUpload, toggleSelect, clearSelection, handleAction,
-      sourceText, sourceBadgeClass, toast,
+      sourceText, sourceBadgeClass, isVideo, toast,
       groupModal, openGroupModal, openGroupModalForSingle, closeGroupModal, confirmGroupSelection, handleBatchDownload
     };
   }
