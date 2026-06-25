@@ -1,0 +1,1802 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SkillHub - 智岩 AI 平台 (v3)</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind & Vue -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', 'sans-serif'],
+            mono: ['JetBrains Mono', 'SF Mono', 'Consolas', 'monospace']
+          },
+          colors: {
+            primary: {
+              DEFAULT: '#f59e0b',
+              hover: '#fbbf24',
+              active: '#d97706'
+            },
+            bg: {
+              base: '#0a0a0c',
+              elevated: '#16161e',
+              glass: 'rgba(255, 255, 255, 0.06)'
+            },
+            border: {
+              default: 'rgba(255, 255, 255, 0.10)',
+              light: 'rgba(255, 255, 255, 0.05)'
+            },
+            text: {
+              primary: 'rgba(255, 255, 255, 0.92)',
+              secondary: 'rgba(255, 255, 255, 0.64)',
+              tertiary: 'rgba(255, 255, 255, 0.42)'
+            }
+          },
+          boxShadow: {
+            'glow-primary': '0 0 16px rgba(245, 158, 11, 0.25)',
+            'inset-highlight': 'inset 0 1px 0 0 rgba(255, 255, 255, 0.1)'
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255,255,255,0.15);
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(255,255,255,0.3);
+    }
+    
+    /* Utility Animations */
+    .fade-enter-active, .fade-leave-active {
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+    .fade-enter-from, .fade-leave-to {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    
+    .toast-enter-active, .toast-leave-active {
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .toast-enter-from {
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+    .toast-leave-to {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+
+    /* Markdown Sim Styles */
+    .md-content h1 { font-size: 1.5rem; font-weight: 600; margin-bottom: 1rem; color: theme('colors.text.primary'); }
+    .md-content h2 { font-size: 1.25rem; font-weight: 600; margin: 1.5rem 0 0.75rem; color: theme('colors.text.primary'); }
+    .md-content p { margin-bottom: 1rem; color: theme('colors.text.secondary'); line-height: 1.6; }
+    .md-content ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 1rem; color: theme('colors.text.secondary'); }
+    .md-content pre { background: rgba(0,0,0,0.3); padding: 1rem; border-radius: 8px; border: 1px solid theme('colors.border.default'); margin-bottom: 1rem; overflow-x: auto; }
+    .md-content code { font-family: theme('fontFamily.mono'); font-size: 0.85rem; color: #a5b4fc; }
+
+    /* Dock Hover Area */
+    .dock-zone {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 480px;
+      height: 32px;
+      z-index: 200;
+    }
+    .dock-container {
+      position: absolute;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%) translateY(120%);
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      background: rgba(255,255,255,0.08);
+      backdrop-filter: blur(20px) saturate(180%);
+      border: 1px solid theme('colors.border.light');
+      border-radius: 9999px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5), theme('boxShadow.inset-highlight');
+    }
+    .dock-zone:hover .dock-container, .dock-container:hover {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+    
+    .dock-item {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: theme('colors.text.secondary');
+      background: transparent;
+      transition: all 0.2s ease;
+      cursor: pointer;
+      position: relative;
+    }
+    .dock-item:hover {
+      background: rgba(255,255,255,0.1);
+      color: theme('colors.text.primary');
+      transform: translateY(-4px) scale(1.1);
+    }
+    .dock-item.active {
+      color: theme('colors.primary.DEFAULT');
+      background: rgba(245, 158, 11, 0.1);
+    }
+    .dock-item.active::after {
+      content: '';
+      position: absolute;
+      bottom: -6px;
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: theme('colors.primary.DEFAULT');
+      box-shadow: 0 0 8px theme('colors.primary.DEFAULT');
+    }
+
+    /* Checkbox & Radio Styles */
+    .custom-checkbox input:checked + div {
+      background: theme('colors.primary.DEFAULT');
+      border-color: theme('colors.primary.DEFAULT');
+    }
+    .custom-radio input:checked + div {
+      border-color: theme('colors.primary.DEFAULT');
+    }
+    .custom-radio input:checked + div > div {
+      transform: scale(1);
+    }
+  </style>
+</head>
+<body class="bg-bg-base text-text-primary h-screen w-screen overflow-hidden selection:bg-primary/30">
+
+  <div id="app" class="h-full w-full flex flex-col relative" v-cloak>
+    
+    <!-- Toast Notification -->
+    <Transition name="toast">
+      <div v-if="toast.show" class="fixed top-6 left-1/2 -translate-x-1/2 z-[3000] flex items-center gap-3 px-4 py-3 bg-bg-elevated border border-border-default shadow-xl rounded-xl">
+        <i v-if="toast.type === 'success'" class="ph-fill ph-check-circle text-green-500 text-xl"></i>
+        <i v-else class="ph-fill ph-info text-blue-500 text-xl"></i>
+        <span class="text-sm font-medium">{{ toast.message }}</span>
+      </div>
+    </Transition>
+
+    <!-- Ambient Background -->
+    <div class="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+      <div class="absolute -top-[10%] -left-[10%] w-[50vw] h-[50vw] bg-indigo-600/10 rounded-full blur-[120px] mix-blend-screen"></div>
+      <div class="absolute top-[20%] right-[-10%] w-[40vw] h-[40vw] bg-amber-600/10 rounded-full blur-[120px] mix-blend-screen"></div>
+      <div class="absolute -bottom-[20%] left-[20%] w-[60vw] h-[60vw] bg-purple-600/5 rounded-full blur-[150px] mix-blend-screen"></div>
+    </div>
+
+    <!-- AppHeader z-50 -->
+    <header class="h-[48px] shrink-0 border-b border-border-default flex items-center justify-between px-4 z-50 relative bg-bg-base/40 backdrop-blur-sm">
+      <div class="flex items-center gap-4">
+        <!-- Logo -->
+        <div class="flex items-center gap-2 pr-4 border-r border-border-default">
+          <div class="w-7 h-7 rounded bg-primary flex items-center justify-center text-bg-base font-bold text-sm">
+            <i class="ph-bold ph-cube"></i>
+          </div>
+          <span class="font-bold text-[15px] tracking-wide">智岩 AI</span>
+        </div>
+        
+        <!-- PageTabBar -->
+        <div class="flex items-center gap-1" v-if="tabs.length > 0">
+          <div v-for="tab in tabs" :key="tab.id" 
+               @click="activeTabId = tab.id"
+               class="h-[30px] px-3 flex items-center gap-2 rounded-md text-[13px] transition-colors cursor-pointer max-w-[220px] border"
+               :class="activeTabId === tab.id ? 'bg-primary/10 text-text-primary border-primary/25' : 'text-text-secondary border-transparent hover:bg-white/5 hover:text-text-primary'">
+            <i :class="tab.icon"></i>
+            <span class="truncate">{{ tab.title }}</span>
+            <button @click.stop="closeTab(tab.id)" class="w-4 h-4 rounded hover:bg-white/10 flex items-center justify-center opacity-60 hover:opacity-100 transition-opacity">
+              <i class="ph ph-x text-[10px]"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Tools -->
+      <div class="flex items-center gap-3">
+        <button class="w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center text-text-secondary hover:text-text-primary transition-colors">
+          <i class="ph ph-moon text-lg"></i>
+        </button>
+        <div class="w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-xs font-semibold shadow-inner border border-white/20">
+          管
+        </div>
+      </div>
+    </header>
+
+    <!-- PageChrome z-10 -->
+    <main class="flex-1 overflow-hidden p-[10px_12px_12px] relative z-10 flex">
+      <!-- The Glassmorphic Container -->
+      <div class="flex-1 bg-bg-glass backdrop-blur-[12px] border border-border-default rounded-[14px] overflow-hidden flex flex-col shadow-lg shadow-black/50 ring-1 ring-white/5 relative">
+        
+        <Transition name="fade" mode="out-in">
+          
+          <!-- VIEW: SKILL MARKET -->
+          <div v-if="activeTab.view === 'market'" class="flex flex-col h-full" key="market">
+            <!-- Topbar (Discover / Mine Tabs & Create) -->
+            <div class="h-[60px] border-b border-border-default flex items-center px-6 justify-between shrink-0 bg-white/[0.02]">
+              <div class="flex items-center gap-6">
+                <!-- Main Sub-tabs: 发现 vs 我的 -->
+                <div class="flex items-center bg-black/20 p-1 rounded-lg border border-border-default">
+                  <button @click="mainTab = 'discover'" 
+                          class="px-5 py-1.5 rounded-md text-[13px] font-medium transition-all flex items-center gap-1.5"
+                          :class="mainTab === 'discover' ? 'bg-white/10 text-text-primary shadow-sm' : 'text-text-secondary hover:text-text-primary'">
+                    <i class="ph-duotone ph-compass text-[15px]"></i>发现
+                  </button>
+                  <button @click="mainTab = 'mine'" 
+                          class="px-5 py-1.5 rounded-md text-[13px] font-medium transition-all flex items-center gap-1.5"
+                          :class="mainTab === 'mine' ? 'bg-white/10 text-text-primary shadow-sm' : 'text-text-secondary hover:text-text-primary'">
+                    <i class="ph-duotone ph-user text-[15px]"></i>我的
+                  </button>
+                </div>
+              </div>
+              
+              <div class="flex items-center gap-3">
+                <button @click="openCreateView" class="h-[32px] px-4 rounded-lg bg-primary hover:bg-primary-hover active:bg-primary-active text-bg-base text-[13px] font-semibold transition-all flex items-center gap-1.5 shadow-[0_0_12px_rgba(245,158,11,0.2)] hover:shadow-[0_0_16px_rgba(245,158,11,0.4)]">
+                  <i class="ph-bold ph-plus"></i>
+                  创建技能
+                </button>
+              </div>
+            </div>
+
+            <!-- DISCOVER TAB CONTENT -->
+            <template v-if="mainTab === 'discover'">
+              <!-- Toolbar: Categories + Search + Filters -->
+              <div class="px-6 py-3 flex items-center justify-between shrink-0 border-b border-border-light bg-bg-base/20">
+                <!-- Categories -->
+                <div class="flex items-center gap-2 overflow-x-auto no-scrollbar">
+                  <button v-for="cat in categories" :key="cat" 
+                          @click="activeCategory = cat"
+                          class="px-4 py-1.5 rounded-full text-[13px] font-medium transition-all whitespace-nowrap"
+                          :class="activeCategory === cat ? 'bg-white/10 text-text-primary shadow-inset-highlight border border-border-default' : 'text-text-secondary hover:bg-white/5 border border-transparent'">
+                    {{ cat }}
+                  </button>
+                </div>
+                <!-- Search & Filters -->
+                <div class="flex items-center gap-3 shrink-0 ml-6">
+                  <div class="relative group">
+                    <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary group-focus-within:text-primary transition-colors"></i>
+                    <input type="text" v-model="searchQuery" placeholder="搜索技能、标签或描述..." 
+                           class="w-[200px] h-[32px] bg-black/20 border border-border-default rounded-lg pl-9 pr-3 text-[13px] outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all placeholder-text-tertiary">
+                  </div>
+                  <div class="relative">
+                    <select v-model="selectedDept" class="h-[32px] bg-black/20 border border-border-default rounded-lg pl-3 pr-8 text-[13px] outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 text-text-secondary appearance-none transition-all cursor-pointer">
+                      <option v-for="d in departments" :key="d" :value="d" class="bg-bg-elevated">{{ d }}</option>
+                    </select>
+                    <i class="ph ph-caret-down absolute right-2.5 top-1/2 -translate-y-1/2 text-text-tertiary pointer-events-none"></i>
+                  </div>
+                  <div class="relative">
+                    <select v-model="selectedSort" class="h-[32px] bg-black/20 border border-border-default rounded-lg pl-3 pr-8 text-[13px] outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 text-text-secondary appearance-none transition-all cursor-pointer">
+                      <option v-for="s in sortOptions" :key="s" :value="s" class="bg-bg-elevated">{{ s }}</option>
+                    </select>
+                    <i class="ph ph-caret-down absolute right-2.5 top-1/2 -translate-y-1/2 text-text-tertiary pointer-events-none"></i>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Grid -->
+              <div class="flex-1 overflow-y-auto px-6 py-5 pb-24">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                  <div v-for="skill in filteredSkills" :key="skill.id" 
+                       @click="openDetailView(skill)"
+                       class="group bg-white/[0.03] border border-border-default rounded-xl p-5 cursor-pointer hover:bg-white/[0.06] hover:border-primary/40 hover:-translate-y-1 transition-all duration-300 hover:shadow-glow-primary flex flex-col h-[200px]">
+                    
+                    <div class="flex justify-between items-start mb-3">
+                      <div class="w-12 h-12 rounded-xl bg-gradient-to-br flex items-center justify-center text-2xl shadow-inner border border-white/10" :class="skill.gradient">
+                        <i :class="skill.icon"></i>
+                      </div>
+                    </div>
+
+                    <h3 class="text-base font-semibold text-text-primary mb-1 group-hover:text-primary transition-colors">{{ skill.name }}</h3>
+                    <p class="text-[13px] text-text-secondary line-clamp-2 mb-auto leading-relaxed">{{ skill.desc }}</p>
+                    
+                    <div class="flex items-center justify-between mt-4 pt-4 border-t border-border-light">
+                      <div class="flex items-center gap-2">
+                        <div class="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center text-[10px] text-text-secondary font-bold">
+                          {{ skill.author[0] }}
+                        </div>
+                        <span class="text-xs text-text-tertiary">{{ skill.author }} · {{ skill.dept }}</span>
+                      </div>
+                      <div class="flex items-center gap-1 text-text-tertiary text-xs">
+                        <i class="ph ph-download-simple"></i>
+                        {{ skill.downloads }}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Empty State -->
+                <div v-if="filteredSkills.length === 0" class="flex flex-col items-center justify-center h-64 opacity-50">
+                  <i class="ph-duotone ph-file-search text-6xl mb-4"></i>
+                  <p class="text-sm">暂无匹配的技能</p>
+                </div>
+              </div>
+            </template>
+
+            <!-- MINE TAB CONTENT -->
+            <template v-else-if="mainTab === 'mine'">
+              <!-- Mine Toolbar: Sub-tabs + Search -->
+              <div class="px-6 py-3 flex items-center justify-between shrink-0 border-b border-border-light bg-bg-base/20">
+                <div class="flex items-center gap-2 overflow-x-auto no-scrollbar">
+                  <button @click="mineSubTab = 'published'" class="px-4 py-1.5 rounded-full text-[13px] font-medium transition-all whitespace-nowrap" :class="mineSubTab === 'published' ? 'bg-white/10 text-text-primary shadow-inset-highlight border border-border-default' : 'text-text-secondary hover:bg-white/5 border border-transparent'">我的技能</button>
+                  <button @click="mineSubTab = 'downloaded'" class="px-4 py-1.5 rounded-full text-[13px] font-medium transition-all whitespace-nowrap" :class="mineSubTab === 'downloaded' ? 'bg-white/10 text-text-primary shadow-inset-highlight border border-border-default' : 'text-text-secondary hover:bg-white/5 border border-transparent'">我的下载</button>
+                  <button @click="mineSubTab = 'pending'" class="px-4 py-1.5 rounded-full text-[13px] font-medium transition-all whitespace-nowrap flex items-center gap-1.5" :class="mineSubTab === 'pending' ? 'bg-white/10 text-text-primary shadow-inset-highlight border border-border-default' : 'text-text-secondary hover:bg-white/5 border border-transparent'">
+                    我的审核
+                    <span class="ml-0.5 px-1.5 py-0.5 rounded-full bg-error/20 text-red-400 text-[10px] border border-red-500/20 leading-none">1</span>
+                  </button>
+                </div>
+                <div class="flex items-center gap-3 shrink-0 ml-6">
+                  <div class="relative group">
+                    <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary group-focus-within:text-primary transition-colors"></i>
+                    <input type="text" v-model="mineSearchQuery" placeholder="搜索技能、标签或描述..." 
+                           class="w-[200px] h-[32px] bg-black/20 border border-border-default rounded-lg pl-9 pr-3 text-[13px] outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all placeholder-text-tertiary">
+                  </div>
+                </div>
+              </div>
+
+              <div class="flex-1 overflow-y-auto px-6 py-6 pb-24 bg-black/10">
+                <!-- Mine Skills (Grid like market) -->
+                <div v-if="mineSubTab === 'published'">
+                  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                    <div v-for="ms in myPublishedSkills" :key="ms.id" class="group bg-white/[0.03] border border-border-default rounded-xl p-5 hover:bg-white/[0.06] hover:border-primary/40 transition-all duration-300 flex flex-col h-[180px]">
+
+                      <div class="flex justify-between items-start mb-3">
+                        <div class="w-12 h-12 rounded-xl bg-gradient-to-br flex items-center justify-center text-2xl shadow-inner border border-white/10 shrink-0" :class="ms.gradient">
+                          <i :class="ms.icon"></i>
+                        </div>
+                        <div class="flex items-center gap-2">
+                          <!-- Status Badge -->
+                          <span v-if="ms.status === '已发布'" class="px-2 py-0.5 rounded text-[11px] font-medium bg-green-500/10 text-green-400 border border-green-500/20">已发布</span>
+                          <span v-else-if="ms.status === '草稿'" class="px-2 py-0.5 rounded text-[11px] font-medium bg-white/10 text-text-secondary border border-white/10">草稿</span>
+
+                          <!-- 已发布 + 有待发新版本 -->
+                          <span v-if="ms.pendingVersion" class="px-2 py-0.5 rounded text-[11px] font-medium bg-primary/20 text-primary border border-primary/30 flex items-center gap-1">
+                            待发 v{{ ms.pendingVersion }}
+                          </span>
+
+                          <!-- 三点菜单 -->
+                          <div class="relative group/menu">
+                            <button class="w-7 h-7 flex items-center justify-center rounded-md hover:bg-white/10 text-text-secondary hover:text-text-primary transition-colors">
+                              <i class="ph-bold ph-dots-three text-lg"></i>
+                            </button>
+                            <div class="absolute right-0 top-full mt-1 w-28 bg-bg-elevated border border-border-default rounded-xl shadow-xl opacity-0 invisible group-hover/menu:opacity-100 group-hover/menu:visible transition-all duration-200 z-10 flex flex-col p-1">
+                              <!-- 草稿：继续编辑 / 删除 -->
+                              <template v-if="ms.status === '草稿'">
+                                <button @click="editDraft(ms)" class="w-full text-left px-3 py-2 text-[13px] text-text-secondary hover:text-text-primary hover:bg-white/5 rounded-lg transition-colors">继续编辑</button>
+                                <div class="h-px bg-border-light my-1 mx-2"></div>
+                                <button @click="deleteDraft(ms)" class="w-full text-left px-3 py-2 text-[13px] text-red-400 hover:bg-red-500/10 rounded-lg transition-colors">删除草稿</button>
+                              </template>
+                              <!-- 已发布：编辑资料 / 更新版本 / 下架 -->
+                              <template v-else>
+                                <button @click="editInfo(ms)" class="w-full text-left px-3 py-2 text-[13px] text-text-secondary hover:text-text-primary hover:bg-white/5 rounded-lg transition-colors">编辑资料</button>
+                                <button @click="openUpdateVersion(ms)" class="w-full text-left px-3 py-2 text-[13px] text-text-secondary hover:text-text-primary hover:bg-white/5 rounded-lg transition-colors">更新版本</button>
+                                <div class="h-px bg-border-light my-1 mx-2"></div>
+                                <button @click="unpublishSkill(ms)" class="w-full text-left px-3 py-2 text-[13px] text-red-400 hover:bg-red-500/10 rounded-lg transition-colors">下架</button>
+                              </template>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <h3 class="text-base font-semibold text-text-primary mb-1 cursor-pointer group-hover:text-primary transition-colors" @click="openDetailView(ms)">{{ ms.name }} <span class="text-xs font-mono text-text-tertiary ml-1">v{{ ms.version }}</span></h3>
+                      <p class="text-[13px] text-text-secondary line-clamp-2 mb-auto leading-relaxed">{{ ms.desc }}</p>
+                    </div>
+                  </div>
+
+                  <div v-if="myPublishedSkills.length === 0" class="flex flex-col items-center justify-center h-64 opacity-50">
+                    <i class="ph-duotone ph-file-search text-6xl mb-4"></i>
+                    <p class="text-sm">暂无技能记录</p>
+                  </div>
+                </div>
+
+                <!-- Downloaded List -->
+                <div v-else-if="mineSubTab === 'downloaded'">
+                  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                    <div v-for="ds in myDownloadedSkills" :key="ds.id" class="group bg-white/[0.03] border border-border-default rounded-xl p-5 hover:bg-white/[0.06] hover:border-primary/40 transition-all duration-300 flex flex-col h-[180px] relative">
+                      
+                      <div class="flex justify-between items-start mb-3">
+                        <div class="w-12 h-12 rounded-xl bg-gradient-to-br flex items-center justify-center text-2xl shadow-inner border border-white/10" :class="ds.gradient">
+                          <i :class="ds.icon"></i>
+                        </div>
+                        <!-- New Version Badge -->
+                        <div v-if="ds.hasNewVersion" class="px-2 py-0.5 rounded text-[11px] font-medium bg-primary/20 text-primary border border-primary/30 flex items-center gap-1">
+                          <i class="ph-bold ph-arrow-up"></i>
+                          新版本 {{ ds.latestVersion }}
+                        </div>
+                      </div>
+                      
+                      <h3 class="text-base font-semibold text-text-primary mb-1 cursor-pointer group-hover:text-primary transition-colors" @click="openDetailView(ds)">{{ ds.name }} <span class="text-xs font-mono text-text-tertiary ml-1">当前 v{{ ds.version }}</span></h3>
+                      <p class="text-[13px] text-text-secondary line-clamp-2 mb-auto leading-relaxed">{{ ds.desc }}</p>
+                    </div>
+                  </div>
+                  
+                  <div v-if="myDownloadedSkills.length === 0" class="flex flex-col items-center justify-center h-64 opacity-50">
+                    <i class="ph-duotone ph-download-simple text-6xl mb-4"></i>
+                    <p class="text-sm">暂无下载记录</p>
+                  </div>
+                </div>
+                
+                <!-- Pending List -->
+                <div v-else-if="mineSubTab === 'pending'" class="space-y-4 max-w-5xl mx-auto">
+                  <div v-for="ps in myPendingSkills" :key="ps.id" class="bg-white/[0.04] border border-border-default rounded-xl p-5 flex items-center justify-between hover:border-primary/30 transition-colors cursor-pointer" @click="openReviewView(ps)">
+                    <div class="flex items-center gap-5">
+                      <div class="w-12 h-12 rounded-xl bg-gradient-to-br flex items-center justify-center text-2xl shadow-inner border border-white/10" :class="ps.gradient">
+                        <i :class="ps.icon"></i>
+                      </div>
+                      <div>
+                        <div class="flex items-center gap-2 mb-1">
+                          <h4 class="font-semibold text-[15px] group-hover:text-primary transition-colors">{{ ps.name }}</h4>
+                          <span class="text-xs font-mono text-text-tertiary">v{{ ps.version }}</span>
+                        </div>
+                        <div class="flex items-center gap-3 text-[13px] text-text-tertiary">
+                          <span>提交人: {{ ps.submitter }}</span>
+                          <span class="w-1 h-1 rounded-full bg-border-default"></span>
+                          <span>部门: {{ ps.submitDept }}</span>
+                          <span class="w-1 h-1 rounded-full bg-border-default"></span>
+                          <span>时间: {{ ps.submitTime }}</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div class="flex items-center gap-4">
+                      <span class="px-2.5 py-1 rounded text-xs bg-amber-500/10 text-amber-400 border border-amber-500/20"><i class="ph-fill ph-clock mr-1"></i> 待审核</span>
+                      <i class="ph-bold ph-caret-right text-text-tertiary"></i>
+                    </div>
+                  </div>
+                  
+                  <div v-if="myPendingSkills.length === 0" class="flex flex-col items-center justify-center h-64 opacity-50">
+                    <i class="ph-duotone ph-check-circle text-6xl mb-4"></i>
+                    <p class="text-sm">暂无待审核任务</p>
+                  </div>
+                </div>
+
+              </div>
+            </template>
+          </div>
+
+          <!-- VIEW: SKILL DETAIL -->
+          <div v-else-if="activeTab.view === 'detail'" class="flex flex-col h-full bg-bg-base/50" :key="activeTab.skillData.id">
+            <!-- Header -->
+            <div class="h-[60px] border-b border-border-default flex items-center px-6 shrink-0 gap-4">
+              <div class="w-8 h-8 rounded bg-gradient-to-br flex items-center justify-center text-lg" :class="activeTab.skillData.gradient">
+                <i :class="activeTab.skillData.icon"></i>
+              </div>
+              <h2 class="text-[18px] font-semibold">{{ activeTab.skillData.name }}</h2>
+              <span class="px-2 py-0.5 rounded text-[11px] font-medium bg-green-500/10 text-green-400 border border-green-500/20">已发布</span>
+              <div class="flex-1"></div>
+              <button class="h-[32px] px-3 rounded-lg border border-border-default text-text-secondary hover:text-text-primary hover:bg-white/5 text-[13px] font-medium transition-colors">
+                分享
+              </button>
+            </div>
+
+            <!-- Content Split -->
+            <div class="flex-1 flex overflow-hidden">
+              <!-- Left: Detail Content -->
+              <div class="flex-[3] border-r border-border-default flex flex-col bg-black/20 overflow-hidden relative">
+                
+                <!-- 技能简述 (Added to Left Side) -->
+                <div class="p-8 border-b border-border-default bg-white/[0.02]">
+                  <p class="text-[15px] text-text-primary leading-relaxed">{{ activeTab.skillData.desc }}</p>
+                </div>
+
+                <!-- Inner Tabs -->
+                <div class="h-[48px] px-8 flex items-center gap-6 border-b border-border-light shrink-0 bg-white/[0.01]">
+                  <button @click="detailSubTab = 'overview'" class="text-[14px] font-medium pt-3.5 pb-3 border-b-2 transition-colors relative top-[1px]" :class="detailSubTab === 'overview' ? 'text-primary border-primary' : 'text-text-secondary border-transparent hover:text-text-primary'">概览</button>
+                  <button @click="detailSubTab = 'files'" class="text-[14px] font-medium pt-3.5 pb-3 border-b-2 transition-colors relative top-[1px]" :class="detailSubTab === 'files' ? 'text-primary border-primary' : 'text-text-secondary border-transparent hover:text-text-primary'">文件</button>
+                  <button @click="detailSubTab = 'versions'" class="text-[14px] font-medium pt-3.5 pb-3 border-b-2 transition-colors relative top-[1px]" :class="detailSubTab === 'versions' ? 'text-primary border-primary' : 'text-text-secondary border-transparent hover:text-text-primary'">版本历史</button>
+                </div>
+                
+                <!-- Tab Content Area -->
+                <div class="flex-1 overflow-y-auto p-8 custom-scrollbar">
+                  
+                  <!-- Overview Tab -->
+                  <div v-show="detailSubTab === 'overview'" class="max-w-3xl mx-auto md-content pb-10">
+                    <h2>✨ 核心特性</h2>
+                    <ul>
+                      <li>高度自动化的上下文识别与处理</li>
+                      <li>无缝集成于各类大模型对话流中</li>
+                      <li>输出格式严格结构化，便于二次解析</li>
+                    </ul>
+                    
+                    <h2>💻 使用示例 (Example)</h2>
+                    <p>在 Agent 中调用时，你可以这样配置 <code>skill.json</code> 的绑定：</p>
+                    <pre><code>{
+  "name": "{{ activeTab.skillData.id }}",
+  "version": "{{ activeTab.skillData.version }}",
+  "execute": "auto"
+}</code></pre>
+
+                    <h2>📌 参数说明</h2>
+                    <p>支持以下输入参数来控制输出的颗粒度：</p>
+                    <ul>
+                      <li><strong>depth</strong> (Number): 分析深度，1-5。</li>
+                      <li><strong>lang</strong> (String): 输出语言，默认 <code>zh-CN</code>。</li>
+                    </ul>
+                  </div>
+
+                  <!-- Files Tab -->
+                  <div v-show="detailSubTab === 'files'" class="max-w-3xl mx-auto pb-10">
+                    <div class="bg-bg-elevated border border-border-default rounded-xl overflow-hidden font-mono text-[13px]">
+                      <div class="bg-white/5 px-4 py-2 border-b border-border-default flex items-center gap-2 text-text-primary font-semibold">
+                        <i class="ph-fill ph-file-zip text-primary text-lg"></i>
+                        my-skill-v{{ activeTab.skillData.version }}.zip
+                      </div>
+                      <div class="p-2 space-y-1">
+                        <div @click="openFilePreviewModal('skill.md')" class="flex items-center justify-between px-3 py-1.5 rounded hover:bg-white/5 cursor-pointer group transition-colors">
+                          <div class="flex items-center gap-2.5 text-text-secondary group-hover:text-primary transition-colors">
+                            <i class="ph-duotone ph-file-text"></i> skill.md
+                          </div>
+                          <span class="text-text-tertiary text-xs">2.3KB</span>
+                        </div>
+                        <div @click="openFilePreviewModal('skill.json')" class="flex items-center justify-between px-3 py-1.5 rounded hover:bg-white/5 cursor-pointer group transition-colors">
+                          <div class="flex items-center gap-2.5 text-text-secondary group-hover:text-primary transition-colors">
+                            <i class="ph-duotone ph-file-code"></i> skill.json
+                          </div>
+                          <span class="text-text-tertiary text-xs">0.4KB</span>
+                        </div>
+                        <div class="flex items-center px-3 py-1.5 text-text-primary font-medium mt-1">
+                          <i class="ph-fill ph-folder-open text-amber-500 mr-2.5"></i> examples/
+                        </div>
+                        <div @click="openFilePreviewModal('example1.md')" class="flex items-center justify-between px-3 py-1.5 rounded hover:bg-white/5 cursor-pointer group pl-8 transition-colors">
+                          <div class="flex items-center gap-2.5 text-text-secondary group-hover:text-primary transition-colors">
+                            <i class="ph-duotone ph-file-text"></i> example1.md
+                          </div>
+                          <span class="text-text-tertiary text-xs">1.1KB</span>
+                        </div>
+                        <div @click="openFilePreviewModal('example2.md')" class="flex items-center justify-between px-3 py-1.5 rounded hover:bg-white/5 cursor-pointer group pl-8 transition-colors">
+                          <div class="flex items-center gap-2.5 text-text-secondary group-hover:text-primary transition-colors">
+                            <i class="ph-duotone ph-file-text"></i> example2.md
+                          </div>
+                          <span class="text-text-tertiary text-xs">0.8KB</span>
+                        </div>
+                        <div class="flex items-center px-3 py-1.5 text-text-primary font-medium mt-1">
+                          <i class="ph-fill ph-folder-open text-amber-500 mr-2.5"></i> tests/
+                        </div>
+                        <div @click="openFilePreviewModal('test-cases.json')" class="flex items-center justify-between px-3 py-1.5 rounded hover:bg-white/5 cursor-pointer group pl-8 transition-colors">
+                          <div class="flex items-center gap-2.5 text-text-secondary group-hover:text-primary transition-colors">
+                            <i class="ph-duotone ph-file-code"></i> test-cases.json
+                          </div>
+                          <span class="text-text-tertiary text-xs">3.2KB</span>
+                        </div>
+                        <div class="flex items-center px-3 py-1.5 text-text-primary font-medium mt-1">
+                          <i class="ph-fill ph-folder-open text-amber-500 mr-2.5"></i> assets/
+                        </div>
+                        <div @click="openFilePreviewModal('icon.png')" class="flex items-center justify-between px-3 py-1.5 rounded hover:bg-white/5 cursor-pointer group pl-8 transition-colors">
+                          <div class="flex items-center gap-2.5 text-text-secondary group-hover:text-primary transition-colors">
+                            <i class="ph-duotone ph-image"></i> icon.png
+                          </div>
+                          <span class="text-text-tertiary text-xs">48KB</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Versions Tab -->
+                  <div v-show="detailSubTab === 'versions'" class="max-w-3xl mx-auto pb-10">
+                    <div class="relative pl-4 border-l border-border-default space-y-8 pb-4">
+                      
+                      <!-- Current Version -->
+                      <div class="relative">
+                        <div class="absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full bg-primary ring-4 ring-primary/20"></div>
+                        <div class="flex items-center gap-3 mb-2">
+                          <span class="font-mono text-lg font-bold text-text-primary">v{{ activeTab.skillData.version }}</span>
+                          <span class="text-xs px-2 py-0.5 rounded bg-primary/20 text-primary border border-primary/30">当前版本</span>
+                          <span class="text-[13px] text-text-tertiary ml-auto">2026-06-16 14:30</span>
+                        </div>
+                        <div class="bg-white/5 border border-border-default rounded-lg p-4 mt-3">
+                          <ul class="list-disc pl-4 text-[13px] text-text-secondary space-y-1">
+                            <li>修复了分析深度的容错率问题</li>
+                            <li>新增了输出语言 <code>lang</code> 字段支持</li>
+                            <li>优化 Prompt 执行效率，Token 消耗减少 15%</li>
+                          </ul>
+                        </div>
+                      </div>
+
+                      <!-- Old Version -->
+                      <div class="relative opacity-70 hover:opacity-100 transition-opacity group">
+                        <div class="absolute -left-[21px] top-1.5 w-2.5 h-2.5 rounded-full bg-border-default border-2 border-bg-base ring-2 ring-border-default"></div>
+                        <div class="flex items-center gap-3 mb-2">
+                          <span class="font-mono text-base font-semibold text-text-secondary">v1.1.0</span>
+                          <button v-if="activeTab.mode === 'view'" class="opacity-0 group-hover:opacity-100 ml-2 px-2 py-1 rounded bg-white/5 hover:bg-white/10 text-text-secondary hover:text-text-primary border border-border-light text-[11px] transition-colors flex items-center gap-1">
+                            <i class="ph-bold ph-clock-counter-clockwise"></i> 切换至此版本
+                          </button>
+                          <span class="text-[13px] text-text-tertiary ml-auto">2026-06-10 09:15</span>
+                        </div>
+                        <div class="bg-transparent border border-border-light rounded-lg p-4 mt-3">
+                          <ul class="list-disc pl-4 text-[13px] text-text-secondary space-y-1">
+                            <li>优化 Prompt 执行效率</li>
+                            <li>更新 examples 目录下的测试用例</li>
+                          </ul>
+                        </div>
+                      </div>
+
+                      <!-- Initial Version -->
+                      <div class="relative opacity-70 hover:opacity-100 transition-opacity group">
+                        <div class="absolute -left-[21px] top-1.5 w-2.5 h-2.5 rounded-full bg-border-default border-2 border-bg-base ring-2 ring-border-default"></div>
+                        <div class="flex items-center gap-3 mb-2">
+                          <span class="font-mono text-base font-semibold text-text-secondary">v1.0.0</span>
+                          <button v-if="activeTab.mode === 'view'" class="opacity-0 group-hover:opacity-100 ml-2 px-2 py-1 rounded bg-white/5 hover:bg-white/10 text-text-secondary hover:text-text-primary border border-border-light text-[11px] transition-colors flex items-center gap-1">
+                            <i class="ph-bold ph-clock-counter-clockwise"></i> 切换至此版本
+                          </button>
+                          <span class="text-[13px] text-text-tertiary ml-auto">2026-06-01 10:00</span>
+                        </div>
+                        <div class="bg-transparent border border-border-light rounded-lg p-4 mt-3">
+                          <ul class="list-disc pl-4 text-[13px] text-text-secondary space-y-1">
+                            <li>初始版本发布</li>
+                          </ul>
+                        </div>
+                      </div>
+
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+
+              <!-- Right: Metadata & Action -->
+              <div class="flex-[1] min-w-[320px] bg-bg-base/30 p-6 overflow-y-auto flex flex-col gap-6 custom-scrollbar">
+                
+                <template v-if="activeTab.mode === 'review'">
+                  <div>
+                    <h4 class="text-[13px] font-semibold text-text-secondary uppercase tracking-wider mb-4">提交信息</h4>
+                    <div class="space-y-4">
+                      <div class="flex justify-between items-center">
+                        <span class="text-[13px] text-text-tertiary">提交人</span>
+                        <span class="text-[13px] text-text-primary">{{ activeTab.skillData.submitter || '李四' }}</span>
+                      </div>
+                      <div class="flex justify-between items-center">
+                        <span class="text-[13px] text-text-tertiary">部门</span>
+                        <span class="text-[13px] text-text-primary">{{ activeTab.skillData.submitDept || '数字平台 (DP)' }}</span>
+                      </div>
+                      <div class="flex justify-between items-center">
+                        <span class="text-[13px] text-text-tertiary">提交版本</span>
+                        <span class="text-[13px] font-mono text-text-primary">v{{ activeTab.skillData.version }}</span>
+                      </div>
+                      <div class="flex justify-between items-center">
+                        <span class="text-[13px] text-text-tertiary">提交时间</span>
+                        <span class="text-[13px] text-text-primary">{{ activeTab.skillData.submitTime || '2026-06-17 09:30' }}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <hr class="border-border-default">
+
+                  <div>
+                    <h4 class="text-[13px] font-semibold text-text-secondary uppercase tracking-wider mb-4">自动检测结果</h4>
+                    <div class="space-y-3">
+                      <div class="flex items-center gap-2 text-[13px] text-green-400">
+                        <i class="ph-bold ph-check text-lg"></i> 包结构完整
+                      </div>
+                      <div class="flex items-center gap-2 text-[13px] text-green-400">
+                        <i class="ph-bold ph-check text-lg"></i> 无危险命令
+                      </div>
+                      <div class="flex items-center gap-2 text-[13px] text-green-400">
+                        <i class="ph-bold ph-check text-lg"></i> 无外部 URL
+                      </div>
+                    </div>
+                  </div>
+
+                  <hr class="border-border-default">
+
+                  <div class="flex flex-col gap-3">
+                    <button class="w-full py-2 rounded-lg bg-primary hover:bg-primary-hover text-bg-base text-[14px] font-semibold transition-colors flex items-center justify-center gap-2">
+                      <i class="ph-bold ph-check"></i> 通过
+                    </button>
+                    <button class="w-full py-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 text-[14px] font-semibold transition-colors flex items-center justify-center gap-2">
+                      <i class="ph-bold ph-x"></i> 驳回
+                    </button>
+                  </div>
+                </template>
+
+                <template v-else>
+                  <!-- Install Action Card (Cleanized) -->
+                  <div>
+                    <h4 class="text-[13px] font-semibold text-text-secondary uppercase tracking-wider mb-4">安装</h4>
+                    <div class="space-y-4">
+                      <!-- Terminal Content -->
+                      <div class="p-4 bg-bg-elevated/50 rounded-lg border border-border-default relative group shadow-sm">
+                        <div class="text-[13px] font-mono text-text-primary/90 leading-relaxed pr-10 break-all overflow-hidden whitespace-pre-wrap">npx clawhub install {{ activeTab.skillData.id || 'skill-name' }} --registry https://skill.xfyun.cn</div>
+                        <button @click="copyCliCommand" class="absolute right-3 top-3 text-text-secondary hover:text-white transition-colors" title="复制代码">
+                          <i class="ph-duotone ph-copy text-lg"></i>
+                        </button>
+                      </div>
+
+                      <!-- Download Button -->
+                      <button @click="triggerDownload" class="w-full h-[36px] rounded-lg border border-border-default hover:border-primary text-text-primary hover:text-primary bg-white/5 hover:bg-primary/10 text-[13px] font-medium transition-all flex items-center justify-center gap-2">
+                        <i class="ph-bold ph-cloud-arrow-down text-lg"></i>
+                        下载
+                      </button>
+                    </div>
+                  </div>
+
+                  <hr class="border-border-default">
+                  <div>
+                    <h4 class="text-[13px] font-semibold text-text-secondary uppercase tracking-wider mb-4">技能信息</h4>
+                    <div class="space-y-4">
+                      <div class="flex justify-between items-center">
+                        <span class="text-[13px] text-text-tertiary">作者</span>
+                        <div class="flex items-center gap-2">
+                          <span class="text-[13px]">{{ activeTab.skillData.author }}</span>
+                        </div>
+                      </div>
+                      <div class="flex justify-between items-center">
+                        <span class="text-[13px] text-text-tertiary">分类</span>
+                        <span class="text-[13px]">{{ activeTab.skillData.category }}</span>
+                      </div>
+                      <div class="flex justify-between items-center">
+                        <span class="text-[13px] text-text-tertiary">版本</span>
+                        <span class="text-[13px] font-mono">{{ activeTab.skillData.version }}</span>
+                      </div>
+                      <div class="flex justify-between items-center">
+                        <span class="text-[13px] text-text-tertiary">更新时间</span>
+                        <span class="text-[13px]">2026-06-16</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <hr class="border-border-default">
+
+                  <!-- Tags -->
+                  <div>
+                    <h4 class="text-[13px] font-semibold text-text-secondary uppercase tracking-wider mb-3">标签</h4>
+                    <div class="flex flex-wrap gap-2">
+                      <span v-for="tag in activeTab.skillData.tags" :key="tag" class="px-2.5 py-1 rounded bg-white/5 border border-border-light text-[12px] text-text-secondary">
+                        {{ tag }}
+                      </span>
+                    </div>
+                  </div>
+
+                </template>
+              </div>
+            </div>
+          </div>
+
+          <!-- VIEW: CREATE SKILL -->
+          <div v-else-if="activeTab.view === 'create'" class="flex flex-col h-full bg-bg-base/40" key="create">
+            <!-- Header -->
+            <div class="h-[60px] border-b border-border-default flex items-center px-6 shrink-0 justify-between">
+              <h2 class="text-[18px] font-semibold flex items-center gap-2">
+                <i class="ph-duotone text-primary" :class="createMode === 'updateVersion' ? 'ph-cloud-arrow-up' : (createMode === 'editInfo' ? 'ph-pencil-simple' : (createMode === 'editDraft' ? 'ph-file-dashed' : 'ph-magic-wand'))"></i>
+                {{ createMode === 'updateVersion' ? '更新版本' : (createMode === 'editInfo' ? '编辑资料' : (createMode === 'editDraft' ? '编辑草稿' : '发布新技能')) }}
+              </h2>
+              <button @click="confirmCloseCreate" class="w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center text-text-secondary hover:text-text-primary transition-colors" title="关闭">
+                <i class="ph-bold ph-x text-lg"></i>
+              </button>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto p-8 custom-scrollbar">
+              <div class="mx-auto w-full max-w-2xl bg-white/[0.02] border border-border-default rounded-xl p-8 shadow-xl">
+                
+                <form @submit.prevent="submitCreate" class="space-y-6">
+                  <!-- Name & Cat -->
+                  <div class="grid grid-cols-2 gap-6">
+                    <div class="space-y-2">
+                      <label class="block text-[13px] font-medium text-text-secondary">技能名称 <span class="text-error text-red-500">*</span></label>
+                      <input type="text" required v-model="form.name" placeholder="例如：智能代码审查助手" class="w-full h-[36px] bg-black/20 border border-border-default rounded-lg px-3 text-[13px] outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all">
+                    </div>
+                    <div class="space-y-2">
+                      <label class="block text-[13px] font-medium text-text-secondary">分类 <span class="text-error text-red-500">*</span></label>
+                      <select required v-model="form.category" class="w-full h-[36px] bg-black/20 border border-border-default rounded-lg px-3 text-[13px] outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all text-text-primary appearance-none">
+                        <option value="" disabled selected>选择所属领域</option>
+                        <option v-for="c in categories.filter(c=>c!=='全部')" :key="c" :value="c" class="bg-bg-elevated">{{ c }}</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <!-- Icon Picker -->
+                  <div class="space-y-2">
+                    <label class="block text-[13px] font-medium text-text-secondary">技能图标</label>
+                    <div class="grid grid-cols-6 gap-2">
+                      <div v-for="opt in iconOptions" :key="opt.icon"
+                           @click="form.icon = opt.icon; form.gradient = opt.gradient"
+                           class="w-10 h-10 rounded-xl bg-gradient-to-br flex items-center justify-center text-lg shadow-inner border-2 cursor-pointer transition-all hover:scale-110"
+                           :class="[opt.gradient, form.icon === opt.icon ? 'border-primary shadow-glow-primary scale-110' : 'border-white/10']">
+                        <i :class="opt.icon"></i>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Desc -->
+                  <div class="space-y-2">
+                    <label class="block text-[13px] font-medium text-text-secondary">技能描述 <span class="text-error text-red-500">*</span></label>
+                    <textarea required v-model="form.desc" rows="2" placeholder="简要描述该技能的功能、适用场景..." class="w-full bg-black/20 border border-border-default rounded-lg p-3 text-[13px] outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all resize-none"></textarea>
+                  </div>
+
+                  <!-- Tags -->
+                  <div class="space-y-2">
+                    <label class="block text-[13px] font-medium text-text-secondary">标签 (用逗号分隔)</label>
+                    <input type="text" v-model="form.tags" placeholder="例如：Code Review, BugFix" class="w-full h-[36px] bg-black/20 border border-border-default rounded-lg px-3 text-[13px] outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all">
+                  </div>
+
+
+                  <!-- 更新版本专属字段 -->
+                  <template v-if="createMode === 'updateVersion'">
+                    <div class="p-4 bg-primary/5 border border-primary/20 rounded-lg space-y-3">
+                      <p class="text-xs text-primary font-medium flex items-center gap-1.5">
+                        <i class="ph-bold ph-cloud-arrow-up"></i>版本更新信息
+                      </p>
+                      <div class="grid grid-cols-2 gap-4">
+                        <div class="space-y-1.5">
+                          <label class="block text-[12px] font-medium text-text-secondary">新版本号 <span class="text-red-400">*</span></label>
+                          <input type="text" required v-model="updateVersionData.version" placeholder="例如：1.3.0" class="w-full h-[36px] bg-black/20 border border-border-default rounded-lg px-3 text-[13px] font-mono outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all">
+                        </div>
+                        <div class="space-y-1.5">
+                          <label class="block text-[12px] font-medium text-text-secondary">Changelog</label>
+                          <input type="text" v-model="updateVersionData.changelog" placeholder="简述本次更新内容..." class="w-full h-[36px] bg-black/20 border border-border-default rounded-lg px-3 text-[13px] outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all">
+                        </div>
+                      </div>
+                    </div>
+                  </template>
+
+                  <!-- Visibility -->
+                  <div class="space-y-3">
+                    <label class="block text-[13px] font-medium text-text-secondary">可见范围</label>
+                    <div class="flex gap-6">
+                      <label class="flex items-center gap-2 cursor-pointer group custom-radio">
+                        <input type="radio" v-model="form.visibility" value="all" class="hidden">
+                        <div class="w-4 h-4 rounded-full border border-border-default group-hover:border-primary flex items-center justify-center transition-colors">
+                          <div class="w-2 h-2 rounded-full bg-primary scale-0 transition-transform"></div>
+                        </div>
+                        <span class="text-[13px] text-text-primary">全员可见</span>
+                      </label>
+                      <label class="flex items-center gap-2 cursor-pointer group custom-radio">
+                        <input type="radio" v-model="form.visibility" value="dept" class="hidden">
+                        <div class="w-4 h-4 rounded-full border border-border-default group-hover:border-primary flex items-center justify-center transition-colors">
+                          <div class="w-2 h-2 rounded-full bg-primary scale-0 transition-transform"></div>
+                        </div>
+                        <span class="text-[13px] text-text-primary">仅本部门</span>
+                      </label>
+                      <label class="flex items-center gap-2 cursor-pointer group custom-radio">
+                        <input type="radio" v-model="form.visibility" value="private" class="hidden">
+                        <div class="w-4 h-4 rounded-full border border-border-default group-hover:border-primary flex items-center justify-center transition-colors">
+                          <div class="w-2 h-2 rounded-full bg-primary scale-0 transition-transform"></div>
+                        </div>
+                        <span class="text-[13px] text-text-primary">仅自己</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <hr class="border-border-default">
+
+                  <!-- Upload Zone -->
+                  <div class="space-y-3" v-show="createMode !== 'editInfo'">
+                    <label class="block text-[13px] font-medium text-text-secondary">上传技能包 (.zip) <span class="text-error text-red-500">*</span></label>
+                    
+                    <div class="w-full min-h-[112px] py-4 px-4 border-2 border-dashed border-border-default hover:border-primary/50 rounded-xl bg-black/10 hover:bg-primary/5 flex flex-col items-center justify-center transition-colors cursor-pointer group"
+                         @click="simulatedUploaded = true">
+                      <div class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center mb-2 group-hover:bg-primary/20 group-hover:text-primary transition-colors">
+                        <i class="ph-duotone ph-upload-simple text-xl"></i>
+                      </div>
+                      <p class="text-[13px] text-text-primary font-medium text-center break-all" v-if="!simulatedUploaded">点击或拖拽 Zip 包至此</p>
+                      <p class="text-[13px] text-green-400 font-medium text-center break-all" v-else>my-skill-v1.0.zip (已上传)</p>
+                      <p class="text-[11px] text-text-tertiary mt-1 text-center">包含 skill.md 与 skill.json</p>
+                    </div>
+
+                    <!-- Auto Check Results -->
+                    <Transition name="fade">
+                      <div v-if="simulatedUploaded" class="p-3.5 bg-black/20 border border-border-default rounded-lg space-y-2.5 mt-2 min-w-0">
+                        <p class="text-xs text-text-secondary font-medium">系统自动检测结果</p>
+                        <div class="flex items-start gap-2 text-xs min-w-0">
+                          <i class="ph-fill ph-check-circle text-green-500 text-sm shrink-0 mt-px"></i>
+                          <span class="break-words">包结构完整性 (skill.md / skill.json 校验通过)</span>
+                        </div>
+                        <div class="flex items-start gap-2 text-xs min-w-0">
+                          <i class="ph-fill ph-check-circle text-green-500 text-sm shrink-0 mt-px"></i>
+                          <span class="break-words">安全检测 (无危险命令与违规外链)</span>
+                        </div>
+                      </div>
+                    </Transition>
+                  </div>
+                  
+                  <!-- Actions -->
+                  <div class="flex justify-end pt-2">
+                    <button type="submit" class="h-[36px] px-6 rounded-lg bg-primary hover:bg-primary-hover active:bg-primary-active text-bg-base text-[13px] font-semibold transition-all shadow-[0_0_12px_rgba(245,158,11,0.2)]" :class="{'opacity-70 pointer-events-none': isSubmitting}">
+                      <span v-if="!isSubmitting">{{ createMode === 'updateVersion' ? '提交版本更新' : (createMode === 'editInfo' ? '保存修改' : (createMode === 'editDraft' ? '提交发布' : '提交发布')) }}</span>
+                      <span v-else class="flex items-center gap-2"><i class="ph-bold ph-spinner animate-spin"></i> 处理中...</span>
+                    </button>
+                  </div>
+                </form>
+                
+              </div>
+            </div>
+          </div>
+
+        </Transition>
+      </div>
+    </main>
+
+    <!-- Close Create Confirmation Modal -->
+    <Transition name="fade">
+      <div v-if="showCloseConfirm" class="fixed inset-0 z-[3000] flex items-center justify-center bg-black/60 backdrop-blur-sm" @click.self="showCloseConfirm = false">
+        <div class="bg-bg-elevated border border-border-default rounded-2xl shadow-2xl w-[400px] overflow-hidden ring-1 ring-white/10" @click.stop>
+          <div class="p-6 text-center">
+            <i class="ph-duotone ph-question text-4xl text-primary mb-3"></i>
+            <h3 class="text-[16px] font-semibold text-text-primary mb-2">关闭编辑器</h3>
+            <p class="text-[13px] text-text-secondary leading-relaxed">
+              <template v-if="['create', 'editDraft'].includes(createMode)">当前内容尚未保存，是否需要保留草稿？</template>
+              <template v-else>确定要放弃当前的修改吗？</template>
+            </p>
+          </div>
+          <div class="border-t border-border-default p-4 flex flex-col gap-2">
+            <template v-if="['create', 'editDraft'].includes(createMode)">
+              <button @click="saveDraftAndClose" class="w-full h-[40px] rounded-lg bg-primary hover:bg-primary-hover text-bg-base text-[13px] font-semibold transition-colors">
+                保留草稿
+              </button>
+              <button @click="discardAndClose" class="w-full h-[40px] rounded-lg border border-border-default text-text-secondary hover:text-text-primary hover:bg-white/5 text-[13px] font-medium transition-colors">
+                不保留
+              </button>
+            </template>
+            <template v-else>
+              <button @click="discardAndClose" class="w-full h-[40px] rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 text-[13px] font-semibold transition-colors">
+                放弃修改
+              </button>
+            </template>
+            <button @click="showCloseConfirm = false" class="w-full h-[36px] rounded-lg text-text-secondary hover:text-text-primary hover:bg-white/5 text-[13px] font-medium transition-colors">
+              继续编辑
+            </button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
+    <!-- File Preview Modal -->
+    <Transition name="fade">
+      <div v-if="showFilePreviewModal" class="fixed inset-0 z-[2500] flex items-center justify-center bg-black/60 backdrop-blur-sm" @click.self="closeFilePreviewModal">
+        <div class="bg-bg-elevated border border-border-default rounded-2xl shadow-2xl w-[800px] max-h-[85vh] flex flex-col overflow-hidden ring-1 ring-white/10" @click.stop>
+          <!-- Modal Header -->
+          <div class="h-[52px] shrink-0 border-b border-border-default flex items-center px-5 gap-3 bg-white/[0.02]">
+            <i v-if="previewFileData?.type === 'markdown'" class="ph-duotone ph-file-text text-primary text-lg"></i>
+            <i v-else-if="previewFileData?.type === 'code'" class="ph-duotone ph-file-code text-blue-400 text-lg"></i>
+            <i v-else-if="previewFileData?.type === 'image'" class="ph-duotone ph-image text-green-400 text-lg"></i>
+            <span class="font-mono text-[14px] text-text-primary font-semibold">{{ previewFileData?.name }}</span>
+            <span v-if="previewFileData" class="text-[11px] text-text-tertiary">{{ previewFileData.language || previewFileData.type }}</span>
+            <div class="flex-1"></div>
+            <button @click="downloadFile(previewFileData)" class="w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center text-text-secondary hover:text-primary transition-colors" title="下载">
+              <i class="ph-bold ph-download-simple text-lg"></i>
+            </button>
+            <button @click="copyFileContent(previewFileData)" class="w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center text-text-secondary hover:text-primary transition-colors" title="复制">
+              <i class="ph-bold ph-copy text-lg"></i>
+            </button>
+            <button @click="closeFilePreviewModal" class="w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center text-text-secondary hover:text-text-primary transition-colors" title="关闭">
+              <i class="ph-bold ph-x text-lg"></i>
+            </button>
+          </div>
+
+          <!-- Modal Body -->
+          <div class="flex-1 overflow-y-auto p-6 custom-scrollbar">
+            <!-- Markdown -->
+            <div v-if="previewFileData?.type === 'markdown'" class="md-content max-w-none">
+              <div v-html="renderMarkdown(previewFileData.content)"></div>
+            </div>
+
+            <!-- Code -->
+            <div v-else-if="previewFileData?.type === 'code'" class="h-full">
+              <div class="bg-black/30 border border-border-default rounded-xl overflow-hidden h-full">
+                <pre class="p-5 text-[13px] font-mono text-text-secondary leading-relaxed overflow-x-auto h-full"><code>{{ previewFileData.content }}</code></pre>
+              </div>
+            </div>
+
+            <!-- Image -->
+            <div v-else-if="previewFileData?.type === 'image'" class="flex flex-col items-center justify-center py-10 gap-5">
+              <div class="w-40 h-40 rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                <i class="ph-duotone ph-cube text-6xl text-white/80"></i>
+              </div>
+              <div class="text-center space-y-1">
+                <p class="text-[14px] text-text-primary font-medium">技能图标预览</p>
+                <p class="text-[12px] text-text-tertiary">icon.png · 128×128px · PNG</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
+    <!-- FloatingDock z-[200] -->
+    <div class="dock-zone">
+      <div class="dock-container">
+        <div class="dock-item" title="企业全局总览">
+          <i class="ph-duotone ph-chart-pie-slice text-2xl"></i>
+        </div>
+        <div class="dock-item" title="智能广告托管">
+          <i class="ph-duotone ph-trend-up text-2xl"></i>
+        </div>
+        <div class="w-[1px] h-6 bg-border-default mx-1"></div>
+        <div class="dock-item active" title="Skill Hub">
+          <i class="ph-duotone ph-storefront text-2xl"></i>
+        </div>
+        <div class="dock-item" title="图像生成">
+          <i class="ph-duotone ph-image text-2xl"></i>
+        </div>
+        <div class="dock-item" title="在线会话">
+          <i class="ph-duotone ph-chats-circle text-2xl"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const { createApp, ref, computed } = Vue;
+
+    // Dummy Data mapped to actual departments
+    const ORG_DEPTS = ['全部', '照明事业部 (LBU)', '家电事业部 (ABU)', '营销中心 (MC)', '用户中心 (UC)', '交付中心 (DC)', '质量平台 (QP)', '制造平台 (MP)', '数字平台 (DP)', '支持平台 (SP)'];
+    
+    const MOCK_SKILLS = [
+      { id: '1', name: '智能代码审查专家', desc: '深度分析 PR/MR 代码，找出潜在的 Bug、性能瓶颈以及不符合规范的写法，并给出修改建议。', category: '开发工具', tags: ['Code Review', 'BugFix', 'Vue3'], author: 'Alex', dept: '数字平台 (DP)', rating: '4.9', downloads: '1.2k', version: '1.2.0', icon: 'ph-duotone ph-code', gradient: 'from-blue-600 to-cyan-500' },
+      { id: '2', name: '小红书爆款文案器', desc: '输入简短的产品卖点，一键生成符合小红书语境的带 Emoji 爆款排版文案。', category: '内容创作', tags: ['文案', '社媒', '营销'], author: 'Sarah', dept: '营销中心 (MC)', rating: '4.8', downloads: '3.4k', version: '2.0.1', icon: 'ph-duotone ph-pen-nib', gradient: 'from-pink-600 to-rose-400' },
+      { id: '3', name: 'Shopify 竞品提取器', desc: '抓取 Shopify 竞品站点的关键商品描述、SKU 和定价策略，结构化输出。', category: '数据分析', tags: ['Crawler', 'Shopify', 'JSON'], author: 'Leo', dept: '数字平台 (DP)', rating: '4.6', downloads: '850', version: '1.0.5', icon: 'ph-duotone ph-database', gradient: 'from-emerald-600 to-teal-400' },
+      { id: '4', name: '多语种本地化翻译', desc: '专为软件 UI/UX 文本设计的翻译技能，保持占位符不变，支持 12 种主流语言。', category: '内容创作', tags: ['i18n', '翻译', '工具'], author: 'Maria', dept: '支持平台 (SP)', rating: '4.7', downloads: '2.1k', version: '1.1.0', icon: 'ph-duotone ph-translate', gradient: 'from-indigo-600 to-blue-500' },
+      { id: '5', name: '会议纪要提炼', desc: '将杂乱的会议语音转写文本提取为：核心决议、待办事项(Owner+DDL)以及讨论细节。', category: '办公效率', tags: ['办公', '总结', 'TODO'], author: 'David', dept: '照明事业部 (LBU)', rating: '4.9', downloads: '5.6k', version: '3.0.0', icon: 'ph-duotone ph-files', gradient: 'from-orange-500 to-amber-400' },
+      { id: '6', name: 'SQL 慢查询优化', desc: '输入慢查询 SQL 与表结构，自动分析 explain 结果并给出索引建议。', category: '开发工具', tags: ['DBA', 'MySQL', '调优'], author: 'DBA Team', dept: '数字平台 (DP)', rating: '4.8', downloads: '920', version: '1.0.2', icon: 'ph-duotone ph-lightning', gradient: 'from-violet-600 to-fuchsia-500' },
+    ];
+
+    createApp({
+      setup() {
+        const categories = ['全部', '开发工具', '内容创作', '数据分析', '办公效率', '设计创意', '产品管理', '其他'];
+        const activeCategory = ref('全部');
+
+        const iconOptions = [
+          { icon: 'ph-duotone ph-code', gradient: 'from-blue-600 to-cyan-500', label: '代码' },
+          { icon: 'ph-duotone ph-pen-nib', gradient: 'from-pink-600 to-rose-400', label: '文案' },
+          { icon: 'ph-duotone ph-database', gradient: 'from-emerald-600 to-teal-400', label: '数据' },
+          { icon: 'ph-duotone ph-translate', gradient: 'from-indigo-600 to-blue-500', label: '翻译' },
+          { icon: 'ph-duotone ph-files', gradient: 'from-orange-500 to-amber-400', label: '文档' },
+          { icon: 'ph-duotone ph-lightning', gradient: 'from-violet-600 to-fuchsia-500', label: '效率' },
+          { icon: 'ph-duotone ph-chart-bar', gradient: 'from-rose-600 to-pink-400', label: '图表' },
+          { icon: 'ph-duotone ph-brain', gradient: 'from-purple-600 to-indigo-500', label: 'AI' },
+          { icon: 'ph-duotone ph-shield-check', gradient: 'from-green-600 to-emerald-400', label: '安全' },
+          { icon: 'ph-duotone ph-gear', gradient: 'from-gray-500 to-slate-400', label: '工具' },
+          { icon: 'ph-duotone ph-image', gradient: 'from-amber-500 to-yellow-400', label: '图像' },
+          { icon: 'ph-duotone ph-globe', gradient: 'from-sky-600 to-cyan-400', label: '网络' },
+        ];
+        const searchQuery = ref('');
+        const skills = ref([...MOCK_SKILLS]);
+        
+        // Structure state
+        const mainTab = ref('discover'); // discover | mine
+        const mineSubTab = ref('published'); // published | downloaded | pending
+        const mineSearchQuery = ref('');
+
+        const departments = ORG_DEPTS;
+        const selectedDept = ref('全部');
+        const sortOptions = ['最多下载', '最新发布'];
+        const selectedSort = ref('最多下载');
+
+        // Tabs State for AppRouter simulation
+        const tabs = ref([
+          { id: 'market-home', title: 'Skill Hub', view: 'market', icon: 'ph-duotone ph-storefront' }
+        ]);
+        const activeTabId = ref('market-home');
+        const detailSubTab = ref('overview'); // overview | files | versions
+        const selectedFile = ref(null); // { name, type, content }
+        const showFilePreviewModal = ref(false);
+        const previewFileData = ref(null);
+        const showCloseConfirm = ref(false);
+
+        // Mock file contents for preview
+        const fileContents = {
+          'skill.md': {
+            type: 'markdown',
+            content: `# 智能代码审查专家
+
+> 深度分析 PR/MR 代码，找出潜在的 Bug、性能瓶颈以及不符合规范的写法，并给出修改建议。
+
+## 功能概述
+
+本技能专为代码审查场景设计，支持以下核心能力：
+
+- **Bug 检测**：自动识别空指针、资源泄漏、并发竞争等常见缺陷
+- **性能分析**：标记 N+1 查询、不必要的重渲染、内存泄漏风险
+- **规范检查**：基于 ESLint / Prettier 规则集，确保代码风格一致
+
+## 使用方式
+
+1. 在 Agent 对话中上传代码片段或 PR diff
+2. 说一句"帮我审查这段代码"
+3. 技能将自动输出结构化的审查报告
+
+## 输出格式
+
+审查报告包含三个部分：
+
+1. **严重问题（Critical）** - 必须修复的 Bug
+2. **改进建议（Suggestions）** - 性能或可维护性优化
+3. **规范提醒（Style）** - 代码风格问题
+
+## 配置参数
+
+| 参数 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| depth | number | 3 | 分析深度 1-5 |
+| lang | string | zh-CN | 输出语言 |
+| strict | boolean | false | 是否开启严格模式 |
+
+## 示例
+
+> 用户：帮我审查这段代码
+>
+> 技能输出：
+> \`\`\`
+> 【严重问题】1 处
+> - L42: 未处理 Promise rejection，建议添加 try/catch
+>
+> 【改进建议】2 处
+> - L15: 列表未使用 key 属性，影响 diff 性能
+> - L78: 建议使用 useMemo 缓存计算结果
+>
+> 【规范提醒】1 处
+> - L3: import 语句未按字母排序
+> \`\`\``
+          },
+          'skill.json': {
+            type: 'code',
+            language: 'json',
+            content: `{
+  "name": "code-review-expert",
+  "version": "1.2.0",
+  "description": "深度代码审查专家",
+  "author": "Alex",
+  "category": "开发工具",
+  "tags": ["Code Review", "BugFix", "Vue3"],
+  "main": "skill.md",
+  "config": {
+    "depth": 3,
+    "lang": "zh-CN",
+    "strict": false,
+    "maxLines": 500
+  },
+  "compatibility": {
+    "agents": ["claude-code", "cursor", "copilot"],
+    "minVersion": "1.0.0"
+  },
+  "files": [
+    "skill.md",
+    "skill.json",
+    "examples/example1.md",
+    "examples/example2.md",
+    "tests/test-cases.json",
+    "assets/icon.png"
+  ]
+}`
+          },
+          'example1.md': {
+            type: 'markdown',
+            content: `# 示例 1：React 组件审查
+
+## 输入
+
+\`\`\`tsx
+function UserProfile({ userId }) {
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    fetchUser(userId).then(setUser);
+  }, [userId]);
+
+  return <div>{user.name}</div>;
+}
+\`\`\`
+
+## 审查报告
+
+### 严重问题
+
+1. **未处理异步错误** - \`fetchUser\` 可能 reject，导致未捕获的异常
+2. **空值访问风险** - 初始渲染时 \`user\` 为 \`null\`，访问 \`user.name\` 会报错
+
+### 改进建议
+
+1. 添加 Loading 和 Error 状态管理
+2. 考虑使用 \`useCallback\` 包装 fetch 逻辑
+3. 建议添加请求取消逻辑，避免竞态条件`
+          },
+          'example2.md': {
+            type: 'markdown',
+            content: `# 示例 2：Node.js 接口审查
+
+## 输入
+
+\`\`\`javascript
+app.get('/api/users', async (req, res) => {
+  const { page, size } = req.query;
+  const users = await db.query(
+    \`SELECT * FROM users LIMIT \${size} OFFSET \${(page-1)*size}\`
+  );
+  res.json(users);
+});
+\`\`\`
+
+## 审查报告
+
+### 严重问题
+
+1. **SQL 注入风险** - 直接将查询参数拼入 SQL 语句
+2. **参数校验缺失** - page/size 未做类型和范围校验
+
+### 改进建议
+
+1. 使用参数化查询或 ORM
+2. 添加输入校验中间件
+3. 建议添加分页元信息（total, hasMore）`
+          },
+          'test-cases.json': {
+            type: 'code',
+            language: 'json',
+            content: `{
+  "testSuite": "代码审查专家 - 测试用例",
+  "version": "1.2.0",
+  "cases": [
+    {
+      "id": "TC-001",
+      "name": "空值访问检测",
+      "input": "const name = user.profile.name;",
+      "expected": {
+        "severity": "critical",
+        "rule": "null-safety",
+        "message": "可能存在空值访问风险"
+      }
+    },
+    {
+      "id": "TC-002",
+      "name": "未处理 Promise",
+      "input": "fetchData().then(updateState);",
+      "expected": {
+        "severity": "critical",
+        "rule": "unhandled-promise",
+        "message": "Promise rejection 未被捕获"
+      }
+    },
+    {
+      "id": "TC-003",
+      "name": "数组 map 缺少 key",
+      "input": "items.map(i => <Item data={i} />)",
+      "expected": {
+        "severity": "suggestion",
+        "rule": "missing-key",
+        "message": "列表渲染建议添加唯一 key"
+      }
+    },
+    {
+      "id": "TC-004",
+      "name": "SQL 注入检测",
+      "input": "db.query('SELECT * FROM t WHERE id=' + id)",
+      "expected": {
+        "severity": "critical",
+        "rule": "sql-injection",
+        "message": "检测到潜在的 SQL 注入风险"
+      }
+    }
+  ]
+}`
+          },
+          'icon.png': {
+            type: 'image',
+            content: null
+          }
+        };
+        
+        const activeTab = computed(() => tabs.value.find(t => t.id === activeTabId.value) || tabs.value[0]);
+
+        // Form State
+        const form = ref({
+          name: '', category: '', desc: '', tags: '',
+          visibility: 'all',
+          icon: 'ph-duotone ph-code', gradient: 'from-blue-600 to-cyan-500'
+        });
+        const isSubmitting = ref(false);
+        const simulatedUploaded = ref(false);
+
+        // Mine Skills - 三个明确示例
+        const mySkillDrafts = [
+          {
+            id: 'my-1', name: '智能代码审查专家', desc: '深度分析 PR/MR 代码，找出潜在的 Bug、性能瓶颈以及不符合规范的写法，并给出修改建议。',
+            category: '开发工具', tags: ['Code Review', 'BugFix', 'Vue3'], author: 'You', dept: '数字平台 (DP)',
+            version: '1.2.0', icon: 'ph-duotone ph-code', gradient: 'from-blue-600 to-cyan-500',
+            status: '已发布', downloads: '1.2k',
+          },
+          {
+            id: 'my-2', name: '照明产品规格生成器', desc: '根据产品需求自动生成符合公司模板的照明产品规格书（仍在编写中）。',
+            category: '产品管理', tags: ['照明', '规格书', '产品'], author: 'You', dept: '数字平台 (DP)',
+            version: '0.1.0', icon: 'ph-duotone ph-lightbulb', gradient: 'from-amber-500 to-orange-400',
+            status: '草稿',
+          },
+          {
+            id: 'my-3', name: 'SQL 慢查询优化', desc: '输入慢查询 SQL 与表结构，自动分析 explain 结果并给出索引建议。',
+            category: '开发工具', tags: ['DBA', 'MySQL', '调优'], author: 'You', dept: '数字平台 (DP)',
+            version: '1.0.2', icon: 'ph-duotone ph-lightning', gradient: 'from-violet-600 to-fuchsia-500',
+            status: '已发布', downloads: '920', pendingVersion: '1.1.0', pendingChangelog: '新增 PostgreSQL 支持，优化索引建议算法',
+          },
+        ];
+
+        const myPublishedSkills = computed(() => {
+          let list = mySkillDrafts;
+          if (mineSearchQuery.value) {
+            const q = mineSearchQuery.value.toLowerCase();
+            list = list.filter(s => s.name.toLowerCase().includes(q) || s.category.toLowerCase().includes(q));
+          }
+          return list;
+        });
+
+        const myDownloadedSkills = computed(() => {
+           let list = skills.value.slice(2, 4).map((s, i) => ({
+             ...s,
+             hasNewVersion: i === 0,
+             latestVersion: '2.1.0'
+           }));
+           return list;
+        });
+
+        const myPendingSkills = computed(() => {
+           let list = skills.value.slice(4, 5).map(s => ({
+             ...s,
+             submitter: '李四',
+             submitDept: '数字平台 (DP)',
+             submitTime: '2026-06-17 09:30'
+           }));
+           return list;
+        });
+
+        // Toast State
+        const toast = ref({ show: false, message: '', type: 'success' });
+        const showToast = (msg, type='success') => {
+          toast.value = { show: true, message: msg, type };
+          setTimeout(() => toast.value.show = false, 3000);
+        }
+
+        // Methods
+        const filteredSkills = computed(() => {
+          return skills.value.filter(s => {
+            const matchCat = activeCategory.value === '全部' || s.category === activeCategory.value;
+            const matchDept = selectedDept.value === '全部' || s.dept === selectedDept.value;
+            const matchSearch = s.name.toLowerCase().includes(searchQuery.value.toLowerCase()) || 
+                                s.desc.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+                                s.tags.some(t => t.toLowerCase().includes(searchQuery.value.toLowerCase()));
+            return matchCat && matchSearch && matchDept;
+          });
+        });
+
+        const openDetailView = (skill) => {
+          const tabId = `detail-${skill.id}`;
+          if (!tabs.value.find(t => t.id === tabId)) {
+            tabs.value.push({
+              id: tabId,
+              title: skill.name,
+              view: 'detail',
+              mode: 'view',
+              icon: skill.icon,
+              skillData: skill
+            });
+          }
+          activeTabId.value = tabId;
+        };
+
+        const openReviewView = (skill) => {
+          const tabId = `review-${skill.id}`;
+          if (!tabs.value.find(t => t.id === tabId)) {
+            tabs.value.push({
+              id: tabId,
+              title: skill.name,
+              view: 'detail',
+              mode: 'review',
+              icon: skill.icon,
+              skillData: skill
+            });
+          }
+          activeTabId.value = tabId;
+        };
+
+        // 表单模式: 'create' | 'edit' | 'updateVersion'
+        const createMode = ref('create');
+        const editingSkillId = ref(null);
+        const updateVersionData = ref({ version: '', changelog: '' });
+
+        const openCreateView = () => {
+          createMode.value = 'create';
+          editingSkillId.value = null;
+          updateVersionData.value = { version: '', changelog: '' };
+          const tabId = 'create-new';
+          if (!tabs.value.find(t => t.id === tabId)) {
+            tabs.value.push({
+              id: tabId,
+              title: '发布新技能',
+              view: 'create',
+              icon: 'ph-duotone ph-magic-wand'
+            });
+          }
+          activeTabId.value = tabId;
+          form.value = { name: '', category: '', desc: '', tags: '', visibility: 'all', icon: 'ph-duotone ph-code', gradient: 'from-blue-600 to-cyan-500' };
+          simulatedUploaded.value = false;
+        };
+
+        // 草稿 → 继续编辑：预填表单
+        const editDraft = (skill) => {
+          createMode.value = 'editDraft';
+          editingSkillId.value = skill.id;
+          updateVersionData.value = { version: '', changelog: '' };
+          const tabId = `edit-draft-${skill.id}`;
+          if (!tabs.value.find(t => t.id === tabId)) {
+            tabs.value.push({
+              id: tabId,
+              title: `编辑草稿 · ${skill.name}`,
+              view: 'create',
+              icon: 'ph-duotone ph-file-dashed'
+            });
+          }
+          activeTabId.value = tabId;
+          form.value = {
+            name: skill.name,
+            category: skill.category,
+            desc: skill.desc,
+            tags: skill.tags.join(', '),
+            visibility: 'all',
+            icon: skill.icon || 'ph-duotone ph-code',
+            gradient: skill.gradient || 'from-blue-600 to-cyan-500'
+          };
+          simulatedUploaded.value = true;
+        };
+
+        const deleteDraft = (skill) => {
+          if (confirm(`确定要删除草稿「${skill.name}」吗？`)) {
+            const idx = mySkillDrafts.findIndex(s => s.id === skill.id);
+            if(idx > -1) mySkillDrafts.splice(idx, 1);
+            showToast('草稿已删除');
+          }
+        };
+
+        // 已发布 → 编辑资料 (仅元信息，不需要新版本)
+        const editInfo = (skill) => {
+          createMode.value = 'editInfo';
+          editingSkillId.value = skill.id;
+          updateVersionData.value = { version: '', changelog: '' };
+          const tabId = `edit-info-${skill.id}`;
+          if (!tabs.value.find(t => t.id === tabId)) {
+            tabs.value.push({
+              id: tabId,
+              title: `编辑资料 · ${skill.name}`,
+              view: 'create',
+              icon: 'ph-duotone ph-pencil-simple'
+            });
+          }
+          activeTabId.value = tabId;
+          form.value = {
+            name: skill.name,
+            category: skill.category,
+            desc: skill.desc,
+            tags: skill.tags.join(', '),
+            visibility: 'all'
+          };
+          simulatedUploaded.value = true; // 绕过未上传拦截
+        };
+
+        // 已发布 → 更新版本
+        const openUpdateVersion = (skill) => {
+          createMode.value = 'updateVersion';
+          editingSkillId.value = skill.id;
+          // 自动推荐自增版本号
+          const parts = skill.version.split('.').map(Number);
+          parts[2] = (parts[2] || 0) + 1;
+          updateVersionData.value = { version: parts.join('.'), changelog: '' };
+          const tabId = `update-ver-${skill.id}`;
+          if (!tabs.value.find(t => t.id === tabId)) {
+            tabs.value.push({
+              id: tabId,
+              title: `更新版本 · ${skill.name}`,
+              view: 'create',
+              icon: 'ph-duotone ph-cloud-arrow-up'
+            });
+          }
+          activeTabId.value = tabId;
+          form.value = {
+            name: skill.name,
+            category: skill.category,
+            desc: skill.desc,
+            tags: skill.tags.join(', '),
+            visibility: 'all',
+            icon: skill.icon || 'ph-duotone ph-code',
+            gradient: skill.gradient || 'from-blue-600 to-cyan-500'
+          };
+          simulatedUploaded.value = false;
+        };
+
+        // 下架技能
+        const unpublishSkill = (skill) => {
+          if (confirm(`确定要下架「${skill.name}」吗？下架后可从广场移除。`)) {
+            showToast(`「${skill.name}」已下架`, 'info');
+          }
+        };
+
+        const confirmCloseCreate = () => {
+          showCloseConfirm.value = true;
+        };
+
+        const saveDraftAndClose = () => {
+          if (createMode.value === 'editDraft') {
+            const target = mySkillDrafts.find(s => s.id === editingSkillId.value);
+            if (target) {
+              target.name = form.value.name || target.name;
+              target.desc = form.value.desc || target.desc;
+              target.category = form.value.category || target.category;
+              target.tags = form.value.tags ? form.value.tags.split(',').map(t=>t.trim()) : target.tags;
+              target.icon = form.value.icon;
+              target.gradient = form.value.gradient;
+            }
+          } else {
+            const newSkill = {
+              id: Date.now().toString(),
+              name: form.value.name || '未命名技能',
+              desc: form.value.desc || '',
+              category: form.value.category || '其他',
+              tags: form.value.tags ? form.value.tags.split(',').map(t=>t.trim()) : [],
+              author: 'You',
+              dept: '数字平台 (DP)',
+              version: '0.1.0', icon: form.value.icon, gradient: form.value.gradient,
+              status: '草稿'
+            };
+            mySkillDrafts.unshift(newSkill);
+          }
+          showToast('草稿已保存');
+          showCloseConfirm.value = false;
+          closeTab(activeTabId.value);
+          activeTabId.value = 'market-home';
+          mainTab.value = 'mine';
+          mineSubTab.value = 'published';
+        };
+
+        const discardAndClose = () => {
+          showCloseConfirm.value = false;
+          closeTab(activeTabId.value);
+          activeTabId.value = 'market-home';
+        };
+
+        const closeTab = (id) => {
+          const idx = tabs.value.findIndex(t => t.id === id);
+          if (idx !== -1) {
+            tabs.value.splice(idx, 1);
+            if (activeTabId.value === id) {
+              activeTabId.value = tabs.value[Math.max(0, idx - 1)]?.id || 'market-home';
+            }
+          }
+        };
+
+        const triggerDownload = () => {
+          showToast('技能包下载中...', 'info');
+        };
+
+        const copyCliCommand = () => {
+          showToast('命令已复制到剪贴板！');
+        };
+
+        const openFilePreviewModal = (filename) => {
+          const data = fileContents[filename];
+          if (data) {
+            previewFileData.value = { name: filename, ...data };
+            showFilePreviewModal.value = true;
+          }
+        };
+
+        const closeFilePreviewModal = () => {
+          showFilePreviewModal.value = false;
+        };
+
+        const copyFileContent = (file) => {
+          navigator.clipboard.writeText(file.content).then(() => {
+            showToast('内容已复制到剪贴板！');
+          });
+        };
+
+        const downloadFile = (file) => {
+          showToast(`文件 ${file.name} 下载中...`, 'info');
+        };
+
+        // Simple Markdown → HTML renderer
+        const renderMarkdown = (md) => {
+          if (!md) return '';
+          let html = md
+            // Escaping HTML entities
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            // Code blocks (```...```)
+            .replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) => {
+              const decoded = code.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+              return `<pre class="bg-black/40 border border-border-default rounded-lg p-4 my-3 overflow-x-auto"><code class="text-[13px] font-mono text-text-secondary leading-relaxed">${decoded}</code></pre>`;
+            })
+            // Inline code (`...`)
+            .replace(/`([^`]+)`/g, '<code class="px-1.5 py-0.5 rounded bg-black/30 text-[13px] font-mono text-indigo-300 border border-border-light">$1</code>')
+            // Headers
+            .replace(/^### (.+)$/gm, '<h3 class="text-[15px] font-semibold text-text-primary mt-6 mb-2">$1</h3>')
+            .replace(/^## (.+)$/gm, '<h2 class="text-[17px] font-semibold text-text-primary mt-8 mb-3 pb-2 border-b border-border-light">$1</h2>')
+            .replace(/^# (.+)$/gm, '<h1 class="text-xl font-bold text-text-primary mt-8 mb-4">$1</h1>')
+            // Bold & italic
+            .replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>')
+            .replace(/\*\*(.+?)\*\*/g, '<strong class="font-semibold text-text-primary">$1</strong>')
+            .replace(/\*(.+?)\*/g, '<em>$1</em>')
+            // Images
+            .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img alt="$1" src="$2" class="rounded-lg my-3 max-w-full border border-border-default" />')
+            // Links
+            .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-primary hover:underline" target="_blank">$1</a>')
+            // Horizontal rules
+            .replace(/^---$/gm, '<hr class="border-border-default my-4" />')
+            // Blockquotes
+            .replace(/^&gt; (.+)$/gm, '<blockquote class="border-l-3 border-primary/40 pl-4 my-3 text-text-secondary italic text-[14px]">$1</blockquote>')
+            // Unordered lists
+            .replace(/^\- (.+)$/gm, '<li class="text-text-secondary text-[14px] leading-relaxed">$1</li>')
+            // Ordered lists
+            .replace(/^\d+\. (.+)$/gm, '<li class="text-text-secondary text-[14px] leading-relaxed">$1</li>')
+            // Tables (simple)
+            .replace(/^\|(.+)\|$/gm, (match) => {
+              const cells = match.split('|').filter(c => c.trim()).map(c => c.trim());
+              const isHeader = cells.every(c => /^-{3,}$/.test(c));
+              if (isHeader) return '';
+              const isSep = cells.every(c => /^:?-+:?$/.test(c));
+              if (isSep) return '';
+              const tag = match.startsWith('|') && !match.endsWith('|') ? 'th' : 'td';
+              return '';
+            })
+            // Paragraphs (double newlines)
+            .replace(/\n\n/g, '</p><p class="text-[14px] text-text-secondary leading-relaxed mb-3">')
+            // Single newlines → <br>
+            .replace(/\n/g, '<br>');
+
+          // Wrap in paragraphs for non-block elements
+          html = '<p class="text-[14px] text-text-secondary leading-relaxed mb-3">' + html + '</p>';
+          // Clean up empty paragraphs
+          html = html.replace(/<p class="[^"]*"><\/p>/g, '');
+          html = html.replace(/<p class="[^"]*">(\s*<br>\s*)+<\/p>/g, '');
+          // Wrap consecutive <li> in <ul>
+          html = html.replace(/(<li[^>]*>.*?<\/li>(?:\s*<br>)?)+/g, (match) => {
+            const items = match.replace(/<br>/g, '');
+            return `<ul class="list-disc pl-5 my-3 space-y-1">${items}</ul>`;
+          });
+
+          return html;
+        };
+
+        const submitDraft = () => {
+          isSubmitting.value = true;
+          setTimeout(() => {
+            isSubmitting.value = false;
+            if (createMode.value === 'editDraft') {
+              const target = mySkillDrafts.find(s => s.id === editingSkillId.value);
+              if (target) {
+                target.name = form.value.name;
+                target.desc = form.value.desc;
+                target.category = form.value.category;
+                target.tags = form.value.tags ? form.value.tags.split(',').map(t=>t.trim()) : target.tags;
+              }
+            } else {
+              const newSkill = {
+                id: Date.now().toString(),
+                name: form.value.name,
+                desc: form.value.desc,
+                category: form.value.category,
+                tags: form.value.tags ? form.value.tags.split(',').map(t=>t.trim()) : ['New'],
+                author: 'You',
+                dept: '数字平台 (DP)',
+                version: '0.1.0', icon: form.value.icon, gradient: form.value.gradient,
+                status: '草稿'
+              };
+              mySkillDrafts.unshift(newSkill);
+            }
+            showToast('草稿保存成功！');
+            closeTab(activeTabId.value);
+            activeTabId.value = 'market-home';
+          }, 800);
+        };
+
+        const submitCreate = () => {
+          if (createMode.value !== 'editInfo' && !simulatedUploaded.value) {
+            showToast('请先上传技能包！', 'error');
+            return;
+          }
+          if (createMode.value === 'updateVersion' && !updateVersionData.value.version.trim()) {
+            showToast('请输入新版本号！', 'error');
+            return;
+          }
+          isSubmitting.value = true;
+          setTimeout(() => {
+            isSubmitting.value = false;
+
+            if (createMode.value === 'updateVersion') {
+              // 更新版本：更新 mySkillDrafts 中对应技能的待审字段
+              const target = mySkillDrafts.find(s => s.id === editingSkillId.value);
+              if (target) {
+                target.pendingVersion = updateVersionData.value.version;
+                target.pendingChangelog = updateVersionData.value.changelog;
+              }
+              showToast(`新版本 v${updateVersionData.value.version} 已提交，待审核通过后自动切换。`);
+            } else if (createMode.value === 'editInfo') {
+              // 编辑资料：只更新元信息
+              const target = mySkillDrafts.find(s => s.id === editingSkillId.value);
+              if (target) {
+                target.name = form.value.name;
+                target.desc = form.value.desc;
+                target.category = form.value.category;
+                target.tags = form.value.tags ? form.value.tags.split(',').map(t=>t.trim()) : target.tags;
+              }
+              showToast('资料已更新！');
+            } else if (createMode.value === 'editDraft') {
+              // 编辑草稿并发布
+              const target = mySkillDrafts.find(s => s.id === editingSkillId.value);
+              if (target) {
+                target.name = form.value.name;
+                target.desc = form.value.desc;
+                target.category = form.value.category;
+                target.tags = form.value.tags ? form.value.tags.split(',').map(t=>t.trim()) : target.tags;
+                target.status = '已发布';
+                target.icon = form.value.icon;
+                target.gradient = form.value.gradient;
+                target.version = '1.0.0';
+              }
+              if (!skills.value.find(s => s.id === target.id)) {
+                 skills.value.unshift({ ...target, rating: '0.0', downloads: '0' });
+              }
+              showToast('技能发布成功！');
+            } else {
+              // 新建并发布
+              const newSkill = {
+                id: Date.now().toString(),
+                name: form.value.name,
+                desc: form.value.desc,
+                category: form.value.category,
+                tags: form.value.tags ? form.value.tags.split(',').map(t=>t.trim()) : ['New'],
+                author: 'You',
+                dept: '数字平台 (DP)',
+                version: '1.0.0', icon: form.value.icon, gradient: form.value.gradient,
+                status: '已发布'
+              };
+              mySkillDrafts.unshift(newSkill);
+              skills.value.unshift({ ...newSkill, rating: '0.0', downloads: '0' });
+              showToast('技能发布成功！');
+            }
+
+            closeTab(activeTabId.value);
+            activeTabId.value = 'market-home';
+            mainTab.value = 'mine';
+            mineSubTab.value = 'published';
+          }, 1500);
+        };
+
+        return {
+          categories, activeCategory, searchQuery, filteredSkills, iconOptions,
+          mainTab, mineSubTab, mineSearchQuery, departments, selectedDept, sortOptions, selectedSort,
+          myPublishedSkills, myDownloadedSkills, myPendingSkills,
+          tabs, activeTabId, activeTab, closeTab, detailSubTab,
+          openDetailView, openCreateView, openReviewView,
+          editDraft, editInfo, deleteDraft, openUpdateVersion, unpublishSkill,
+          form, createMode, updateVersionData, isSubmitting, simulatedUploaded, submitCreate, submitDraft,
+          toast, triggerDownload, copyCliCommand, selectedFile, previewFileData, showFilePreviewModal, openFilePreviewModal, closeFilePreviewModal, copyFileContent, downloadFile, renderMarkdown, showCloseConfirm, confirmCloseCreate, saveDraftAndClose, discardAndClose
+        }
+      }
+    }).mount('#app');
+  </script>
+</body>
+</html>
