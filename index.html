@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>智岩 AI 平台三期 · 原型导航</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: #0f1117;
+      color: #e8eaed;
+      min-height: 100vh;
+      padding: 48px 24px;
+    }
+    .container { max-width: 720px; margin: 0 auto; }
+    h1 { font-size: 28px; font-weight: 600; margin-bottom: 8px; }
+    .subtitle { color: #9aa0a6; font-size: 14px; margin-bottom: 40px; }
+    .section { margin-bottom: 32px; }
+    .section-title {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #6b7280;
+      margin-bottom: 12px;
+    }
+    .card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      background: #1a1d27;
+      border: 1px solid #2d3140;
+      border-radius: 12px;
+      margin-bottom: 8px;
+      text-decoration: none;
+      color: inherit;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .card:hover { border-color: #4ade80; background: #1e2230; }
+    .card-info { display: flex; flex-direction: column; gap: 4px; }
+    .card-name { font-size: 15px; font-weight: 500; }
+    .card-desc { font-size: 12px; color: #9aa0a6; }
+    .card-arrow { color: #4ade80; font-size: 18px; }
+    .badge {
+      display: inline-block;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      margin-left: 8px;
+      vertical-align: middle;
+    }
+    .badge-latest { background: #4ade8020; color: #4ade80; border: 1px solid #4ade8040; }
+    footer { margin-top: 48px; font-size: 12px; color: #4b5563; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>智岩 AI 平台三期</h1>
+    <p class="subtitle">产品原型导航 · 点击卡片即可预览</p>
+
+    <div class="section">
+      <div class="section-title">素材管理</div>
+      <a class="card" href="asset-management-prototype-v2.html">
+        <div class="card-info">
+          <span class="card-name">素材管理 v2 <span class="badge badge-latest">最新</span></span>
+          <span class="card-desc">轻量素材库 · 分组管理 · 团队共享 · 下载与适配入口</span>
+        </div>
+        <span class="card-arrow">→</span>
+      </a>
+      <a class="card" href="asset-management-prototype-v1.html">
+        <div class="card-info">
+          <span class="card-name">素材管理 v1</span>
+          <span class="card-desc">SKU 中心化素材管理（早期版本）</span>
+        </div>
+        <span class="card-arrow">→</span>
+      </a>
+    </div>
+
+    <div class="section">
+      <div class="section-title">素材审核</div>
+      <a class="card" href="review-workbench-prototype-v1.html">
+        <div class="card-info">
+          <span class="card-name">素材审核 v1 <span class="badge badge-latest">最新</span></span>
+          <span class="card-desc">商品审核项目 · SKU 管理 · 多类型分组 · 素材库选图</span>
+        </div>
+        <span class="card-arrow">→</span>
+      </a>
+    </div>
+
+    <div class="section">
+      <div class="section-title">设计 AI 赋能 · 多平台适配</div>
+      <a class="card" href="design-ai-empowerment-prototype-v4.html">
+        <div class="card-info">
+          <span class="card-name">多平台适配 v4 <span class="badge badge-latest">最新</span></span>
+          <span class="card-desc">多尺寸 · 多语言 · 智能构图适配</span>
+        </div>
+        <span class="card-arrow">→</span>
+      </a>
+      <a class="card" href="design-ai-empowerment-prototype-v3.html">
+        <div class="card-info">
+          <span class="card-name">多平台适配 v3</span>
+          <span class="card-desc">早期迭代版本</span>
+        </div>
+        <span class="card-arrow">→</span>
+      </a>
+      <a class="card" href="design-ai-empowerment-prototype-v2.html">
+        <div class="card-info">
+          <span class="card-name">多平台适配 v2</span>
+          <span class="card-desc">早期迭代版本</span>
+        </div>
+        <span class="card-arrow">→</span>
+      </a>
+      <a class="card" href="design-ai-empowerment-prototype-v1.html">
+        <div class="card-info">
+          <span class="card-name">多平台适配 v1</span>
+          <span class="card-desc">早期迭代版本</span>
+        </div>
+        <span class="card-arrow">→</span>
+      </a>
+    </div>
+
+    <footer>智岩 AI 平台三期 · 内部原型预览</footer>
+  </div>
+</body>
+</html>

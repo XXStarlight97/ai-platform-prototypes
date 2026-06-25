@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>素材管理 (轻量版) - 智岩 AI 平台</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+<script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+<script>
+tailwind.config = {
+  darkMode: 'class',
+  theme: {
+    extend: {
+      fontFamily: {
+        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', 'sans-serif'],
+      },
+      colors: {
+        primary: { DEFAULT: '#f59e0b', hover: '#fbbf24', active: '#d97706' },
+        bg: { base: '#0a0a0c', elevated: '#16161e', glass: 'rgba(255, 255, 255, 0.06)' },
+        border: { default: 'rgba(255, 255, 255, 0.10)', light: 'rgba(255, 255, 255, 0.05)' },
+        text: { primary: 'rgba(255, 255, 255, 0.92)', secondary: 'rgba(255, 255, 255, 0.64)', tertiary: 'rgba(255, 255, 255, 0.42)' }
+      }
+    }
+  }
+}
+</script>
+
+<style>
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.3); }
+
+.fade-enter-active, .fade-leave-active { transition: opacity 0.2s ease, transform 0.2s ease; }
+.fade-enter-from, .fade-leave-to { opacity: 0; transform: translateY(4px); }
+[v-cloak] { display: none; }
+</style>
+</head>
+<body class="bg-bg-base text-text-primary h-screen w-screen overflow-hidden selection:bg-primary/30">
+
+<div id="app" class="h-full w-full flex flex-col relative" v-cloak>
+
+  <!-- Ambient Background -->
+  <div class="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+    <div class="absolute -top-[10%] -left-[10%] w-[50vw] h-[50vw] bg-indigo-600/10 rounded-full blur-[120px] mix-blend-screen"></div>
+    <div class="absolute top-[20%] right-[-10%] w-[40vw] h-[40vw] bg-amber-600/10 rounded-full blur-[120px] mix-blend-screen"></div>
+  </div>
+
+  <!-- AppHeader -->
+  <header class="h-[48px] shrink-0 border-b border-border-default flex items-center justify-between px-4 z-50 relative bg-bg-base/40 backdrop-blur-sm">
+    <div class="flex items-center gap-4">
+      <div class="flex items-center gap-2 pr-4 border-r border-border-default">
+        <div class="w-7 h-7 rounded bg-primary flex items-center justify-center text-bg-base font-bold text-sm">
+          <i class="ph-bold ph-cube"></i>
+        </div>
+        <span class="font-bold text-[15px] tracking-wide">智岩 AI</span>
+      </div>
+      <div class="flex items-center gap-1">
+        <div class="h-[30px] px-3 flex items-center gap-2 rounded-md text-[13px] transition-colors cursor-pointer border bg-primary/10 text-text-primary border-primary/25">
+          <i class="ph-duotone ph-folders"></i>
+          <span class="truncate">素材管理</span>
+        </div>
+      </div>
+    </div>
+    <div class="flex items-center gap-3">
+      <div class="w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-xs font-semibold shadow-inner border border-white/20">管</div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="flex-1 overflow-hidden p-[10px_12px_12px] relative z-10 flex">
+    <div class="flex-1 bg-bg-glass backdrop-blur-[12px] border border-border-default rounded-[14px] overflow-hidden flex shadow-lg ring-1 ring-white/5 relative">
+
+      <!-- ======================== -->
+      <!-- Left Sidebar (240px)     -->
+      <!-- ======================== -->
+      <div class="w-[240px] shrink-0 border-r border-border-light flex flex-col overflow-hidden bg-white/[0.01]">
+        
+        <!-- Upload Button -->
+        <div class="p-4 border-b border-border-light">
+          <button @click="triggerUpload" class="w-full h-[36px] rounded-lg bg-primary hover:bg-primary-hover active:bg-primary-active text-bg-base text-[13px] font-semibold transition-all flex items-center justify-center gap-2 shadow-[0_0_12px_rgba(245,158,11,0.2)] hover:shadow-[0_0_16px_rgba(245,158,11,0.4)]">
+            <i class="ph-bold ph-upload-simple"></i>上传图片
+          </button>
+          <input type="file" ref="fileInput" class="hidden" multiple accept="image/*" @change="handleFileUpload">
+        </div>
+
+        <div class="flex-1 overflow-y-auto">
+          <!-- Main Views -->
+          <div class="p-3 flex flex-col gap-1">
+            <div class="text-[11px] font-semibold text-text-tertiary px-3 py-2 uppercase tracking-wider">资源库</div>
+            
+            <button @click="activeNav = 'all'" 
+                    class="flex items-center justify-between px-3 py-2 rounded-lg text-[13px] transition-colors group"
+                    :class="activeNav === 'all' ? 'bg-primary/10 text-primary font-medium' : 'text-text-secondary hover:bg-white/[0.04] hover:text-text-primary'">
+              <div class="flex items-center gap-3">
+                <i class="ph-fill ph-squares-four text-lg"></i>
+                全部素材
+              </div>
+              <span class="text-[11px] opacity-60">{{ assets.length }}</span>
+            </button>
+            
+            <button @click="activeNav = 'recent'" 
+                    class="flex items-center px-3 py-2 rounded-lg text-[13px] transition-colors"
+                    :class="activeNav === 'recent' ? 'bg-primary/10 text-primary font-medium' : 'text-text-secondary hover:bg-white/[0.04] hover:text-text-primary'">
+              <div class="flex items-center gap-3">
+                <i class="ph-fill ph-clock text-lg"></i>
+                最近添加
+              </div>
+            </button>
+            
+            <button @click="activeNav = 'team'" 
+                    class="flex items-center justify-between px-3 py-2 rounded-lg text-[13px] transition-colors group"
+                    :class="activeNav === 'team' ? 'bg-primary/10 text-primary font-medium' : 'text-text-secondary hover:bg-white/[0.04] hover:text-text-primary'">
+              <div class="flex items-center gap-3">
+                <i class="ph-fill ph-users text-lg"></i>
+                团队共享
+              </div>
+              <span class="text-[11px] opacity-60">{{ teamAssets.length }}</span>
+            </button>
+          </div>
+
+          <!-- My Groups -->
+          <div class="p-3 flex flex-col gap-1">
+            <div class="flex items-center justify-between px-3 py-2">
+              <span class="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider">我的分组</span>
+              <button @click="createGroup" class="w-5 h-5 rounded flex items-center justify-center text-text-tertiary hover:bg-white/10 hover:text-text-primary transition-colors" title="新建分组">
+                <i class="ph-bold ph-plus"></i>
+              </button>
+            </div>
+            
+            <button v-for="group in groups" :key="group.id"
+                    @click="activeNav = group.id" 
+                    class="flex items-center justify-between px-3 py-2 rounded-lg text-[13px] transition-colors group"
+                    :class="activeNav === group.id ? 'bg-primary/10 text-primary font-medium' : 'text-text-secondary hover:bg-white/[0.04] hover:text-text-primary'">
+              <div class="flex items-center gap-3 truncate">
+                <i class="ph-fill ph-folder text-lg" :class="activeNav === group.id ? 'text-primary' : 'text-text-tertiary group-hover:text-text-secondary'"></i>
+                <span class="truncate">{{ group.name }}</span>
+              </div>
+              <span class="text-[11px] opacity-60 shrink-0">{{ getGroupCount(group.id) }}</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ======================== -->
+      <!-- Right Content Area       -->
+      <!-- ======================== -->
+      <div class="flex-1 flex flex-col overflow-hidden min-w-0 bg-bg-elevated/30">
+
+        <!-- Header / Toolbar -->
+        <div class="h-[60px] border-b border-border-default flex items-center px-6 justify-between shrink-0 bg-white/[0.02]">
+          <div class="flex items-center gap-4">
+            <span class="text-[15px] font-semibold text-text-primary">{{ currentNavTitle }}</span>
+            <div class="w-[1px] h-4 bg-border-default"></div>
+            <!-- Source Filter -->
+            <select v-model="sourceFilter" class="bg-transparent border-none text-[13px] text-text-secondary outline-none cursor-pointer hover:text-text-primary">
+              <option value="all">全部来源</option>
+              <option value="image_gen">图像生成</option>
+              <option value="adaptation">素材适配</option>
+              <option value="upload">本地上传</option>
+            </select>
+          </div>
+
+          <div class="flex items-center gap-4">
+            <!-- Batch Actions (visible if selected) -->
+            <div v-if="selectedCount > 0" class="flex items-center gap-2 mr-2 animate-fade-in">
+              <span class="text-[12px] text-text-tertiary mr-2">已选 {{ selectedCount }} 项</span>
+              <button @click="openGroupModal" class="h-[28px] px-3 rounded text-[12px] bg-white/5 border border-border-default hover:bg-white/10 transition-colors">加入分组</button>
+              <button @click="handleBatchDownload" class="h-[28px] px-3 rounded text-[12px] bg-white/5 border border-border-default hover:bg-white/10 transition-colors">批量下载</button>
+              <button class="h-[28px] px-3 rounded text-[12px] bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20 transition-colors">批量适配</button>
+            </div>
+            
+            <div class="relative w-[240px]">
+              <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary"></i>
+              <input type="text" v-model="searchQuery" placeholder="搜索名称或 SKU..."
+                     class="w-full h-[32px] bg-black/20 border border-border-default rounded-lg pl-9 pr-3 text-[13px] outline-none focus:border-primary/50 transition-all placeholder-text-tertiary">
+            </div>
+          </div>
+        </div>
+
+        <!-- Asset Grid -->
+        <div class="flex-1 overflow-y-auto p-6" @click.self="clearSelection">
+          <!-- Empty State -->
+          <div v-if="filteredAssets.length === 0" class="h-full flex flex-col items-center justify-center text-text-tertiary gap-3" @click.self="clearSelection">
+            <i class="ph-duotone ph-folder-dashed text-[48px] opacity-30 pointer-events-none"></i>
+            <div class="text-sm pointer-events-none">暂无素材</div>
+            <div class="text-xs opacity-60 pointer-events-none">可通过上传或在其他模块中保存到此处</div>
+          </div>
+
+          <!-- Grid -->
+          <div v-else class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
+            <div v-for="asset in filteredAssets" :key="asset.id"
+                 @click.stop="toggleSelect(asset)"
+                 class="group relative bg-black/20 border rounded-xl overflow-hidden cursor-pointer transition-all duration-200"
+                 :class="asset.selected ? 'border-primary ring-1 ring-primary shadow-[0_0_15px_rgba(245,158,11,0.1)]' : 'border-border-default hover:border-border-default/80'">
+              
+              <!-- Checkbox -->
+              <div class="absolute top-2 left-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity" :class="{'opacity-100': asset.selected}">
+                <div class="w-5 h-5 rounded border flex items-center justify-center transition-colors"
+                     :class="asset.selected ? 'bg-primary border-primary text-bg-base' : 'bg-black/50 border-white/30 text-transparent'">
+                  <i class="ph-bold ph-check text-[12px]"></i>
+                </div>
+              </div>
+
+              <!-- Source Badge -->
+              <div class="absolute top-2 right-2 z-10 pointer-events-none">
+                <span class="px-1.5 py-0.5 rounded text-[9px] font-medium backdrop-blur-md"
+                      :class="sourceBadgeClass(asset.source)">
+                  {{ sourceText(asset.source) }}
+                </span>
+              </div>
+
+              <!-- Image -->
+              <div class="w-full aspect-square bg-black/40 relative flex items-center justify-center overflow-hidden">
+                <img v-if="asset.url" :src="asset.url" class="w-full h-full object-cover">
+                <i v-else class="ph-duotone ph-image text-text-tertiary text-[40px]"></i>
+                
+                <!-- Hover Overlay Actions -->
+                <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 backdrop-blur-[2px]" v-if="!asset.selected">
+                  <button class="w-8 h-8 rounded-full bg-primary text-bg-base flex items-center justify-center hover:scale-110 transition-transform" title="用于素材适配" @click.stop="handleAction('adapt', asset)">
+                    <i class="ph-bold ph-magic-wand"></i>
+                  </button>
+                  <button class="w-8 h-8 rounded-full bg-white/20 text-white flex items-center justify-center hover:scale-110 hover:bg-white/30 transition-transform" title="发起审核" @click.stop="handleAction('review', asset)">
+                    <i class="ph-bold ph-check-circle"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Info -->
+              <div class="p-3">
+                <div class="text-[12px] font-medium text-text-primary truncate mb-1" :title="asset.name">{{ asset.name }}</div>
+                <div class="flex items-center justify-between text-[10px] text-text-tertiary">
+                  <span class="truncate pr-2" v-if="asset.sku">SKU: {{ asset.sku }}</span>
+                  <span v-else>{{ asset.date }}</span>
+                  
+                  <div class="relative group/menu">
+                    <button class="w-5 h-5 rounded hover:bg-white/10 flex items-center justify-center" @click.stop>
+                      <i class="ph-bold ph-dots-three"></i>
+                    </button>
+                    <!-- Simulated popover menu -->
+                      <div class="absolute right-0 bottom-full mb-1 w-24 bg-bg-elevated border border-border-default rounded-lg shadow-xl opacity-0 invisible group-hover/menu:opacity-100 group-hover/menu:visible transition-all z-20 flex flex-col py-1 overflow-hidden">
+                        <div class="px-3 py-1.5 text-[11px] text-text-secondary hover:bg-white/5 hover:text-text-primary cursor-pointer" @click.stop="openGroupModalForSingle(asset)">加入分组</div>
+                        <div class="px-3 py-1.5 text-[11px] text-text-secondary hover:bg-white/5 hover:text-text-primary cursor-pointer" @click.stop="handleAction('share', asset)">分享至团队</div>
+                        <div class="px-3 py-1.5 text-[11px] text-text-secondary hover:bg-white/5 hover:text-text-primary cursor-pointer" @click.stop="handleAction('download', asset)">下载原图</div>
+                        <div class="px-3 py-1.5 text-[11px] text-red-400 hover:bg-red-500/10 cursor-pointer" @click.stop="handleAction('delete', asset)">删除</div>
+                      </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- Toast -->
+  <div v-if="toast.show" class="fixed top-6 left-1/2 -translate-x-1/2 z-[100] px-4 py-2 bg-[#1a1a24] border border-border-default shadow-xl rounded-full flex items-center gap-2 animate-fade-in text-[13px]">
+    <div class="w-4 h-4 rounded-full bg-primary flex items-center justify-center text-bg-base">
+      <i class="ph-bold ph-check text-[10px]"></i>
+    </div>
+    {{ toast.msg }}
+  </div>
+
+  <!-- Group Selection Modal -->
+  <div v-if="groupModal.show" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-center justify-center">
+    <div class="bg-bg-elevated border border-border-default rounded-2xl w-[400px] shadow-2xl overflow-hidden animate-fade-in">
+      <div class="px-6 py-4 border-b border-border-default flex items-center justify-between">
+        <span class="text-[15px] font-semibold">加入分组</span>
+        <button @click="closeGroupModal" class="text-text-tertiary hover:text-text-primary transition-colors">
+          <i class="ph-bold ph-x"></i>
+        </button>
+      </div>
+      <div class="p-4 max-h-[300px] overflow-y-auto">
+        <div class="flex flex-col gap-2">
+          <label v-for="g in groups" :key="g.id" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 cursor-pointer transition-colors border border-transparent hover:border-white/10">
+            <input type="radio" :value="g.id" v-model="groupModal.selectedId" class="w-4 h-4 accent-primary bg-black/50 border-border-default">
+            <span class="text-[13px]">{{ g.name }}</span>
+            <span class="text-[11px] text-text-tertiary ml-auto">{{ getGroupCount(g.id) }} 项</span>
+          </label>
+        </div>
+      </div>
+      <div class="px-6 py-4 border-t border-border-default flex justify-end gap-3 bg-black/20">
+        <button @click="closeGroupModal" class="px-4 py-2 rounded-lg text-[13px] font-medium text-text-secondary hover:bg-white/5 transition-colors">取消</button>
+        <button @click="confirmGroupSelection" :disabled="!groupModal.selectedId && groupModal.mode !== 'batch'" class="px-4 py-2 rounded-lg text-[13px] font-medium bg-primary text-bg-base hover:bg-primary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed">确认加入</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const { createApp, ref, computed, reactive } = Vue;
+
+createApp({
+  setup() {
+    const activeNav = ref('all'); // 'all', 'recent', or groupId
+    const searchQuery = ref('');
+    const sourceFilter = ref('all');
+    const fileInput = ref(null);
+
+    const toast = reactive({ show: false, msg: '' });
+    const showToast = (msg) => {
+      toast.msg = msg;
+      toast.show = true;
+      setTimeout(() => { toast.show = false; }, 2500);
+    };
+
+    // Mock Groups
+    const groups = ref([
+      { id: 'g1', name: '落地灯场景参考' },
+      { id: 'g2', name: 'Prime Day 备选' },
+      { id: 'g3', name: 'A+ 模块素材' }
+    ]);
+
+    // Mock Team Assets
+    const teamAssets = ref([
+      { id: 101, name: 'Brand_Logo_Pack.zip', source: 'upload', sku: '', date: '2026-06-10', groupId: null, selected: false, url: '' }
+    ]);
+
+    // Group Modal State
+    const groupModal = reactive({
+      show: false,
+      selectedId: null,
+      mode: 'batch', // 'batch' or 'single'
+      targetAsset: null
+    });
+    const assets = ref([
+      { id: 1, name: 'LMP-001_Scene_Gen_01.jpg', source: 'image_gen', sku: 'LMP-001', date: '2026-06-25', groupId: 'g1', selected: false, url: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=400&q=80' },
+      { id: 2, name: 'LMP-001_Scene_Gen_02.jpg', source: 'image_gen', sku: 'LMP-001', date: '2026-06-25', groupId: 'g1', selected: false, url: 'https://images.unsplash.com/photo-1540932239986-30128078f3c5?w=400&q=80' },
+      { id: 3, name: 'SDC_Banner_OptionA.png', source: 'adaptation', sku: 'FAN-200', date: '2026-06-24', groupId: 'g2', selected: false, url: '' },
+      { id: 4, name: 'Shooting_Raw_05.jpg', source: 'upload', sku: '', date: '2026-06-23', groupId: null, selected: false, url: '' },
+      { id: 5, name: 'A_Plus_Module_1.jpg', source: 'adaptation', sku: 'LMP-001', date: '2026-06-22', groupId: 'g3', selected: false, url: '' },
+      { id: 6, name: 'Brand_KV_Summer.jpg', source: 'image_gen', sku: '', date: '2026-06-21', groupId: 'g2', selected: false, url: '' },
+    ]);
+
+    // Computed properties
+    const currentNavTitle = computed(() => {
+      if (activeNav.value === 'all') return '全部素材';
+      if (activeNav.value === 'recent') return '最近添加';
+      if (activeNav.value === 'team') return '团队共享';
+      const group = groups.value.find(g => g.id === activeNav.value);
+      return group ? group.name : '全部素材';
+    });
+
+    const filteredAssets = computed(() => {
+      let result = activeNav.value === 'team' ? teamAssets.value : assets.value;
+
+      // Nav filter
+      if (activeNav.value === 'recent') {
+        // Mock recent: just top 4
+        result = result.slice(0, 4);
+      } else if (activeNav.value !== 'all' && activeNav.value !== 'team') {
+        result = result.filter(a => a.groupId === activeNav.value);
+      }
+
+      // Source filter
+      if (sourceFilter.value !== 'all') {
+        result = result.filter(a => a.source === sourceFilter.value);
+      }
+
+      // Search
+      if (searchQuery.value) {
+        const q = searchQuery.value.toLowerCase();
+        result = result.filter(a => 
+          a.name.toLowerCase().includes(q) || 
+          (a.sku && a.sku.toLowerCase().includes(q))
+        );
+      }
+
+      return result;
+    });
+
+    const selectedCount = computed(() => assets.value.filter(a => a.selected).length);
+
+    // Methods
+    const getGroupCount = (id) => assets.value.filter(a => a.groupId === id).length;
+
+    // Group Modal Methods
+    const openGroupModal = () => {
+      if (selectedCount.value === 0) return;
+      groupModal.mode = 'batch';
+      groupModal.targetAsset = null;
+      groupModal.selectedId = null;
+      groupModal.show = true;
+    };
+
+    const openGroupModalForSingle = (asset) => {
+      groupModal.mode = 'single';
+      groupModal.targetAsset = asset;
+      groupModal.selectedId = asset.groupId;
+      groupModal.show = true;
+    };
+
+    const closeGroupModal = () => {
+      groupModal.show = false;
+    };
+
+    const confirmGroupSelection = () => {
+      if (!groupModal.selectedId) return;
+      const groupName = groups.value.find(g => g.id === groupModal.selectedId)?.name || '未知分组';
+      
+      if (groupModal.mode === 'batch') {
+        const selected = assets.value.filter(a => a.selected);
+        selected.forEach(a => a.groupId = groupModal.selectedId);
+        showToast(`已将 ${selected.length} 个文件加入分组 "${groupName}"`);
+        clearSelection();
+      } else if (groupModal.mode === 'single' && groupModal.targetAsset) {
+        groupModal.targetAsset.groupId = groupModal.selectedId;
+        showToast(`已将 "${groupModal.targetAsset.name}" 加入分组 "${groupName}"`);
+      }
+      closeGroupModal();
+    };
+
+    const handleBatchDownload = () => {
+      showToast(`开始打包下载 ${selectedCount.value} 个文件`);
+      clearSelection();
+    };
+
+    const createGroup = () => {
+      const name = prompt('请输入新分组名称：');
+      if (name && name.trim()) {
+        const id = 'g' + Date.now();
+        groups.value.push({ id, name: name.trim() });
+        showToast(`已创建分组 "${name}"`);
+      }
+    };
+
+    const triggerUpload = () => fileInput.value.click();
+    
+    const handleFileUpload = (e) => {
+      const files = e.target.files;
+      if (files.length > 0) {
+        const newAsset = {
+          id: Date.now(),
+          name: files[0].name,
+          source: 'upload',
+          sku: '',
+          date: new Date().toISOString().split('T')[0],
+          groupId: (activeNav.value !== 'all' && activeNav.value !== 'recent') ? activeNav.value : null,
+          selected: false,
+          url: ''
+        };
+        assets.value.unshift(newAsset);
+        showToast(`成功上传 ${files.length} 个文件`);
+      }
+      e.target.value = '';
+    };
+
+    const toggleSelect = (asset) => {
+      asset.selected = !asset.selected;
+    };
+
+    const clearSelection = () => {
+      assets.value.forEach(a => a.selected = false);
+    };
+
+    const handleAction = (action, asset) => {
+      switch(action) {
+        case 'adapt':
+          showToast(`已将 "${asset.name}" 带入素材适配模块`);
+          break;
+        case 'review':
+          showToast(`已使用 "${asset.name}" 发起审核任务`);
+          break;
+        case 'group':
+          openGroupModalForSingle(asset);
+          break;
+        case 'download':
+          showToast(`开始下载 ${asset.name}`);
+          break;
+        case 'share':
+          showToast(`已分享至团队: ${asset.name}`);
+          break;
+        case 'delete':
+          assets.value = assets.value.filter(a => a.id !== asset.id);
+          showToast('素材已删除');
+          break;
+      }
+    };
+
+    const sourceText = (s) => {
+      const map = { 'image_gen': '图像生成', 'adaptation': '素材适配', 'upload': '本地上传' };
+      return map[s] || s;
+    };
+
+    const sourceBadgeClass = (s) => {
+      const map = {
+        'image_gen': 'bg-purple-500/20 text-purple-400 border border-purple-500/20',
+        'adaptation': 'bg-amber-500/20 text-amber-500 border border-amber-500/20',
+        'upload': 'bg-blue-500/20 text-blue-400 border border-blue-500/20'
+      };
+      return map[s] || '';
+    };
+
+    return {
+      activeNav, currentNavTitle, searchQuery, sourceFilter, fileInput,
+      groups, assets, teamAssets, filteredAssets, selectedCount, getGroupCount,
+      createGroup, triggerUpload, handleFileUpload, toggleSelect, clearSelection, handleAction,
+      sourceText, sourceBadgeClass, toast,
+      groupModal, openGroupModal, openGroupModalForSingle, closeGroupModal, confirmGroupSelection, handleBatchDownload
+    };
+  }
+}).mount('#app');
+</script>
+
+<style>
+.animate-fade-in {
+  animation: fadeIn 0.2s ease-out forwards;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+</style>
+</body>
+</html>

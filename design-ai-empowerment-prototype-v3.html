@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>智岩 AI · 场景生成 v3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+<script>
+tailwind.config={darkMode:'class',theme:{extend:{fontFamily:{sans:['Inter','-apple-system','BlinkMacSystemFont','Segoe UI','PingFang SC','Microsoft YaHei','sans-serif']},colors:{primary:{DEFAULT:'#f59e0b',hover:'#fbbf24',active:'#d97706'}},boxShadow:{glow:'0 0 16px rgba(245,158,11,0.25)'}}}};
+</script>
+<style>
+[v-cloak]{display:none!important}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;background:#0a0a0c;color:rgba(255,255,255,0.92);overflow:hidden;height:100vh}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.12);border-radius:3px}
+.ambient{position:fixed;inset:0;z-index:0;pointer-events:none}
+.blob{position:absolute;border-radius:50%;filter:blur(120px);opacity:0.30}
+.blob1{width:600px;height:600px;background:radial-gradient(circle,rgba(245,158,11,0.10),transparent);top:-250px;right:-150px}
+.blob2{width:500px;height:500px;background:radial-gradient(circle,rgba(99,102,241,0.08),transparent);bottom:-200px;left:-100px}
+.blob3{width:400px;height:400px;background:radial-gradient(circle,rgba(245,158,11,0.06),transparent);top:45%;left:55%}
+.glass{background:rgba(255,255,255,0.06);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.10);box-shadow:inset 0 1px 0 0 rgba(255,255,255,0.1)}
+.dock-zone{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:520px;height:36px;z-index:200}
+.dock-stage{position:absolute;bottom:10px;left:50%;transform:translateX(-50%) translateY(120%);opacity:0;transition:all 0.32s cubic-bezier(0.16,1,0.3,1);display:flex;align-items:center;gap:3px;padding:6px 8px;background:rgba(255,255,255,0.07);backdrop-filter:blur(20px) saturate(180%);border:1px solid rgba(255,255,255,0.08);border-radius:20px;box-shadow:0 8px 32px rgba(0,0,0,0.5),inset 0 1px 0 0 rgba(255,255,255,0.08)}
+.dock-zone:hover .dock-stage,.dock-stage:hover{transform:translateX(-50%) translateY(0);opacity:1}
+.dock-item{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.52);background:transparent;transition:all 0.18s ease;cursor:pointer;position:relative;font-size:18px}
+.dock-item:hover{background:rgba(255,255,255,0.10);color:rgba(255,255,255,0.90);transform:translateY(-5px) scale(1.12)}
+.dock-item.active{color:#f59e0b;background:rgba(245,158,11,0.12)}
+.dock-item.active::after{content:'';position:absolute;bottom:-5px;width:4px;height:4px;border-radius:50%;background:#f59e0b;box-shadow:0 0 8px rgba(245,158,11,0.5)}
+.dock-sep{width:1px;height:22px;background:rgba(255,255,255,0.10);margin:0 4px}
+.tab{height:30px;padding:0 14px;display:flex;align-items:center;gap:7px;border-radius:7px;font-size:13px;cursor:pointer;transition:all 0.15s;color:rgba(255,255,255,0.52);white-space:nowrap;max-width:200px;border:1px solid transparent}
+.tab:hover{background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.80)}
+.tab.active{background:rgba(245,158,11,0.10);color:rgba(255,255,255,0.90);border-color:rgba(245,158,11,0.25)}
+.stab{padding:8px 18px;font-size:13px;font-weight:500;cursor:pointer;color:rgba(255,255,255,0.52);border-bottom:2px solid transparent;transition:all 0.15s;white-space:nowrap}
+.stab:hover{color:rgba(255,255,255,0.80)}
+.stab.active{color:#f59e0b;border-bottom-color:#f59e0b}
+.card{padding:10px 12px;border-radius:8px;cursor:pointer;border:1px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.02);transition:all 0.15s;font-size:12px}
+.card:hover{border-color:rgba(255,255,255,0.15);background:rgba(255,255,255,0.05)}
+.card.sel{border-color:rgba(245,158,11,0.45);background:rgba(245,158,11,0.08)}
+.elt{position:absolute;cursor:move;border:1px solid transparent;transition:border-color 0.12s}
+.elt:hover{border-color:rgba(245,158,11,0.30)}
+.elt.on{border-color:rgba(245,158,11,0.70)!important;box-shadow:0 0 0 2px rgba(245,158,11,0.20)}
+.rh{position:absolute;width:8px;height:8px;background:#f59e0b;border:1px solid #0a0a0c;border-radius:2px;z-index:5}
+.rh-nw{top:-4px;left:-4px;cursor:nw-resize}.rh-ne{top:-4px;right:-4px;cursor:ne-resize}
+.rh-sw{bottom:-4px;left:-4px;cursor:sw-resize}.rh-se{bottom:-4px;right:-4px;cursor:se-resize}
+@keyframes pulse{0%,100%{opacity:0.5}50%{opacity:1}}
+.pulse{animation:pulse 2s ease-in-out infinite}
+</style>
+</head>
+<body>
+
+<div id="app" v-cloak style="height:100vh;display:flex;flex-direction:column;position:relative;z-index:10">
+<div class="ambient"><div class="blob blob1"></div><div class="blob blob2"></div><div class="blob blob3"></div></div>
+
+<!-- HEADER -->
+<header style="height:48px;flex-shrink:0;display:flex;align-items:center;background:rgba(10,10,12,0.85);backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,0.07);padding:0 12px;z-index:50">
+  <div style="display:flex;align-items:center;gap:7px;margin-right:16px"><div style="width:22px;height:22px;border-radius:5px;background:linear-gradient(135deg,#f59e0b,#fbbf24);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#0a0a0c">智</div><span style="font-size:14px;font-weight:600">智岩 AI</span></div>
+  <div style="display:flex;align-items:center;gap:3px;flex:1;overflow-x:auto;height:48px"><div class="tab active" style="cursor:default">场景生成</div></div>
+  <div style="display:flex;align-items:center;gap:12px;font-size:12px;color:rgba(255,255,255,0.42)"><span @click="help=!help" style="cursor:pointer">💡 指引</span><div style="width:26px;height:26px;border-radius:50%;background:rgba(245,158,11,0.15);display:flex;align-items:center;justify-content:center;font-size:12px;color:#f59e0b">W</div></div>
+</header>
+
+<!-- CONTENT -->
+<div style="flex:1;overflow:hidden;padding:8px 10px 10px">
+<div class="glass" style="height:100%;border-radius:14px;display:flex;flex-direction:column;overflow:hidden">
+
+  <!-- Scene Tabs -->
+  <div style="flex-shrink:0;display:flex;align-items:center;gap:0;padding:4px 16px 0;border-bottom:1px solid rgba(255,255,255,0.06)">
+    <div v-for="s in stabs" :key="s.k" class="stab" :class="{active:stab===s.k}" @click="switchStab(s.k)">{{s.l}}</div>
+    <span v-if="stab!=='assets'" style="margin-left:auto;font-size:11px;color:rgba(255,255,255,0.22);padding-bottom:8px">{{scene.specs}}</span>
+  </div>
+
+  <!-- WORKSPACE -->
+  <div v-if="stab!=='assets'" style="flex:1;display:flex;overflow:hidden">
+
+    <!-- PROJECT SIDEBAR -->
+    <div style="width:200px;flex-shrink:0;border-right:1px solid rgba(255,255,255,0.06);display:flex;flex-direction:column;overflow:hidden">
+      <div style="padding:12px 12px 8px"><button @click="newProject" style="width:100%;padding:8px 0;border-radius:7px;border:1px dashed rgba(245,158,11,0.30);background:rgba(245,158,11,0.06);color:#f59e0b;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.15s" class="hover:bg-primary/10">＋ 新建项目</button></div>
+      <div style="flex:1;overflow:auto;padding:0 8px 8px">
+        <div v-if="projects.length===0" style="font-size:11px;color:rgba(255,255,255,0.16);text-align:center;padding:30px 10px">暂无项目</div>
+        <div v-for="p in projects" :key="p.id" class="card" :class="{sel:activePj&&activePj.id===p.id}" @click="openProject(p)" style="margin-bottom:4px;display:flex;flex-direction:column;gap:4px">
+          <div style="font-weight:600;font-size:12px;color:rgba(255,255,255,0.82);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{p.name}}</div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.30)">{{p.batches.length}}批次 · {{p.batches.reduce((s,b)=>s+b.results.filter(r=>r.saved).length,0)||0}}张已存 · {{p.date}}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT AREA -->
+    <div v-if="!activePj" style="flex:1;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.12)"><div style="text-align:center"><span style="font-size:48px">📂</span><div style="font-size:14px;margin-top:12px">选择左侧项目或新建项目</div></div></div>
+
+    <template v-if="activePj">
+
+      <!-- ===== BATCH LIST (no active batch) ===== -->
+      <div v-if="!activeBatch" style="flex:1;display:flex;flex-direction:column;overflow:hidden;background:rgba(0,0,0,0.18)">
+        <div style="padding:12px 16px;font-size:13px;font-weight:600;color:rgba(255,255,255,0.75);border-bottom:1px solid rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:space-between">
+          <span>{{activePj.name}}</span>
+          <button @click="newBatch" style="padding:5px 14px;border-radius:6px;border:none;background:#f59e0b;color:#0a0a0c;font-size:11px;font-weight:600;cursor:pointer">＋ 新建生成</button>
+        </div>
+        <div style="flex:1;overflow:auto;padding:16px">
+          <div v-if="activePj.batches.length===0" style="text-align:center;color:rgba(255,255,255,0.16);padding:60px 0">
+            <span style="font-size:40px">📦</span><div style="font-size:13px;margin-top:10px">暂无生成记录</div><div style="font-size:11px;margin-top:4px">点击上方「新建生成」开始</div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px">
+            <div v-for="(b,bi) in activePj.batches" :key="b.id" class="glass" style="padding:16px;cursor:pointer;transition:all 0.15s;border-radius:10px" @click="openBatch(b)" @mouseenter="e=>{e.currentTarget.style.borderColor='rgba(245,158,11,0.25)'}" @mouseleave="e=>{e.currentTarget.style.borderColor='rgba(255,255,255,0.10)'}">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+                <span style="font-weight:600;font-size:12px;color:rgba(255,255,255,0.80)">{{b.date}} · 批次 {{bi+1}}</span>
+                <span style="font-size:10px;color:rgba(255,255,255,0.28)">{{b.results.length}}张</span>
+              </div>
+              <div style="font-size:10px;color:rgba(255,255,255,0.32);line-height:1.5">
+                {{b.params.prod||'未命名'}} · {{b.params.platform}} · {{b.params.sizes.length}}尺寸 · {{b.params.langs.length}}语言
+              </div>
+              <div v-if="b.params.selling" style="font-size:10px;color:rgba(255,255,255,0.20);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{b.params.selling}}</div>
+              <div style="margin-top:8px;display:flex;gap:4px;flex-wrap:wrap">
+                <span style="padding:1px 5px;border-radius:3px;font-size:9px;background:rgba(34,197,94,0.08);color:#22c55e" v-if="b.results.filter(r=>r.saved).length">已存{{b.results.filter(r=>r.saved).length}}张</span>
+                <span style="padding:1px 5px;border-radius:3px;font-size:9px;background:rgba(245,158,11,0.08);color:#f59e0b" v-if="b.results.filter(r=>r.mod&&!r.saved).length">{{b.results.filter(r=>r.mod&&!r.saved).length}}张已编辑</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== BATCH WORKSPACE (active batch) ===== -->
+      <template v-if="activeBatch">
+
+        <!-- LEFT: 参数面板 -->
+        <div style="width:320px;flex-shrink:0;border-right:1px solid rgba(255,255,255,0.06);display:flex;flex-direction:column;overflow:hidden">
+          <div style="flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:16px">
+
+            <!-- Back to batch list -->
+            <div @click="closeBatch" style="font-size:11px;color:rgba(255,255,255,0.38);cursor:pointer;display:flex;align-items:center;gap:4px" class="hover:text-primary">← 返回批次列表</div>
+
+            <div>
+              <div style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.32);margin-bottom:8px">📤 上传图片</div>
+              <div style="display:flex;gap:8px">
+                <!-- 商品图 -->
+                <div style="flex:1">
+                  <div style="font-size:10px;color:rgba(255,255,255,0.32);margin-bottom:4px">商品图 *</div>
+                  <div v-if="!sourceImg" @click="triggerUpload" style="border:1.5px dashed rgba(255,255,255,0.12);border-radius:8px;padding:16px 8px;text-align:center;cursor:pointer;transition:all 0.15s;background:rgba(255,255,255,0.01);aspect-ratio:1" class="hover:border-primary/30">
+                    <span style="font-size:28px;color:rgba(255,255,255,0.10)">🖼️</span><div style="font-size:10px;color:rgba(255,255,255,0.22);margin-top:4px">点击上传</div>
+                  </div>
+                  <div v-else style="position:relative;border-radius:8px;overflow:hidden;border:1px solid rgba(255,255,255,0.10);aspect-ratio:1">
+                    <div style="width:100%;height:100%;background:rgba(255,255,255,0.03);display:flex;align-items:center;justify-content:center;font-size:24px;color:rgba(255,255,255,0.08)">🖼️</div>
+                    <div style="position:absolute;bottom:0;left:0;right:0;padding:4px 6px;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:space-between;font-size:10px;color:rgba(255,255,255,0.45)"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">{{sourceImg.name}}</span><span @click.stop="sourceImg=null" style="cursor:pointer;color:rgba(255,255,255,0.25);flex-shrink:0;margin-left:4px" class="hover:text-red-400">✕</span></div>
+                  </div>
+                </div>
+                <!-- 参考图 -->
+                <div style="flex:1">
+                  <div style="font-size:10px;color:rgba(255,255,255,0.32);margin-bottom:4px">参考图 <span style="color:rgba(255,255,255,0.18)">可选</span></div>
+                  <div v-if="!refImg" @click="triggerRef" style="border:1px dashed rgba(255,255,255,0.08);border-radius:8px;padding:16px 8px;text-align:center;cursor:pointer;transition:all 0.15s;background:rgba(255,255,255,0.01);aspect-ratio:1" class="hover:border-primary/30">
+                    <span style="font-size:20px;color:rgba(255,255,255,0.08)">➕</span><div style="font-size:10px;color:rgba(255,255,255,0.18);margin-top:4px">添加参考</div>
+                  </div>
+                  <div v-else style="position:relative;border-radius:8px;overflow:hidden;border:1px solid rgba(255,255,255,0.08);aspect-ratio:1">
+                    <div style="width:100%;height:100%;background:rgba(255,255,255,0.03);display:flex;align-items:center;justify-content:center;font-size:20px;color:rgba(255,255,255,0.06)">🖼️</div>
+                    <div style="position:absolute;bottom:0;left:0;right:0;padding:4px 6px;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:space-between;font-size:10px;color:rgba(255,255,255,0.40)"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">{{refImg.name}}</span><span @click.stop="refImg=null" style="cursor:pointer;color:rgba(255,255,255,0.20);flex-shrink:0;margin-left:4px" class="hover:text-red-400">✕</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div style="height:1px;background:rgba(255,255,255,0.05)"></div>
+
+            <div>
+              <div style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.32);margin-bottom:12px">📝 生成配置</div>
+              <div style="margin-bottom:12px"><div style="font-size:10px;color:rgba(255,255,255,0.38);margin-bottom:3px">商品名称</div><input v-model="prod" placeholder="如：智能落地灯 Pro" style="width:100%;padding:8px 10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.10);border-radius:8px;font-size:12px;color:rgba(255,255,255,0.85);outline:none"/></div>
+              <div style="margin-bottom:12px"><div style="font-size:10px;color:rgba(255,255,255,0.38);margin-bottom:3px">SKU <span style="color:rgba(255,255,255,0.18)">选填</span></div><input v-model="sku" placeholder="输入具体型号" style="width:100%;padding:8px 10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.10);border-radius:8px;font-size:12px;color:rgba(255,255,255,0.85);outline:none"/></div>
+              <div style="margin-bottom:12px"><div style="font-size:10px;color:rgba(255,255,255,0.38);margin-bottom:3px">核心卖点</div><textarea v-model="selling" rows="2" placeholder="每行一个卖点" style="width:100%;padding:8px 10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.10);border-radius:8px;font-size:12px;color:rgba(255,255,255,0.85);outline:none;resize:none"></textarea></div>
+              <div style="margin-bottom:12px"><div style="font-size:10px;color:rgba(255,255,255,0.38);margin-bottom:3px">选择平台</div><div style="display:flex;gap:6px"><span v-for="p in platforms" :key="p" @click="platform=p" :style="{padding:'5px 12px',borderRadius:'6px',fontSize:'11px',fontWeight:500,cursor:'pointer',background:platform===p?'rgba(245,158,11,0.12)':'rgba(255,255,255,0.03)',border:'1px solid '+(platform===p?'rgba(245,158,11,0.30)':'rgba(255,255,255,0.08)'),color:platform===p?'#f59e0b':'rgba(255,255,255,0.45)'}">{{p}}</span></div></div>
+              <div style="margin-bottom:12px"><div style="font-size:10px;color:rgba(255,255,255,0.38);margin-bottom:3px">目标尺寸</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:4px"><div v-for="s in scene.sizes" :key="s.n" class="card" style="padding:6px 7px;display:flex;align-items:center;gap:4px;font-size:10px" :style="selSizes.find(x=>x.n===s.n)?'border-color:rgba(245,158,11,0.40);background:rgba(245,158,11,0.06)':''" @click="toggleSz(s)"><div :style="{width:'12px',height:'12px',borderRadius:'3px',flexShrink:'0',background:selSizes.find(x=>x.n===s.n)?'#f59e0b':'rgba(255,255,255,0.08)',border:selSizes.find(x=>x.n===s.n)?'none':'1px solid rgba(255,255,255,0.15)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'7px',fontWeight:700,color:'#0a0a0c'}">{{selSizes.find(x=>x.n===s.n)?'✓':''}}</div><span style="color:rgba(255,255,255,0.75)">{{s.n}}</span><span style="color:rgba(255,255,255,0.22);margin-left:auto">{{s.d}}</span></div></div></div>
+              <div style="margin-bottom:12px"><div style="font-size:10px;color:rgba(255,255,255,0.38);margin-bottom:3px">排版模式</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:4px"><div v-for="t in tpls" :key="t" class="card" style="padding:7px 8px;text-align:center;font-size:11px" :style="tpl===t?'border-color:rgba(245,158,11,0.40);background:rgba(245,158,11,0.06);color:#f59e0b':'color:rgba(255,255,255,0.55)'" @click="tpl=t">{{t}}</div></div></div>
+              <div style="margin-bottom:12px"><div style="font-size:10px;color:rgba(255,255,255,0.38);margin-bottom:3px">语言版本</div><div style="display:flex;flex-wrap:wrap;gap:4px"><span v-for="l in allLangs" :key="l" @click="toggleLang(l)" :style="{padding:'4px 10px',borderRadius:'6px',fontSize:'11px',fontWeight:500,cursor:'pointer',background:langs.includes(l)?'rgba(245,158,11,0.12)':'rgba(255,255,255,0.03)',border:'1px solid '+(langs.includes(l)?'rgba(245,158,11,0.30)':'rgba(255,255,255,0.08)'),color:langs.includes(l)?'#f59e0b':'rgba(255,255,255,0.42)'}">{{l}}</span></div></div>
+              <div><div style="font-size:10px;color:rgba(255,255,255,0.38);margin-bottom:3px">补充要求</div><input v-model="extra" placeholder="如：突出暖色光效、需要有窗户背景" style="width:100%;padding:8px 10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.10);border-radius:8px;font-size:12px;color:rgba(255,255,255,0.85);outline:none"/></div>
+            </div>
+          </div>
+          <div style="padding:12px 16px;border-top:1px solid rgba(255,255,255,0.06)"><div style="font-size:10px;color:rgba(255,255,255,0.22);text-align:center;margin-bottom:6px">{{selSizes.length}}尺寸 × {{langs.length}}语言 = {{selSizes.length*langs.length}}张</div><button @click="doGen" :disabled="!canGen" :style="{width:'100%',padding:'11px 0',borderRadius:'8px',border:'none',fontSize:'14px',fontWeight:600,cursor:canGen?'pointer':'not-allowed',background:canGen?'#f59e0b':'rgba(255,255,255,0.06)',color:canGen?'#0a0a0c':'rgba(255,255,255,0.22)'}">⚡ 生成效果图</button></div>
+        </div>
+
+        <!-- RIGHT PANEL -->
+        <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;background:rgba(0,0,0,0.20)">
+
+          <!-- STATE 1: Preview -->
+          <div v-if="!activeBatch.results.length" style="flex:1;display:flex;align-items:center;justify-content:center;padding:24px">
+            <div v-if="sourceImg" style="width:100%;max-width:560px;aspect-ratio:1;max-height:100%;position:relative;background:rgba(255,255,255,0.012);border-radius:10px;border:1px dashed rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px;color:rgba(255,255,255,0.16)"><span style="font-size:40px">🖼️</span><span style="font-size:13px">{{sourceImg.name}}</span><span style="font-size:10px;color:rgba(255,255,255,0.10)">配置完成后点击生成</span></div>
+            <div v-else style="color:rgba(255,255,255,0.10);text-align:center"><span style="font-size:48px">🎨</span><div style="font-size:13px;margin-top:10px">左侧上传商品图</div><div style="font-size:11px;margin-top:4px">配置信息后生成效果图</div></div>
+          </div>
+
+          <!-- STATE 2: Results grid -->
+          <div v-else-if="!viewing" style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+            <div style="padding:10px 16px;font-size:12px;font-weight:600;color:rgba(255,255,255,0.70);border-bottom:1px solid rgba(255,255,255,0.04);flex-shrink:0;display:flex;align-items:center;justify-content:space-between">
+              <span>✅ 生成完成 · {{activeBatch.results.length}} 张 · 点击预览</span>
+              <button @click="clearResults" style="padding:5px 12px;border-radius:6px;border:1px solid rgba(255,255,255,0.10);background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.48);font-size:11px;cursor:pointer">🗑 清空结果</button>
+            </div>
+            <div style="flex:1;overflow:auto;padding:14px">
+              <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px">
+                <div v-for="(r,i) in activeBatch.results" :key="i" class="glass" style="overflow:hidden;cursor:pointer;transition:all 0.15s;border-radius:10px" @click="previewResult(i)" @mouseenter="e=>{e.currentTarget.style.borderColor='rgba(245,158,11,0.30)';e.currentTarget.style.boxShadow='0 0 8px rgba(245,158,11,0.05)'}" @mouseleave="e=>{e.currentTarget.style.borderColor='rgba(255,255,255,0.10)';e.currentTarget.style.boxShadow=''}">
+                  <div style="aspect-ratio:1;background:rgba(255,255,255,0.02);display:flex;align-items:center;justify-content:center;font-size:24px;color:rgba(255,255,255,0.06);position:relative">
+                    🖼️
+                    <span v-if="r.saved" style="position:absolute;top:6px;right:6px;padding:2px 6px;border-radius:3px;font-size:9px;background:rgba(34,197,94,0.12);color:#22c55e">已保存</span>
+                    <span v-else-if="r.mod" style="position:absolute;top:6px;right:6px;padding:2px 6px;border-radius:3px;font-size:9px;background:rgba(245,158,11,0.15);color:#f59e0b">已编辑</span>
+                  </div>
+                  <div style="padding:8px"><div style="font-size:11px;font-weight:500;color:rgba(255,255,255,0.72)">{{r.sizeName}} · {{r.lang}}</div><div style="font-size:9px;color:rgba(255,255,255,0.28);margin-top:2px">{{r.dimensions}}</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- STATE 3: Single preview -->
+          <div v-else-if="!editing" style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+            <div style="padding:8px 14px;font-size:11px;font-weight:600;color:rgba(255,255,255,0.38);border-bottom:1px solid rgba(255,255,255,0.04);flex-shrink:0;display:flex;align-items:center;justify-content:space-between">
+              <span>👁 预览 · {{viewing.sizeName}} · {{viewing.lang}} · {{viewing.dimensions}}</span>
+              <button @click="viewing=null;editing=false;selEl=null" style="padding:3px 10px;border-radius:4px;border:1px solid rgba(255,255,255,0.10);background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.45);font-size:10px;cursor:pointer">← 返回网格</button>
+            </div>
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:20px">
+              <div style="width:100%;max-width:600px;aspect-ratio:1;max-height:100%;position:relative;background:rgba(255,255,255,0.012);border-radius:10px;border:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px;color:rgba(255,255,255,0.10)"><span style="font-size:40px">🖼️</span><span style="font-size:13px">大图预览 · {{viewing.sizeName}}</span></div>
+            </div>
+            <div style="padding:12px 16px;border-top:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;gap:10px;justify-content:center">
+              <button @click="startEdit" style="padding:8px 24px;border-radius:7px;border:1px solid rgba(245,158,11,0.25);background:rgba(245,158,11,0.08);color:#f59e0b;font-size:12px;font-weight:600;cursor:pointer">✏️ 编辑排版</button>
+              <button @click="regenOne" style="padding:8px 16px;border-radius:7px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.55);font-size:12px;cursor:pointer">🔄 重生成此张</button>
+              <button @click="saveOne" style="padding:8px 24px;border-radius:7px;border:none;background:#22c55e;color:#fff;font-size:12px;font-weight:600;cursor:pointer">💾 保存</button>
+            </div>
+          </div>
+
+          <!-- STATE 4: Editing canvas -->
+          <div v-else style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+            <div style="padding:8px 14px;font-size:11px;font-weight:600;color:rgba(255,255,255,0.38);border-bottom:1px solid rgba(255,255,255,0.04);flex-shrink:0;display:flex;align-items:center;justify-content:space-between">
+              <span>✏️ 编辑排版 · {{viewing.sizeName}} · {{viewing.lang}}</span>
+              <div style="display:flex;gap:4px">
+                <button @click="editing=false;selEl=null" style="padding:3px 8px;border-radius:4px;border:1px solid rgba(255,255,255,0.10);background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.45);font-size:10px;cursor:pointer">← 返回</button>
+                <button @click="saveOne" style="padding:3px 8px;border-radius:4px;border:none;background:#22c55e;color:#fff;font-size:10px;font-weight:600;cursor:pointer">💾 保存</button>
+              </div>
+            </div>
+            <div style="flex:1;overflow:auto;padding:20px;display:flex;align-items:center;justify-content:center">
+              <div style="width:100%;max-width:680px;height:100%;max-height:620px;position:relative;background:rgba(255,255,255,0.012);border-radius:10px;border:1px solid rgba(255,255,255,0.06);overflow:hidden" @mousedown="onBg">
+                <div :style="{position:'absolute',background:'rgba(255,255,255,0.02)',...viewing.lo.img,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'28px',color:'rgba(255,255,255,0.06)'}">🖼️</div>
+                <div :style="{position:'absolute',border:'1px dashed rgba(245,158,11,0.18)',...viewing.lo.safe,pointerEvents:'none'}"></div>
+                <div v-for="(el,ei) in viewing.lo.els" :key="ei" class="elt" :class="{on:selEl===ei}" :style="{left:el.x+'%',top:el.y+'%',width:el.w+'%',height:el.h+'%',zIndex:el.z||1,background:selEl===ei?'rgba(245,158,11,0.06)':'rgba(255,255,255,0.01)'}" @mousedown.stop="pick(ei,$event)" @dblclick.stop="dbl(ei)">
+                  <div v-if="el.t==='t'&&!el.ed" :style="{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:el.al==='c'?'center':'flex-start',fontSize:el.fs+'px',fontWeight:el.b?600:400,color:el.c||'rgba(255,255,255,0.88)',padding:'4px 8px',pointerEvents:'none'}">{{el.v}}</div>
+                  <input v-if="el.t==='t'&&el.ed" v-model="el.v" @blur="el.ed=false" @keyup.enter="el.ed=false" :style="{width:'100%',height:'100%',background:'rgba(0,0,0,0.5)',border:'1px solid #f59e0b',borderRadius:'2px',outline:'none',fontSize:el.fs+'px',fontWeight:el.b?600:400,color:el.c||'rgba(255,255,255,0.88)',padding:'4px 8px',textAlign:el.al||'c'}"/>
+                  <div v-if="el.t==='l'" :style="{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'13px',color:'rgba(255,255,255,0.22)',border:'1px dashed rgba(255,255,255,0.10)',borderRadius:'4px'}">LOGO</div>
+                  <div v-if="el.t==='c'" :style="{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'11px',background:el.bg||'rgba(245,158,11,0.18)',color:el.c||'#f59e0b',borderRadius:'4px',fontWeight:600}">{{el.v}}</div>
+                  <template v-if="selEl===ei"><div class="rh rh-nw" @mousedown.stop="rsz(ei,'nw',$event)"></div><div class="rh rh-ne" @mousedown.stop="rsz(ei,'ne',$event)"></div><div class="rh rh-sw" @mousedown.stop="rsz(ei,'sw',$event)"></div><div class="rh rh-se" @mousedown.stop="rsz(ei,'se',$event)"></div></template>
+                </div>
+              </div>
+            </div>
+            <div v-if="selEl!==null&&viewing.lo.els[selEl]" style="flex-shrink:0;padding:8px 14px;border-top:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;gap:10px;background:rgba(0,0,0,0.15)">
+              <span style="font-size:10px;color:rgba(255,255,255,0.35)">元素</span>
+              <template v-if="viewing.lo.els[selEl].t==='t'">
+                <input v-model="viewing.lo.els[selEl].v" style="width:120px;padding:4px 8px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.10);border-radius:4px;font-size:11px;color:rgba(255,255,255,0.85);outline:none"/>
+                <input type="range" min="10" max="40" v-model.number="viewing.lo.els[selEl].fs" style="width:60px"/><span style="font-size:10px;color:rgba(255,255,255,0.35)">{{viewing.lo.els[selEl].fs}}px</span>
+                <label style="font-size:10px;color:rgba(255,255,255,0.35);display:flex;align-items:center;gap:3px;cursor:pointer"><input type="checkbox" v-model="viewing.lo.els[selEl].b" style="accent-color:#f59e0b"/><b>B</b></label>
+                <select v-model="viewing.lo.els[selEl].al" style="padding:3px 6px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.10);border-radius:4px;font-size:10px;color:rgba(255,255,255,0.65);outline:none"><option value="l">左对齐</option><option value="c">居中</option><option value="r">右对齐</option></select>
+              </template>
+              <div v-else style="font-size:10px;color:rgba(255,255,255,0.28)">{{viewing.lo.els[selEl].t==='l'?'Logo':'CTA'}} — 拖拽或角点调整</div>
+            </div>
+          </div>
+        </div>
+      </template>
+
+    </template>
+  </div>
+
+  <!-- ===== ASSETS TAB ===== -->
+  <div v-else style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+
+    <!-- Top bar -->
+    <div style="flex-shrink:0;padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;flex-direction:column;gap:10px">
+
+      <!-- Row 1: title + personal/team toggle + upload -->
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="display:flex;align-items:center;gap:0;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:6px;padding:1px">
+          <div @click="assetScope='mine'" :style="{padding:'3px 10px',borderRadius:'4px',fontSize:'11px',fontWeight:500,cursor:'pointer',background:assetScope==='mine'?'rgba(255,255,255,0.06)':'transparent',color:assetScope==='mine'?'rgba(255,255,255,0.80)':'rgba(255,255,255,0.38)'}">我的素材</div>
+          <div @click="assetScope='team'" :style="{padding:'3px 10px',borderRadius:'4px',fontSize:'11px',fontWeight:500,cursor:'pointer',background:assetScope==='team'?'rgba(255,255,255,0.06)':'transparent',color:assetScope==='team'?'rgba(255,255,255,0.80)':'rgba(255,255,255,0.38)'}">团队素材</div>
+        </div>
+        <span style="font-size:10px;color:rgba(255,255,255,0.22);margin-left:auto">{{fassets.length}} 个</span>
+        <button @click="showUploadModal=true" style="padding:6px 14px;border-radius:6px;border:1px solid rgba(245,158,11,0.25);background:rgba(245,158,11,0.08);color:#f59e0b;font-size:11px;font-weight:600;cursor:pointer">＋ 上传素材</button>
+      </div>
+
+      <!-- Row 2: dropdown filters + search -->
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:10px;color:rgba(255,255,255,0.28);flex-shrink:0">筛选</span>
+        <div v-for="(group,gk) in tagGroups" :key="gk" style="position:relative">
+          <select v-model="activeTags[gk]" @change="onTagSelect(gk)" style="padding:5px 8px;padding-right:22px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:5px;font-size:11px;color:rgba(255,255,255,0.70);outline:none;cursor:pointer;appearance:none;min-width:90px">
+            <option value="">{{group.label}}</option>
+            <option v-for="t in group.tags" :key="t" :value="t">{{t}}</option>
+          </select>
+          <span style="position:absolute;right:6px;top:50%;transform:translateY(-50%);pointer-events:none;font-size:9px;color:rgba(255,255,255,0.30)">▾</span>
+        </div>
+        <span v-if="totalActiveTags" @click="clearTags" style="font-size:10px;color:rgba(255,255,255,0.25);cursor:pointer;margin-left:2px" class="hover:text-red-400">✕ 清除</span>
+        <input v-model="q" placeholder="🔍 搜索名称 / SKU / 创建者..." style="margin-left:auto;max-width:240px;padding:5px 10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:5px;font-size:11px;color:rgba(255,255,255,0.85);outline:none"/>
+      </div>
+    </div>
+
+    <!-- Asset grid -->
+    <div style="flex:1;overflow:auto;padding:14px 16px">
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
+        <div v-for="a in fassets" :key="a.id" class="glass" style="overflow:hidden;cursor:pointer;transition:all 0.15s;border-radius:10px"
+          @mouseenter="e=>{e.currentTarget.style.borderColor='rgba(245,158,11,0.25)';e.currentTarget.style.boxShadow='0 0 8px rgba(245,158,11,0.05)'}"
+          @mouseleave="e=>{e.currentTarget.style.borderColor='rgba(255,255,255,0.10)';e.currentTarget.style.boxShadow=''}">
+          <div style="aspect-ratio:1;background:rgba(255,255,255,0.02);display:flex;align-items:center;justify-content:center;font-size:24px;color:rgba(255,255,255,0.06);position:relative">
+            🖼️
+          </div>
+          <div style="padding:10px">
+            <div style="font-size:12px;font-weight:500;color:rgba(255,255,255,0.75);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{a.name}}</div>
+            <div v-if="a.sku" style="font-size:10px;color:rgba(255,255,255,0.32);margin-top:1px">{{a.sku}}</div>
+            <div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:5px">
+              <span style="padding:1px 5px;border-radius:3px;font-size:9px;background:rgba(245,158,11,0.07);color:rgba(245,158,11,0.7)">{{a.scene}}</span>
+              <span style="padding:1px 5px;border-radius:3px;font-size:9px;background:rgba(99,102,241,0.07);color:rgba(161,168,255,0.7)">{{a.type}}</span>
+              <span v-if="a.stage" style="padding:1px 5px;border-radius:3px;font-size:9px;background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.35)">{{a.stage}}</span>
+            </div>
+            <div style="font-size:9px;color:rgba(255,255,255,0.18);margin-top:3px">{{a.date}} · {{a.by}}</div>
+            <div @click.stop="useA(a)" style="margin-top:6px;padding:3px 0;border-radius:3px;background:rgba(245,158,11,0.06);color:#f59e0b;font-size:9px;text-align:center;cursor:pointer" class="hover:bg-primary/10">🔄 基于此生成</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div></div>
+
+<!-- DOCK --><div class="dock-zone"><div class="dock-stage"><div class="dock-item">📊</div><div class="dock-item">📈</div><div class="dock-sep"></div><div class="dock-item active">🎨</div><div class="dock-item">🔍</div><div class="dock-item">💬</div></div></div>
+<!-- UPLOAD MODAL -->
+<div v-if="showUploadModal" @click.self="showUploadModal=false" style="position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center">
+  <div class="glass" style="width:420px;padding:24px;border-radius:14px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+      <span style="font-size:16px;font-weight:600">📤 上传素材</span>
+      <button @click="showUploadModal=false" style="background:none;border:none;color:rgba(255,255,255,0.45);font-size:18px;cursor:pointer">✕</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div @click="uploadAsset" style="border:2px dashed rgba(255,255,255,0.12);border-radius:10px;padding:20px;text-align:center;cursor:pointer;transition:all 0.15s;background:rgba(255,255,255,0.01)" class="hover:border-primary/30">
+        <span style="font-size:28px;color:rgba(255,255,255,0.10)">🖼️</span>
+        <div style="font-size:12px;color:rgba(255,255,255,0.28);margin-top:6px">点击或拖拽上传</div>
+        <div style="font-size:10px;color:rgba(255,255,255,0.16);margin-top:2px">PNG / JPG / WEBP / MP4</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div><div style="font-size:10px;color:rgba(255,255,255,0.35);margin-bottom:3px">素材名称</div><input v-model="upName" placeholder="输入素材名称" style="width:100%;padding:7px 10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.10);border-radius:7px;font-size:12px;color:rgba(255,255,255,0.85);outline:none"/></div>
+        <div style="display:flex;gap:8px">
+          <div style="flex:1"><div style="font-size:10px;color:rgba(255,255,255,0.35);margin-bottom:3px">场景</div><select v-model="upScene" style="width:100%;padding:6px 8px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.10);border-radius:7px;font-size:11px;color:rgba(255,255,255,0.80);outline:none"><option value="电商素材">电商素材</option><option value="社媒素材">社媒素材</option><option value="广告投放素材">广告投放素材</option></select></div>
+          <div style="flex:1"><div style="font-size:10px;color:rgba(255,255,255,0.35);margin-bottom:3px">类型</div><select v-model="upType" style="width:100%;padding:6px 8px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.10);border-radius:7px;font-size:11px;color:rgba(255,255,255,0.80);outline:none"><option value="白底图">白底图</option><option value="场景图">场景图</option><option value="细节图">细节图</option><option value="Banner">Banner</option><option value="视频">视频</option><option value="其他">其他</option></select></div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <div style="flex:1"><div style="font-size:10px;color:rgba(255,255,255,0.35);margin-bottom:3px">阶段</div><select v-model="upStage" style="width:100%;padding:6px 8px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.10);border-radius:7px;font-size:11px;color:rgba(255,255,255,0.80);outline:none"><option value="前期素材">前期素材</option><option value="成图">成图</option></select></div>
+          <div style="flex:1"><div style="font-size:10px;color:rgba(255,255,255,0.35);margin-bottom:3px">SKU</div><input v-model="upSku" placeholder="选填" style="width:100%;padding:6px 8px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.10);border-radius:7px;font-size:11px;color:rgba(255,255,255,0.85);outline:none"/></div>
+        </div>
+      </div>
+      <button @click="uploadAsset" style="width:100%;padding:9px 0;border-radius:8px;border:none;background:#f59e0b;color:#0a0a0c;font-size:13px;font-weight:600;cursor:pointer;margin-top:4px">确认上传</button>
+    </div>
+  </div>
+</div>
+
+<!-- HELP --><div v-if="help" @click.self="help=false" style="position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center"><div class="glass" style="width:480px;padding:28px;border-radius:14px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px"><span style="font-size:16px;font-weight:600">💡 使用指引</span><button @click="help=false" style="background:none;border:none;color:rgba(255,255,255,0.45);font-size:18px;cursor:pointer">✕</button></div><div style="display:flex;flex-direction:column;gap:12px;font-size:12px;line-height:1.7;color:rgba(255,255,255,0.55)"><div><b style="color:#f59e0b">1. 新建项目</b><br>选择场景Tab → 左侧新建项目</div><div><b style="color:#f59e0b">2. 批次管理</b><br>每个项目可多次生成，每次生成为一个批次，独立留存</div><div><b style="color:#f59e0b">3. 上传 & 配置</b><br>上传商品图 → 填商品名、卖点 → 选平台/尺寸/排版/语言 → 生成</div><div><b style="color:#f59e0b">4. 审查 & 保存</b><br>结果网格 → 点击预览 → 满意保存 / 需改编辑 / 效果差可重生成某张</div></div></div></div>
+
+</div>
+
+<script>
+const { createApp } = Vue;
+function mLay(k){
+  const L={ecommerce:{img:{l:'5%',t:'5%',w:'90%',h:'60%',br:'6px'},safe:{l:'10%',t:'10%',w:'80%',h:'80%'},els:[{t:'t',v:'Product Name',x:8,y:68,w:50,h:8,fs:16,b:true,c:'rgba(255,255,255,0.88)',al:'l',z:2},{t:'t',v:'Key Feature',x:8,y:76,w:40,h:5,fs:11,c:'rgba(255,255,255,0.52)',al:'l',z:2},{t:'l',x:75,y:70,w:18,h:10,z:2},{t:'c',v:'SHOP NOW',x:8,y:84,w:22,h:8,bg:'rgba(245,158,11,0.18)',c:'#f59e0b',z:2}]},social:{img:{l:'0%',t:'0%',w:'100%',h:'72%',br:'0'},safe:{l:'8%',t:'8%',w:'84%',h:'84%'},els:[{t:'t',v:'✨ NEW COLLECTION',x:8,y:76,w:60,h:6,fs:13,b:true,c:'rgba(255,255,255,0.88)',al:'l',z:2},{t:'t',v:'Tap link in bio',x:8,y:82,w:40,h:4,fs:10,c:'rgba(255,255,255,0.45)',al:'l',z:2},{t:'l',x:78,y:78,w:16,h:8,z:2}]},ads:{img:{l:'3%',t:'3%',w:'60%',h:'94%',br:'4px'},safe:{l:'5%',t:'5%',w:'90%',h:'90%'},els:[{t:'t',v:'LIMITED OFFER',x:68,y:14,w:28,h:8,fs:18,b:true,c:'#f59e0b',al:'c',z:2},{t:'t',v:'Up to 50% off. Free shipping over $49.',x:68,y:28,w:28,h:14,fs:11,c:'rgba(255,255,255,0.60)',al:'c',z:2},{t:'c',v:'SHOP NOW',x:72,y:52,w:20,h:10,bg:'#f59e0b',c:'#0a0a0c',z:2},{t:'l',x:72,y:78,w:20,h:8,z:2}]}};
+  return JSON.parse(JSON.stringify(L[k]||L.ecommerce));
+}
+createApp({data:()=>({
+  stab:'ecommerce',stabs:[{k:'ecommerce',l:'电商素材'},{k:'social',l:'社媒素材'},{k:'ads',l:'广告投放素材'},{k:'assets',l:'素材管理'}],
+  scenes:{ecommerce:{specs:'主图1500² / A+ 970×600 / 品牌故事970×250',sizes:[{n:'主图',d:'1500×1500'},{n:'A+模块',d:'970×600'},{n:'A+横幅',d:'970×300'},{n:'品牌故事',d:'970×250'},{n:'缩略图',d:'500×500'},{n:'详情长图',d:'1500×不限'}]},social:{specs:'IG 1080² / Story 1080×1920 / FB 1200×628',sizes:[{n:'IG Feed',d:'1080×1080'},{n:'IG Story',d:'1080×1920'},{n:'FB Post',d:'1200×628'},{n:'TikTok',d:'1080×1920'},{n:'Pinterest',d:'1000×1500'}]},ads:{specs:'Google / Meta / Bing / TikTok Ads',sizes:[{n:'方图',d:'1200×1200'},{n:'横图',d:'1200×628'},{n:'竖图',d:'1080×1920'},{n:'宽横幅',d:'970×250'}]}},
+  projects:[],activePj:null,activeBatch:null,
+  sourceImg:null,refImg:null,
+  prod:'',sku:'',selling:'',platform:'Amazon',platforms:['Amazon','独立站/官网','APP商城'],
+  selSizes:[],tpl:'默认版式',tpls:['默认版式','促销版式','品牌A版式','简约版式'],
+  langs:['EN'],allLangs:['EN','DE','FR','JP','ES'],extra:'',
+  viewing:null,editing:false,selEl:null,
+  dragging:false,ds:{x:0,y:0},des:{x:0,y:0},rc:null,rs:null,
+  sampAssets:[
+    {id:1,name:'落地灯_主图_EN',sku:'LD-PRO-001',scene:'电商素材',type:'场景图',stage:'成图',source:'AI生成',by:'平面设计师',date:'2026-06-15',n:6},
+    {id:2,name:'三色灯_广告素材',sku:'3C-RGB-002',scene:'广告投放素材',type:'场景图',stage:'成图',source:'AI生成',by:'广告投放',date:'2026-06-14',n:4},
+    {id:3,name:'窗帘灯_IG帖子',sku:'CL-OUT-003',scene:'社媒素材',type:'场景图',stage:'成图',source:'AI生成',by:'创意视觉',date:'2026-06-13',n:5},
+    {id:4,name:'台灯_A+模块_新品',sku:'TL-S1-002',scene:'电商素材',type:'Banner',stage:'成图',source:'AI生成',by:'平面设计师',date:'2026-06-12',n:6},
+    {id:5,name:'洗墙灯_FB广告',sku:'WL-RGB-004',scene:'广告投放素材',type:'场景图',stage:'成图',source:'项目产出',by:'广告投放',date:'2026-06-11',n:4},
+    {id:6,name:'屋檐灯_白底图',sku:'EY-RF-005',scene:'电商素材',type:'白底图',stage:'成图',source:'上传',by:'平面设计师',date:'2026-06-10',n:1},
+    {id:7,name:'落地灯_细节图',sku:'LD-PRO-001',scene:'电商素材',type:'细节图',stage:'成图',source:'项目产出',by:'平面设计师',date:'2026-06-09',n:2},
+    {id:8,name:'巴黎家居展_参考',sku:'',scene:'社媒素材',type:'场景图',stage:'前期素材',source:'上传',by:'创意视觉',date:'2026-06-08',n:3},
+    {id:9,name:'窗帘灯_白底图',sku:'CL-OUT-003',scene:'电商素材',type:'白底图',stage:'成图',source:'AI生成',by:'平面设计师',date:'2026-06-07',n:1},
+    {id:10,name:'氛围灯_创意灵感',sku:'AT-MOOD-006',scene:'社媒素材',type:'场景图',stage:'前期素材',source:'AI生成',by:'创意视觉',date:'2026-06-06',n:2},
+    {id:11,name:'台灯_Google Ads',sku:'TL-S1-002',scene:'广告投放素材',type:'Banner',stage:'成图',source:'项目产出',by:'广告投放',date:'2026-06-05',n:4},
+    {id:12,name:'洗墙灯_细节展示',sku:'WL-RGB-004',scene:'电商素材',type:'细节图',stage:'前期素材',source:'AI生成',by:'平面设计师',date:'2026-06-04',n:2},
+  ],
+  tagGroups:[
+    {label:'场景',tags:['电商素材','社媒素材','广告投放素材']},
+    {label:'类型',tags:['白底图','场景图','细节图','Banner','视频','其他']},
+    {label:'阶段',tags:['前期素材','成图']},
+    {label:'来源',tags:['AI生成','上传','项目产出']},
+  ],
+  activeTags:{0:'',1:'',2:'',3:''},
+  q:'',assetScope:'team',showUploadModal:false,help:false,
+  upName:'',upSku:'',upScene:'电商素材',upType:'场景图',upStage:'前期素材',
+}),computed:{
+  scene(){return this.scenes[this.stab]||this.scenes.ecommerce},
+  canGen(){return this.sourceImg&&this.selSizes.length>0&&this.prod.trim()},
+  totalActiveTags(){let n=0;Object.values(this.activeTags).forEach(t=>{if(t)n++});return n},
+  fassets(){
+    let l=[...this.sampAssets];
+    if(this.q){const q=this.q.toLowerCase();l=l.filter(a=>a.name.toLowerCase().includes(q)||a.by.toLowerCase().includes(q)||(a.sku||'').toLowerCase().includes(q))}
+    // Tag filtering (single-select per dimension via dropdown)
+    const fieldMap={0:'scene',1:'type',2:'stage',3:'source'};
+    Object.keys(this.activeTags).forEach(gk=>{
+      const tag=this.activeTags[gk];
+      if(tag){
+        const field=fieldMap[gk];
+        if(field)l=l.filter(a=>a[field]===tag);
+      }
+    });
+    return l;
+  },
+},methods:{
+  switchStab(k){this.stab=k;this.activePj=null;this.activeBatch=null;this.resetStates();if(k!=='assets'){this.selSizes=[...this.scene.sizes];this.loadProjects()}},
+  resetStates(){this.sourceImg=null;this.refImg=null;this.prod='';this.sku='';this.selling='';this.extra='';this.tpl='默认版式';this.langs=['EN'];this.platform='Amazon';this.viewing=null;this.editing=false;this.selEl=null},
+
+  loadProjects(){const k='v3p_'+this.stab;const s=sessionStorage.getItem(k);this.projects=s?JSON.parse(s):this.stab==='ecommerce'?[{id:'p1',name:'落地灯 Q2 亚马逊素材',date:'06-15',batches:[{id:'b1',date:'06-15 14:30',results:[{id:Date.now()+1,sizeName:'主图',dimensions:'1500×1500',lang:'EN',lo:mLay('ecommerce'),mod:false,saved:true},{id:Date.now()+2,sizeName:'主图',dimensions:'1500×1500',lang:'DE',lo:mLay('ecommerce'),mod:false,saved:true},{id:Date.now()+3,sizeName:'A+模块',dimensions:'970×600',lang:'EN',lo:mLay('ecommerce'),mod:true,saved:false}],params:{prod:'落地灯 Pro',sku:'LD-PRO-001',platform:'Amazon',sizes:['主图','A+模块'],langs:['EN','DE']}}]},{id:'p2',name:'台灯新品 A+ 素材',date:'06-12',batches:[{id:'b2',date:'06-12 10:15',results:[{id:Date.now()+4,sizeName:'A+模块',dimensions:'970×600',lang:'EN',lo:mLay('ecommerce'),mod:false,saved:true},{id:Date.now()+5,sizeName:'A+横幅',dimensions:'970×300',lang:'EN',lo:mLay('ecommerce'),mod:false,saved:true}],params:{prod:'智能台灯',sku:'TL-S1-002',platform:'Amazon',sizes:['A+模块','A+横幅'],langs:['EN']}}]},]:[]},
+  saveProjects(){if(this.stab!=='assets')sessionStorage.setItem('v3p_'+this.stab,JSON.stringify(this.projects))},
+  newProject(){const d=new Date();const ds=(d.getMonth()+1)+'-'+('0'+d.getDate()).slice(-2);this.projects.unshift({id:'p'+Date.now(),name:'新项目 '+ds,date:ds,batches:[]});this.saveProjects();this.openProject(this.projects[0])},
+  openProject(p){this.activePj=p;this.activeBatch=null;this.resetStates()},
+
+  newBatch(){if(!this.activePj)return;const d=new Date();const ts=d.getHours()+':'+('0'+d.getMinutes()).slice(-2);const b={id:'b'+Date.now(),date:(d.getMonth()+1)+'-'+('0'+d.getDate()).slice(-2)+' '+ts,results:[],params:{}};this.activePj.batches.unshift(b);this.saveProjects();this.activeBatch=b;this.resetStates()},
+  openBatch(b){this.activeBatch=b;this.resetStates();if(b.params){this.prod=b.params.prod||'';this.sku=b.params.sku||'';this.selling=b.params.selling||'';this.platform=b.params.platform||'Amazon';this.extra=b.params.extra||'';this.tpl=b.params.tpl||'默认版式';this.langs=b.params.langs||['EN'];if(b.params.sizes)this.selSizes=b.params.sizes.map(n=>this.scene.sizes.find(s=>s.n===n)).filter(Boolean);this.sourceImg=b.params.sourceImg||null;this.refImg=b.params.refImg||null}},
+  closeBatch(){this.saveCurParams();this.saveProjects();this.activeBatch=null;this.resetStates()},
+
+  saveCurParams(){if(!this.activeBatch)return;this.activeBatch.params={prod:this.prod,sku:this.sku,selling:this.selling,platform:this.platform,extra:this.extra,tpl:this.tpl,langs:[...this.langs],sizes:this.selSizes.map(s=>s.n),sourceImg:this.sourceImg,refImg:this.refImg};this.saveProjects()},
+
+  triggerUpload(){this.sourceImg={name:'上传的商品图',src:'本地上传'}},
+  triggerRef(){this.refImg={name:'参考图',src:'本地上传'}},
+  toggleSz(s){const f=this.selSizes.find(x=>x.n===s.n);if(f)this.selSizes=this.selSizes.filter(x=>x.n!==s.n);else this.selSizes.push(s)},
+  toggleLang(l){if(this.langs.includes(l)){if(this.langs.length>1)this.langs=this.langs.filter(x=>x!==l)}else this.langs.push(l)},
+
+  doGen(){if(!this.canGen||!this.activeBatch)return;this.saveCurParams();const rs=[];this.selSizes.forEach(s=>{this.langs.forEach(l=>{rs.push({id:Date.now()+Math.random(),sizeName:s.n,dimensions:s.d,lang:l,lo:mLay(this.stab),layoutName:this.tpl,mod:false,saved:false})})});this.activeBatch.results=rs;this.saveProjects();this.viewing=null;this.editing=false;this.selEl=null},
+  clearResults(){this.activeBatch.results=[];this.saveProjects();this.viewing=null;this.editing=false;this.selEl=null},
+  previewResult(i){this.viewing=this.activeBatch.results[i];this.editing=false;this.selEl=null},
+  startEdit(){this.editing=true;this.selEl=null},
+  saveOne(){this.viewing.saved=true;this.viewing.mod=false;this.saveProjects();this.viewing=null;this.editing=false;this.selEl=null},
+  regenOne(){
+    const idx=this.activeBatch.results.indexOf(this.viewing);
+    this.extra=(this.extra?this.extra+' ':'')+'['+this.viewing.sizeName+' '+this.viewing.lang+'] 重新生成，注意：';
+    if(idx!==-1)this.activeBatch.results.splice(idx,1);
+    this.saveProjects();this.viewing=null;this.editing=false;this.selEl=null;
+  },
+
+  pick(i,e){this.selEl=i;const el=this.viewing.lo.els[i];this.dragging=true;this.ds={x:e.clientX,y:e.clientY};this.des={x:el.x,y:el.y}},
+  dbl(i){const el=this.viewing.lo.els[i];if(el.t==='t'){this.selEl=i;el.ed=true}},
+  rsz(i,cr,e){e.stopPropagation();e.preventDefault();this.selEl=i;this.rc=cr;const el=this.viewing.lo.els[i];this.rs={x:e.clientX,y:e.clientY,w:el.w,h:el.h,x:el.x,y:el.y}},
+  onBg(e){if(e.target===e.currentTarget)this.selEl=null},
+  onTagSelect(gk){this.$forceUpdate()},
+  clearTags(){this.activeTags={0:'',1:'',2:'',3:''}},
+  uploadAsset(){
+    const d=new Date();const ds=(d.getMonth()+1)+'-'+('0'+d.getDate()).slice(-2);
+    this.sampAssets.unshift({id:Date.now(),name:this.upName||'新上传素材',sku:this.upSku,scene:this.upScene,type:this.upType,stage:this.upStage,source:'上传',by:'我',date:ds,n:1});
+    this.showUploadModal=false;this.upName='';this.upSku='';this.upScene='电商素材';this.upType='场景图';this.upStage='前期素材';
+  },
+  useA(a){const m={电商素材:'ecommerce',社媒素材:'social',广告投放素材:'ads'};this.stab=m[a.scene]||'ecommerce';this.loadProjects();if(this.projects.length===0)this.newProject();else{this.openProject(this.projects[0]);const d=new Date();const ts=d.getHours()+':'+('0'+d.getMinutes()).slice(-2);const b={id:'b'+Date.now(),date:(d.getMonth()+1)+'-'+('0'+d.getDate()).slice(-2)+' '+ts,results:[],params:{}};this.activePj.batches.unshift(b);this.activeBatch=b;this.sourceImg={name:a.name,src:'素材库'};this.saveProjects()}},
+},mounted(){this.selSizes=[...this.scene.sizes];this.loadProjects();document.addEventListener('mousemove',e=>{if(this.dragging&&this.viewing&&this.selEl!==null){const el=this.viewing.lo.els[this.selEl];const dx=(e.clientX-this.ds.x)/5,dy=(e.clientY-this.ds.y)/5;el.x=Math.max(0,Math.min(95,this.des.x+dx));el.y=Math.max(0,Math.min(95,this.des.y+dy));this.viewing.mod=true}if(this.rc&&this.viewing&&this.selEl!==null){const el=this.viewing.lo.els[this.selEl];const dx=(e.clientX-this.rs.x)/5,dy=(e.clientY-this.rs.y)/5;if(this.rc.includes('e'))el.w=Math.max(5,this.rs.w+dx);if(this.rc.includes('w')){el.x=Math.max(0,this.rs.x+dx);el.w=Math.max(5,this.rs.w-dx)}if(this.rc.includes('s'))el.h=Math.max(3,this.rs.h+dy);if(this.rc.includes('n')){el.y=Math.max(0,this.rs.y+dy);el.h=Math.max(3,this.rs.h-dy)}this.viewing.mod=true}});document.addEventListener('mouseup',()=>{this.dragging=false;this.rc=null})}}).mount('#app');
+</script>
+</body>
+</html>

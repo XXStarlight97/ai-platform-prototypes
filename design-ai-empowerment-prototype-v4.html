@@ -1,0 +1,1234 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>智岩 AI 设计赋能 - 素材适配 v4</title>
+<script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<style>
+:root {
+  --bg: #0f0f1a;
+  --surface: rgba(255,255,255,0.04);
+  --border: rgba(255,255,255,0.08);
+  --amber: #f59e0b;
+  --amber-dim: rgba(245,158,11,0.15);
+  --text: rgba(255,255,255,0.85);
+  --text-dim: rgba(255,255,255,0.5);
+  --green: #10b981;
+  --orange: #f97316;
+  --red: #ef4444;
+  --blue: #3b82f6;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg); color: var(--text); overflow: hidden; height: 100vh;
+}
+.glass {
+  background: rgba(255,255,255,0.04);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.amber-btn {
+  background: var(--amber); color: #000; font-weight: 600; border: none;
+  border-radius: 8px; padding: 10px 20px; cursor: pointer; font-size: 14px;
+  transition: all 0.2s;
+}
+.amber-btn:hover { background: #fbbf24; transform: translateY(-1px); }
+.amber-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+.ghost-btn {
+  background: rgba(255,255,255,0.06); color: var(--text); border: 1px solid var(--border);
+  border-radius: 8px; padding: 8px 16px; cursor: pointer; font-size: 13px; transition: all 0.2s;
+}
+.ghost-btn:hover { background: rgba(255,255,255,0.1); }
+.text-input {
+  background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 8px;
+  color: var(--text); padding: 8px 12px; font-size: 13px; width: 100%; outline: none;
+  transition: border 0.2s;
+}
+.text-input:focus { border-color: var(--amber); }
+textarea.text-input { resize: vertical; min-height: 60px; }
+select.text-input { appearance: none; cursor: pointer; }
+.chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 4px 10px; border-radius: 6px; font-size: 12px; cursor: pointer;
+  border: 1px solid var(--border); transition: all 0.2s;
+}
+.chip.active { background: var(--amber-dim); border-color: var(--amber); color: var(--amber); }
+.chip:hover { border-color: rgba(255,255,255,0.3); }
+.section-label {
+  font-size: 12px; color: var(--text-dim); text-transform: uppercase;
+  letter-spacing: 0.5px; margin-bottom: 6px;
+}
+.badge {
+  padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;
+}
+.badge-green { background: rgba(16,185,129,0.2); color: var(--green); }
+.badge-orange { background: rgba(249,115,22,0.2); color: var(--orange); }
+.badge-amber { background: var(--amber-dim); color: var(--amber); }
+.badge-blue { background: rgba(59,130,246,0.2); color: var(--blue); }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+/* Layout */
+.app-shell { display: flex; flex-direction: column; height: 100vh; }
+.app-header {
+  height: 48px; display: flex; align-items: center; padding: 0 16px;
+  background: rgba(0,0,0,0.4); border-bottom: 1px solid var(--border);
+  justify-content: space-between; flex-shrink: 0;
+}
+.app-body { display: flex; flex: 1; overflow: hidden; min-height: 0; }
+.page-tabs {
+  width: 36px; display: flex; flex-direction: column; align-items: center;
+  padding-top: 8px; gap: 4px; border-right: 1px solid var(--border); flex-shrink: 0;
+}
+.page-tab {
+  width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center;
+  justify-content: center; cursor: pointer; font-size: 14px; transition: all 0.2s;
+}
+.page-tab:hover { background: rgba(255,255,255,0.08); }
+.page-tab.active { background: var(--amber-dim); }
+.main-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
+.secondary-tabs {
+  display: flex; gap: 0; border-bottom: 1px solid var(--border); flex-shrink: 0;
+  padding: 0 16px; background: rgba(0,0,0,0.2);
+}
+.sec-tab {
+  padding: 10px 20px; font-size: 13px; font-weight: 600; cursor: pointer;
+  border-bottom: 2px solid transparent; transition: all 0.2s;
+  color: var(--text-dim); background: none;
+}
+.sec-tab:hover { color: var(--text); }
+.sec-tab.active { color: var(--amber); border-bottom-color: var(--amber); }
+.content-area { flex: 1; display: flex; overflow: hidden; min-height: 0; }
+
+/* Project sidebar */
+.project-sidebar {
+  flex-shrink: 0;
+  display: flex; flex-direction: column; background: rgba(0,0,0,0.2);
+  min-width: 160px; max-width: 400px;
+}
+.resize-handle {
+  width: 4px; flex-shrink: 0; cursor: col-resize;
+  background: transparent; transition: background 0.15s;
+  position: relative; z-index: 5;
+}
+.resize-handle:hover, .resize-handle.dragging {
+  background: rgba(245,158,11,0.45);
+}
+.sidebar-header {
+  padding: 12px 16px; border-bottom: 1px solid var(--border);
+  display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;
+}
+.sidebar-list { flex: 1; overflow-y: auto; padding: 8px; }
+.project-item {
+  padding: 10px 12px; border-radius: 8px; cursor: pointer; transition: all 0.2s;
+  border: 1px solid transparent; margin-bottom: 4px;
+}
+.project-item:hover { background: rgba(255,255,255,0.04); }
+.project-item.active { background: rgba(255,255,255,0.06); border-color: var(--amber); }
+.project-name { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+.project-meta { font-size: 11px; color: var(--text-dim); }
+.batch-item {
+  padding: 6px 8px; margin: 2px 0; border-radius: 4px; cursor: pointer;
+  font-size: 12px; color: var(--text-dim); transition: all 0.2s;
+}
+.batch-item:hover { background: rgba(255,255,255,0.04); color: var(--text); }
+.batch-item.active { color: var(--amber); }
+
+/* Workspace */
+.workspace { flex: 1; display: flex; overflow: hidden; min-height: 0; }
+.workspace.two-phase { overflow: hidden; }
+.config-panel {
+  flex-shrink: 0;
+  display: flex; flex-direction: column; background: rgba(0,0,0,0.15);
+  min-height: 0; min-width: 240px; max-width: 480px;
+}
+.config-panel-scroll {
+  flex: 1; overflow-y: auto; padding: 16px;
+  min-height: 0;
+}
+.config-panel-footer {
+  flex-shrink: 0; padding: 12px 16px; border-top: 1px solid var(--border);
+  background: rgba(0,0,0,0.3);
+}
+.config-group { margin-bottom: 16px; }
+.config-group-title {
+  font-size: 12px; color: var(--text-dim); text-transform: uppercase;
+  letter-spacing: 0.5px; margin-bottom: 8px; font-weight: 600;
+}
+.source-upload {
+  width: 100%; height: 100px; border: 2px dashed var(--border); border-radius: 10px;
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+  transition: all 0.2s; color: var(--text-dim); font-size: 13px;
+  background: rgba(0,0,0,0.2);
+}
+.source-upload:hover { border-color: var(--amber); color: var(--amber); }
+.source-upload.has-image { border-style: solid; border-color: var(--green); padding: 0; overflow: hidden; }
+.source-upload.has-image img { width: 100%; height: 100%; object-fit: contain; }
+.rule-banner {
+  padding: 10px 12px; border-radius: 8px; font-size: 12px;
+  background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.25);
+  color: rgba(255,255,255,0.8);
+}
+.rule-banner.warn {
+  background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.25);
+}
+
+/* Result area */
+.result-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: rgba(0,0,0,0.1); }
+.result-toolbar {
+  padding: 10px 16px; display: flex; justify-content: space-between; align-items: center;
+  border-bottom: 1px solid var(--border); flex-shrink: 0; background: rgba(0,0,0,0.2);
+}
+.result-grid {
+  flex: 1; display: flex; flex-wrap: wrap; align-content: flex-start; gap: 12px;
+  padding: 16px; overflow-y: auto;
+}
+.result-card {
+  width: 180px; border-radius: 10px; overflow: hidden; cursor: pointer;
+  background: rgba(0,0,0,0.3); border: 1px solid var(--border); transition: all 0.2s;
+}
+.result-card:hover { border-color: var(--amber); transform: translateY(-2px); }
+.result-card.selected { border-color: rgba(245,158,11,0.5); background: rgba(245,158,11,0.02); }
+.result-card-img { width: 100%; height: 140px; background: rgba(255,255,255,0.02); position: relative; overflow: hidden; cursor: pointer; }
+.result-card-img .placeholder {
+  width: 100%; height: 100%; display: flex; align-items: center;
+  justify-content: center; color: var(--text-dim); font-size: 11px;
+}
+.card-hover-mask {
+  position: absolute; inset: 0; background: rgba(0,0,0,0.5);
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; transition: opacity 0.2s;
+}
+.result-card-img:hover .card-hover-mask { opacity: 1; }
+.edit-btn {
+  padding: 6px 12px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 6px; font-size: 12px; color: #fff; backdrop-filter: blur(4px);
+}
+.result-card-info { padding: 8px 10px; cursor: pointer; }
+.result-card-info .size-label { font-size: 11px; color: var(--amber); font-weight: 600; }
+.result-card-info .lang-label { font-size: 11px; color: var(--text-dim); }
+.result-card-status { padding: 0 10px 8px 30px; display: flex; gap: 4px; cursor: pointer; }
+
+/* Detail / Edit workspace */
+.detail-workspace {
+  flex: 1; display: flex; overflow: hidden; min-height: 0;
+}
+.detail-canvas-area {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  overflow: hidden; padding: 24px; position: relative; min-height: 0;
+  background: rgba(0,0,0,0.1);
+}
+.preview-image-wrap {
+  position: relative; max-width: 100%; max-height: 100%; overflow: hidden;
+  border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+}
+.edit-canvas-img {
+  position: relative;
+  background: #111;
+  border: 1px solid var(--border);
+  border-radius: 8px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+}
+.canvas-hint {
+  position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%);
+  font-size: 10px; color: rgba(255,255,255,0.25);
+}
+.canvas-element {
+  position: absolute; cursor: move; user-select: none;
+  border: 1px solid transparent;
+  white-space: pre-wrap;
+}
+.canvas-element:hover { border-color: rgba(255,255,255,0.2); }
+.canvas-element.active { border-color: var(--amber); }
+
+/* Inspector panel */
+.inspector-panel {
+  width: 280px; flex-shrink: 0; border-left: 1px solid var(--border);
+  display: flex; flex-direction: column; background: rgba(0,0,0,0.2);
+  min-height: 0;
+}
+.inspector-scroll {
+  flex: 1; overflow-y: auto; padding: 16px; min-height: 0;
+}
+.inspector-title {
+  font-size: 12px; color: var(--text-dim); text-transform: uppercase;
+  letter-spacing: 0.5px; font-weight: 600; margin-bottom: 12px;
+}
+.inspector-meta { display: flex; flex-direction: column; gap: 10px; }
+.inspector-meta-row {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  gap: 12px; font-size: 12px;
+}
+.inspector-meta-row .label { color: var(--text-dim); flex-shrink: 0; }
+.inspector-meta-row .value { color: var(--text); text-align: right; word-break: break-all; }
+.inspector-status { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px; }
+.inspector-actions {
+  flex-shrink: 0; padding: 12px 16px; border-top: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: 8px;
+}
+.inspector-footer {
+  flex-shrink: 0; padding: 12px 16px; border-top: 1px solid var(--border);
+  display: flex; gap: 8px; background: rgba(0,0,0,0.15);
+}
+.inspector-footer .ghost-btn,
+.inspector-footer .amber-btn { flex: 1; text-align: center; }
+.edit-field { margin-bottom: 12px; }
+.edit-field label { font-size: 11px; color: var(--text-dim); display: block; margin-bottom: 4px; }
+.edit-controls-row { display: flex; gap: 6px; align-items: center; }
+.sync-bar {
+  margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border);
+}
+
+/* Empty state */
+.empty-state {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  flex-direction: column; color: var(--text-dim); gap: 12px;
+}
+.empty-state .icon { font-size: 48px; opacity: 0.3; }
+
+/* Dialogs */
+.dialog-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100;
+  display: flex; align-items: center; justify-content: center;
+}
+.dialog {
+  background: #1a1a2e; border: 1px solid var(--border); border-radius: 16px;
+  padding: 24px; max-width: 500px; width: 90%; box-shadow: 0 16px 48px rgba(0,0,0,0.6);
+}
+.dialog-title { font-size: 16px; font-weight: 700; margin-bottom: 16px; }
+.dialog-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
+
+/* Asset Management */
+.asset-toolbar {
+  padding: 12px 16px; display: flex; align-items: center; gap: 12px;
+  border-bottom: 1px solid var(--border); flex-shrink: 0; flex-wrap: wrap;
+  background: rgba(0,0,0,0.2);
+}
+.asset-toolbar .filter-select { width: 140px; }
+.asset-toolbar .search-input { width: 200px; }
+.asset-toolbar .toggle-group { display: flex; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); }
+.asset-toolbar .toggle-btn {
+  padding: 6px 14px; font-size: 12px; cursor: pointer; border: none;
+  background: rgba(0,0,0,0.2); color: var(--text-dim); transition: all 0.2s;
+}
+.asset-toolbar .toggle-btn.active { background: var(--amber-dim); color: var(--amber); }
+.asset-grid {
+  flex: 1; display: flex; flex-wrap: wrap; align-content: flex-start; gap: 12px;
+  padding: 16px; overflow-y: auto;
+}
+.asset-card {
+  width: 200px; border-radius: 10px; overflow: hidden; cursor: pointer;
+  background: rgba(0,0,0,0.3); border: 1px solid var(--border); transition: all 0.2s;
+}
+.asset-card:hover { border-color: var(--amber); }
+.asset-card-img {
+  width: 100%; height: 150px; background: rgba(255,255,255,0.02);
+  display: flex; align-items: center; justify-content: center;
+}
+.asset-card-img .ph { color: var(--text-dim); font-size: 11px; }
+.asset-card-body { padding: 10px; }
+.asset-card-name { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+.asset-card-sku { font-size: 11px; color: var(--text-dim); margin-bottom: 6px; }
+.asset-card-tags { display: flex; gap: 4px; flex-wrap: wrap; }
+.asset-tag {
+  padding: 2px 6px; border-radius: 3px; font-size: 10px;
+  background: rgba(255,255,255,0.06); color: var(--text-dim);
+}
+
+/* Floating dock */
+.floating-dock {
+  height: 40px; display: flex; align-items: center; gap: 4px; padding: 0 16px;
+  border-top: 1px solid var(--border); flex-shrink: 0; background: rgba(0,0,0,0.4);
+}
+.dock-icon {
+  width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center;
+  justify-content: center; cursor: pointer; transition: all 0.2s; font-size: 14px;
+}
+.dock-icon:hover { background: rgba(255,255,255,0.08); }
+.dock-icon.active { background: var(--amber-dim); }
+
+/* Transition */
+.fade-enter-active, .fade-leave-active { transition: opacity 0.2s; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
+
+/* Scrollbar for panels */
+.config-panel::-webkit-scrollbar, .inspector-scroll::-webkit-scrollbar, .sidebar-list::-webkit-scrollbar { width: 3px; }
+.hide-scrollbar::-webkit-scrollbar { display: none; }
+
+/* Top toast */
+.toast-container {
+  position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
+  z-index: 1000; pointer-events: none;
+}
+.toast {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 20px 10px 14px;
+  background: rgba(24, 24, 36, 0.96);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 999px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.45);
+  font-size: 13px; color: var(--text);
+  white-space: nowrap; max-width: 90vw;
+  animation: toast-in 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.toast-icon {
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--green); flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; color: #fff;
+}
+.toast-icon.warn { background: var(--orange); }
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+</style>
+</head>
+<body>
+
+<div id="app" class="app-shell">
+  <!-- Top Toast -->
+  <div class="toast-container" v-if="toast.visible">
+    <div class="toast">
+      <div class="toast-icon" :class="{ warn: toast.type === 'warn' }">{{ toast.type === 'warn' ? '!' : '✓' }}</div>
+      <span>{{ toast.message }}</span>
+    </div>
+  </div>
+
+  <!-- App Header -->
+  <div class="app-header">
+    <div style="display:flex;align-items:center;gap:7px;margin-right:16px;">
+      <div style="width:22px;height:22px;border-radius:5px;background:linear-gradient(135deg,#f59e0b,#fbbf24);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#0a0a0c;">智</div>
+      <span style="font-size:14px;font-weight:600;">智岩 AI</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:3px;flex:1;height:48px;">
+      <div style="padding:0 16px;height:100%;display:flex;align-items:center;font-size:13px;font-weight:600;color:var(--amber);border-bottom:2px solid var(--amber);">素材适配</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;font-size:12px;color:rgba(255,255,255,0.42);">
+      <span style="cursor:pointer;">指引</span>
+      <div style="width:26px;height:26px;border-radius:50%;background:rgba(245,158,11,0.15);display:flex;align-items:center;justify-content:center;font-size:12px;color:#f59e0b;">W</div>
+    </div>
+  </div>
+
+  <div class="app-body">
+    <div class="main-area">
+      <div class="content-area">
+        <!-- ==================== 素材适配 ==================== -->
+        <template v-if="true">
+          <!-- Project Sidebar -->
+          <div class="project-sidebar" :style="{ width: sidebarWidth + 'px' }">
+            <div style="padding: 16px;">
+              <button class="amber-btn" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;" @click="showNewProject=true">
+                <span style="font-size: 18px; font-weight: 400;">+</span> 新建项目
+              </button>
+            </div>
+            
+            <div style="padding: 0 16px 12px;">
+              <div style="position: relative;">
+                <span style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 12px; opacity: 0.5;">🔍</span>
+                <input class="text-input" v-model="projectSearch" style="padding-left: 28px; background: rgba(255,255,255,0.04); border: none;" placeholder="搜索项目...">
+              </div>
+            </div>
+
+            <div class="sidebar-list">
+              <div style="font-size: 12px; color: var(--text-dim); padding: 8px 12px; margin-top: 4px;">最近项目</div>
+              <div v-for="proj in filteredProjects" :key="proj._index">
+                <div class="project-item" :class="{active: currentProject===proj._index}" @click="selectProject(proj._index)" style="display: flex; align-items: center; gap: 10px;">
+                  <div style="width: 8px; height: 8px; border-radius: 50%;" :style="{ background: currentProject===proj._index ? 'var(--amber)' : 'rgba(255,255,255,0.2)' }" style="flex-shrink: 0;"></div>
+                  <div style="flex: 1; min-width: 0;">
+                    <div class="project-name" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ proj.name }}</div>
+                  </div>
+                </div>
+              </div>
+              <div v-if="!filteredProjects.length" style="font-size:12px;color:var(--text-dim);padding:16px 12px;">暂无匹配项目</div>
+            </div>
+          </div>
+          <div class="resize-handle" :class="{ dragging: resizing === 'sidebar' }" @mousedown.prevent="startResize('sidebar', $event)"></div>
+
+          <!-- Workspace -->
+          <div class="workspace two-phase">
+            <!-- Config Panel -->
+            <div class="config-panel" :style="{ width: configWidth + 'px' }">
+              <div class="config-panel-scroll">
+              <div class="config-group">
+                <div class="config-group-title">上传底图 (可多选)</div>
+                <div style="display:flex;flex-wrap:nowrap;gap:8px;overflow-x:auto;padding-bottom:8px;scrollbar-width:none;-ms-overflow-style:none;" class="hide-scrollbar">
+                  <div v-for="(img, idx) in sourceImages" :key="idx" style="width:72px;height:72px;border-radius:8px;overflow:hidden;border:1px solid var(--border);position:relative;flex-shrink:0;">
+                    <img :src="img.url" style="width:100%;height:100%;object-fit:cover;pointer-events:none;">
+                    <div style="position:absolute;top:4px;right:4px;width:16px;height:16px;background:rgba(0,0,0,0.6);border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:10px;line-height:1;color:#fff;" @click="removeSourceImage(idx)">✕</div>
+                  </div>
+                  <div class="source-upload" style="width:72px;height:72px;border-radius:8px;margin:0;flex-shrink:0;" @click="addSourceImage">
+                    <span style="font-size:24px;color:var(--text-dim);">+</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="config-group">
+                <div class="config-group-title">图需类型</div>
+                <div style="position: relative;">
+                  <select class="text-input" v-model="taskPackage" @change="onTaskPackageChange" style="appearance: none; padding-right: 30px;">
+                    <option value="">选择图需类型</option>
+                    <optgroup label="自营站广告图">
+                      <option value="self-ad-kv">KV&场景图</option>
+                      <option value="self-ad-carousel">轮播图</option>
+                      <option value="self-ad-overview">一图看懂</option>
+                      <option value="self-ad-usp">卖点图</option>
+                      <option value="self-ad-aff">AFF</option>
+                    </optgroup>
+                    <optgroup label="自营站 Banner">
+                      <option value="self-banner-home">首页/预热 Banner</option>
+                      <option value="self-banner-collection">集合页 Banner</option>
+                      <option value="self-banner-featured">重点页 Banner</option>
+                    </optgroup>
+                    <optgroup label="站外广告图">
+                      <option value="ext-ad-sdc">SDC</option>
+                      <option value="ext-ad-customrec">Custom REC</option>
+                    </optgroup>
+                    <optgroup label="品牌 Paid 图">
+                      <option value="brand-paid">品牌 Paid 图</option>
+                    </optgroup>
+                  </select>
+                  <div style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--text-dim);">▼</div>
+                </div>
+              </div>
+
+              <div class="config-group" v-if="activeSizes.length">
+                <div class="config-group-title">尺寸清单</div>
+                <div style="display:flex;flex-wrap:wrap;gap:4px;">
+                  <span class="chip" v-for="(sz, si) in activeSizes" :key="si"
+                        :class="{active: sz.enabled}" @click="sz.enabled=!sz.enabled">
+                    {{ sz.label }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- 商品名称已移至项目层级 -->
+
+              <div class="config-group" v-if="needsSellingPoints">
+                <div class="config-group-title">卖点信息</div>
+                <textarea class="text-input" v-model="sellingPoints"
+                  placeholder="每行一个卖点&#10;如：&#10;智能调光&#10;防水等级 IP65&#10;3000K-6500K 色温"></textarea>
+              </div>
+
+              <div class="config-group">
+                <div class="config-group-title">模板</div>
+                <div style="display:flex;flex-wrap:wrap;gap:6px;">
+                  <span class="chip" v-for="(tmpl, ti) in templates" :key="ti"
+                        :class="{active: selectedTemplate===ti}" @click="selectedTemplate=ti">
+                    {{ tmpl.name }} <span style="font-size:10px;opacity:0.6;">({{ tmpl.cta }})</span>
+                  </span>
+                </div>
+              </div>
+
+              <div class="config-group">
+                <div class="config-group-title">语言版本</div>
+                <div style="display:flex;flex-wrap:wrap;gap:4px;">
+                  <span class="chip" v-for="(lang, li) in languages" :key="li"
+                        :class="{active: lang.enabled}" @click="lang.enabled=!lang.enabled">
+                    {{ lang.code }}
+                  </span>
+                </div>
+              </div>
+
+              <div class="config-group">
+                <div class="config-group-title">补充要求</div>
+                <textarea class="text-input" v-model="extraNotes" placeholder="额外约束或生成要求..."></textarea>
+              </div>
+
+              </div><!-- end config-panel-scroll -->
+              <div class="config-panel-footer">
+                <div style="font-size:11px;color:var(--text-dim);margin-bottom:8px;text-align:center;" v-if="expectedCount > 0">
+                  预计生成 <span style="color:var(--amber);font-weight:600;">{{ expectedCount }}</span> 张素材
+                </div>
+                <button class="amber-btn" style="width:100%;" :disabled="!canGenerate" @click="handleGenerate">
+                  生成素材
+                </button>
+              </div>
+            </div>
+            <div class="resize-handle" :class="{ dragging: resizing === 'config' }" @mousedown.prevent="startResize('config', $event)"></div>
+
+            <!-- Result Area -->
+            <div class="result-area">
+              <!-- Toolbar: grid -->
+              <div class="result-toolbar" v-if="results.length && !showDetail && !showEdit">
+                <div style="display:flex;align-items:center;gap:12px;">
+                  <span style="font-size:13px;font-weight:600;">结果</span>
+                  <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text-dim);">
+                    <span>{{ results.filter(r=>r.saved).length }}/{{ results.length }} 已保存</span>
+                    <span v-if="selectedCount > 0" style="color:var(--amber);">已选 {{ selectedCount }} 张</span>
+                  </div>
+                </div>
+                <div style="display:flex;gap:6px;">
+                  <button class="ghost-btn" @click="clearResults">清空</button>
+                  <div style="width:1px;height:16px;background:var(--border);margin:auto 4px;"></div>
+                  <button class="ghost-btn" @click="handleDownload">
+                    {{ selectedCount > 0 ? `下载已选 (${selectedCount})` : '下载全部' }}
+                  </button>
+                  <button class="amber-btn" style="padding:8px 16px;font-size:12px;" @click="handleSave">
+                    {{ selectedCount > 0 ? `保存已选 (${selectedCount})` : '保存全部' }}
+                  </button>
+                </div>
+              </div>
+              <!-- Toolbar: detail / edit -->
+              <div class="result-toolbar" v-if="results.length && (showDetail || showEdit)">
+                <button class="ghost-btn" @click="exitDetail">返回</button>
+              </div>
+
+              <!-- Empty state -->
+              <div class="empty-state" v-if="!results.length && !showDetail && !showEdit">
+                <span class="icon">🎯</span>
+                <span style="font-size:14px;">上传底图，选择图需类型后开始生成</span>
+                <span style="font-size:12px;">主链路：生成 → 轻编辑 → 保存到素材库 / 下载</span>
+              </div>
+
+              <!-- Result Grid -->
+              <div class="result-grid" v-if="results.length && !showDetail && !showEdit">
+                <template v-for="group in groupedResults" :key="group.sourceId">
+                  <div style="width:100%;font-size:13px;font-weight:600;margin-top:8px;color:var(--amber);display:flex;align-items:center;gap:6px;">
+                    <span style="display:inline-block;width:3px;height:12px;background:var(--amber);border-radius:2px;"></span>
+                    底图: {{ group.sourceName }}
+                    <span style="font-size:11px;color:var(--text-dim);font-weight:normal;cursor:pointer;margin-left:8px;" @click="toggleGroupSelection(group)">
+                      {{ isGroupAllSelected(group) ? '取消全选' : '全选本组' }}
+                    </span>
+                  </div>
+                  <div class="result-card" v-for="r in group.items" :key="r._originalIndex" :class="{selected: r.selected}">
+                    <div class="result-card-img" @click="previewResult(r._originalIndex)">
+                      <div class="placeholder">{{ r.size }}</div>
+                      <div class="card-hover-mask">
+                        <span class="edit-btn">点击预览</span>
+                      </div>
+                    </div>
+                    <div class="result-card-info" @click="r.selected = !r.selected">
+                      <div style="display:flex;align-items:flex-start;gap:6px;">
+                        <input type="checkbox" v-model="r.selected" @click.stop style="margin-top:2px;cursor:pointer;">
+                        <div style="flex:1;min-width:0;">
+                          <div class="size-label" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ r.filename }}</div>
+                          <div class="lang-label" style="font-size:10px;">{{ r.type }} · {{ r.size }}</div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="result-card-status" @click="r.selected = !r.selected">
+                      <span class="badge badge-green" v-if="r.saved">已保存</span>
+                      <span class="badge badge-orange" v-else-if="r.edited">已编辑</span>
+                      <span class="badge badge-amber" v-else-if="r.synced">待检查</span>
+                      <span class="badge" style="background:rgba(255,255,255,0.1);color:var(--text-dim);" v-else>未保存</span>
+                    </div>
+                  </div>
+                </template>
+              </div>
+
+              <!-- Detail / Edit workspace -->
+              <div class="detail-workspace" v-if="results.length && (showDetail || showEdit)">
+                <!-- Center canvas -->
+                <div class="detail-canvas-area"
+                     @mousemove="showEdit && onCanvasDrag($event)"
+                     @mouseup="showEdit && onCanvasDrop()"
+                     @mouseleave="showEdit && onCanvasDrop()">
+                  <!-- Preview -->
+                  <div class="preview-image-wrap" v-if="showDetail && !showEdit">
+                    <div style="width:min(520px,100%);height:min(400px,70vh);background:rgba(255,255,255,0.02);display:flex;align-items:center;justify-content:center;color:var(--text-dim);">
+                      {{ detailResult.size }} · {{ detailResult.lang }}
+                    </div>
+                  </div>
+                  <!-- Edit canvas -->
+                  <div class="edit-canvas-img" v-if="showEdit" :style="{ width: canvasWidth + 'px', height: canvasHeight + 'px' }">
+                    <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--text-dim);font-size:12px;border:1px dashed rgba(255,255,255,0.1);margin:20px;">
+                      底图区域
+                    </div>
+                    <div v-for="(el, ei) in editElements" :key="ei"
+                      class="canvas-element"
+                      :class="{ active: selectedElementIndex === ei }"
+                      :style="{
+                        left: el.x + 'px', top: el.y + 'px',
+                        fontSize: el.size + 'px', color: el.color,
+                        background: el.bg || 'transparent',
+                        textAlign: el.align || 'left',
+                        zIndex: el.z || 1,
+                        padding: '4px 8px', borderRadius: '4px'
+                      }"
+                      @mousedown.stop="startDrag($event, ei)"
+                      @dblclick.stop="editText(ei)">
+                      {{ el.text }}
+                    </div>
+                  </div>
+                  <div class="canvas-hint" v-if="showEdit">拖拽移动 · 双击文字编辑</div>
+                </div>
+
+                <!-- Right inspector -->
+                <div class="inspector-panel">
+                  <!-- Preview mode -->
+                  <template v-if="showDetail && !showEdit">
+                    <div class="inspector-scroll">
+                      <div class="inspector-title">素材信息</div>
+                      <div class="inspector-meta">
+                        <div class="inspector-meta-row">
+                          <span class="label">文件名</span>
+                          <span class="value">{{ detailResult.filename }}</span>
+                        </div>
+                        <div class="inspector-meta-row">
+                          <span class="label">平台</span>
+                          <span class="value">{{ detailResult.platform }}</span>
+                        </div>
+                        <div class="inspector-meta-row">
+                          <span class="label">尺寸</span>
+                          <span class="value">{{ detailResult.size }}</span>
+                        </div>
+                        <div class="inspector-meta-row">
+                          <span class="label">语言</span>
+                          <span class="value">{{ detailResult.lang }}</span>
+                        </div>
+                        <div class="inspector-meta-row">
+                          <span class="label">类型</span>
+                          <span class="value">{{ detailResult.type }}</span>
+                        </div>
+                        <div class="inspector-meta-row">
+                          <span class="label">模板</span>
+                          <span class="value">{{ detailResult.template }}</span>
+                        </div>
+                        <div class="inspector-status">
+                          <span class="badge badge-green" v-if="detailResult.saved">已保存</span>
+                          <span class="badge badge-orange" v-else-if="detailResult.edited">已编辑</span>
+                          <span class="badge badge-amber" v-else-if="detailResult.synced">待检查</span>
+                          <span class="badge" style="background:rgba(255,255,255,0.1);color:var(--text-dim);" v-else>未保存</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="inspector-actions">
+                      <button class="ghost-btn" style="width:100%;" @click="enterEdit">编辑</button>
+                      <button class="ghost-btn" style="width:100%;" @click="downloadCurrent">下载当前</button>
+                      <button class="amber-btn" style="width:100%;" @click="saveCurrent">保存到素材库</button>
+                    </div>
+                  </template>
+
+                  <!-- Edit mode -->
+                  <template v-if="showEdit">
+                    <div class="inspector-scroll">
+                      <div class="inspector-title">编辑</div>
+                      <div v-if="selectedElementIndex >= 0">
+                        <div class="edit-field">
+                          <label>字号</label>
+                          <div class="edit-controls-row">
+                            <input type="range" min="12" max="48" v-model.number="editElements[selectedElementIndex].size" style="flex:1;">
+                            <span style="font-size:11px;color:var(--text-dim);width:32px;text-align:right;">{{ editElements[selectedElementIndex].size }}px</span>
+                          </div>
+                        </div>
+                        <div class="edit-field">
+                          <label>颜色</label>
+                          <div class="edit-controls-row" style="gap:4px;">
+                            <span style="width:20px;height:20px;border-radius:4px;background:#fff;cursor:pointer;border:1px solid rgba(255,255,255,0.2);" :style="{ borderColor: editElements[selectedElementIndex].color === '#fff' || editElements[selectedElementIndex].color === 'rgba(255,255,255,0.9)' ? 'var(--amber)' : '' }" @click="editElements[selectedElementIndex].color = '#fff'"></span>
+                            <span style="width:20px;height:20px;border-radius:4px;background:#000;cursor:pointer;border:1px solid rgba(255,255,255,0.2);" :style="{ borderColor: editElements[selectedElementIndex].color === '#000' ? 'var(--amber)' : '' }" @click="editElements[selectedElementIndex].color = '#000'"></span>
+                            <span style="width:20px;height:20px;border-radius:4px;background:#f59e0b;cursor:pointer;border:1px solid rgba(255,255,255,0.2);" :style="{ borderColor: editElements[selectedElementIndex].color === '#f59e0b' ? 'var(--amber)' : '' }" @click="editElements[selectedElementIndex].color = '#f59e0b'"></span>
+                            <span style="width:20px;height:20px;border-radius:4px;background:#ef4444;cursor:pointer;border:1px solid rgba(255,255,255,0.2);" :style="{ borderColor: editElements[selectedElementIndex].color === '#ef4444' ? 'var(--amber)' : '' }" @click="editElements[selectedElementIndex].color = '#ef4444'"></span>
+                          </div>
+                        </div>
+                        <div class="edit-field">
+                          <label>对齐</label>
+                          <div class="edit-controls-row" style="gap:4px;">
+                            <button class="ghost-btn" style="padding:4px 8px;" :style="{ background: editElements[selectedElementIndex].align === 'left' ? 'var(--amber-dim)' : '', borderColor: editElements[selectedElementIndex].align === 'left' ? 'var(--amber)' : '' }" @click="editElements[selectedElementIndex].align = 'left'">左</button>
+                            <button class="ghost-btn" style="padding:4px 8px;" :style="{ background: editElements[selectedElementIndex].align === 'center' ? 'var(--amber-dim)' : '', borderColor: editElements[selectedElementIndex].align === 'center' ? 'var(--amber)' : '' }" @click="editElements[selectedElementIndex].align = 'center'">中</button>
+                            <button class="ghost-btn" style="padding:4px 8px;" :style="{ background: editElements[selectedElementIndex].align === 'right' ? 'var(--amber-dim)' : '', borderColor: editElements[selectedElementIndex].align === 'right' ? 'var(--amber)' : '' }" @click="editElements[selectedElementIndex].align = 'right'">右</button>
+                          </div>
+                        </div>
+                      </div>
+                      <div v-else style="font-size:12px;color:var(--text-dim);padding:20px 0;text-align:center;background:rgba(255,255,255,0.02);border-radius:8px;margin-bottom:16px;">
+                        请在左侧画布点击选中要编辑的元素
+                      </div>
+                      
+                      <div class="sync-bar">
+                        <div class="config-group-title">一键套用排版方案</div>
+                        <p style="font-size:11px;color:var(--text-dim);margin-bottom:8px;">将当前排版作为方案，套用到其他素材</p>
+                        <div style="display:flex;gap:8px;">
+                          <button class="ghost-btn" style="flex:1;font-size:11px;padding:6px 4px;" @click="syncSameSize">
+                            仅同步同尺寸
+                          </button>
+                          <button class="ghost-btn" style="flex:1;font-size:11px;padding:6px 4px;" @click="syncAllSize">
+                            套用到全部尺寸
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="inspector-footer">
+                      <button class="ghost-btn" @click="cancelEdit">取消</button>
+                      <button class="amber-btn" @click="saveAndExitEdit">保存编辑</button>
+                    </div>
+                  </template>
+                </div>
+              </div>
+            </div>
+          </div>
+        </template>
+      </div>
+    </div>
+  </div>
+
+  <!-- Floating Dock removed -->
+
+  <!-- New Project Dialog -->
+  <div class="dialog-overlay" v-if="showNewProject" @click.self="showNewProject=false">
+    <div class="dialog">
+      <div class="dialog-title">新建素材适配项目</div>
+      <div class="config-group">
+        <div class="section-label">SKU <span style="color:var(--red)">*</span></div>
+        <input class="text-input" v-model="newProjectSku" placeholder="如：FL-A30-BK" @input="updateNewProjectName">
+      </div>
+      <div class="config-group">
+        <div class="section-label">商品名称 <span style="color:var(--red)">*</span></div>
+        <input class="text-input" v-model="newProjectProductName" placeholder="如：落地灯 A30" @input="updateNewProjectName">
+      </div>
+      <div class="config-group">
+        <div class="section-label">项目名称</div>
+        <input class="text-input" v-model="newProjectName" placeholder="自动生成或自定义">
+      </div>
+      <div class="dialog-actions">
+        <button class="ghost-btn" @click="showNewProject=false">取消</button>
+        <button class="amber-btn" @click="createProject">创建项目</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+console.log('Vue version:', Vue.version);
+try {
+const { createApp, ref, computed, reactive } = Vue;
+
+createApp({
+  setup() {
+    // Project state
+    const showNewProject = ref(false);
+    const newProjectSku = ref('');
+    const newProjectProductName = ref('');
+    const newProjectName = ref('');
+    const projectSearch = ref('');
+    const projects = reactive([
+      {
+        name: 'FL-A30-BK 落地灯 A30',
+        sku: 'FL-A30-BK',
+        productName: '落地灯 A30',
+      },
+      {
+        name: 'TL-B12 台灯 B12',
+        sku: 'TL-B12',
+        productName: '台灯 B12',
+      }
+    ]);
+    const currentProject = ref(0);
+    const sidebarWidth = ref(240);
+    const configWidth = ref(320);
+    const resizing = ref(null);
+    const resizeStartX = ref(0);
+    const resizeStartWidth = ref(0);
+
+    function startResize(type, e) {
+      resizing.value = type;
+      resizeStartX.value = e.clientX;
+      resizeStartWidth.value = type === 'sidebar' ? sidebarWidth.value : configWidth.value;
+      document.addEventListener('mousemove', onResizeMove);
+      document.addEventListener('mouseup', stopResize);
+    }
+    function onResizeMove(e) {
+      const dx = e.clientX - resizeStartX.value;
+      if (resizing.value === 'sidebar') {
+        sidebarWidth.value = Math.min(400, Math.max(160, resizeStartWidth.value + dx));
+      } else if (resizing.value === 'config') {
+        configWidth.value = Math.min(480, Math.max(240, resizeStartWidth.value + dx));
+      }
+    }
+    function stopResize() {
+      resizing.value = null;
+      document.removeEventListener('mousemove', onResizeMove);
+      document.removeEventListener('mouseup', stopResize);
+    }
+
+    const toast = reactive({ visible: false, message: '', type: 'success' });
+    let toastTimer = null;
+    function showToast(message, type = 'success', duration = 2800) {
+      toast.message = String(message).replace(/\n/g, ' · ');
+      toast.type = type;
+      toast.visible = true;
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => { toast.visible = false; }, duration);
+    }
+
+    const filteredProjects = computed(() => {
+      const keyword = projectSearch.value.trim().toLowerCase();
+      return projects
+        .map((project, index) => ({ ...project, _index: index }))
+        .filter(project => {
+          if (!keyword) return true;
+          return project.name.toLowerCase().includes(keyword)
+            || project.sku.toLowerCase().includes(keyword)
+            || project.productName.toLowerCase().includes(keyword);
+        });
+    });
+
+    function updateNewProjectName() {
+      if (newProjectSku.value || newProjectProductName.value) {
+        newProjectName.value = `${newProjectSku.value} ${newProjectProductName.value}`.trim();
+      } else {
+        newProjectName.value = '';
+      }
+    }
+
+    // Config form
+    const sourceImages = ref([]);
+    let nextImageId = 1;
+    function addSourceImage() {
+      sourceImages.value.push({
+        id: nextImageId++,
+        name: `底图 ${nextImageId - 1}`,
+        url: `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect fill='%231a1a2e' width='200' height='200'/%3E%3Ccircle cx='100' cy='80' r='45' fill='%23222' stroke='%23444' stroke-width='2'/%3E%3Ctext x='100' y='160' text-anchor='middle' fill='%23888' font-size='11'%3E底图 ${nextImageId - 1}%3C/text%3E%3C/svg%3E`
+      });
+    }
+    function removeSourceImage(idx) {
+      sourceImages.value.splice(idx, 1);
+    }
+    const taskPackage = ref('');
+    const activeSizes = ref([]);
+    const sellingPoints = ref('');
+    const selectedTemplate = ref(0);
+    const templates = ref([
+      { name: '默认版式', cta: 'Shop Now' },
+      { name: '促销版式', cta: 'Shop Now' },
+      { name: '简约版式', cta: 'Learn More' }
+    ]);
+    const languages = reactive([
+      { code: 'EN', enabled: true },
+      { code: 'DE', enabled: false },
+      { code: 'FR', enabled: false },
+      { code: 'JP', enabled: false },
+      { code: 'ES', enabled: false }
+    ]);
+    const extraNotes = ref('');
+
+    // Task package definitions
+    const taskSizes = {
+      'self-ad-kv': ['1200×1200','1200×628','960×1200','1080×1920'],
+      'self-ad-carousel': ['1200×1200'],
+      'self-ad-overview': ['1200×1200','1200×628','960×1200'],
+      'self-ad-usp': ['1200×1200','1200×628','960×1200'],
+      'self-ad-aff': ['300×250','320×100','336×280','300×600','728×90','700×385','1500×500'],
+      'self-banner-home': ['1920×860','750×1000'],
+      'self-banner-collection': ['1620×607','750×470'],
+      'self-banner-featured': ['1620×726','750×810'],
+      'ext-ad-sdc': ['320×1200','600×500','300×600','640×100','828×250','1940×500','1456×180'],
+      'ext-ad-customrec': ['1200×628','1200×1200','900×1600'],
+      'brand-paid': ['1080×1080','1080×1920','1200×628','1200×1200','960×1200','1920×720']
+    };
+    const taskRuleHints = {
+      'ext-ad-sdc': '需品牌 Logo + 清晰 CTA · 字体≥9pt · 浅色背景加 1px 边框 · 文件≤200KB',
+      'ext-ad-customrec': '禁止添加 Logo、文案和 CTA · 文件≤5MB · JPG 或 PNG',
+    };
+    const taskRuleHint = computed(() => taskRuleHints[taskPackage.value] || '');
+    const taskGroup = computed(() => taskPackage.value.split('-').slice(0, -1).join('-'));
+
+    // Results
+    const results = ref([]);
+    const showDetail = ref(false);
+    const showEdit = ref(false);
+    const detailResult = ref(null);
+    const detailIndex = ref(-1);
+
+    // Edit canvas drag state
+    const editElements = ref([]);
+    const selectedElementIndex = ref(-1);
+    const dragIdx = ref(-1);
+    const dragStart = ref({ x: 0, y: 0 });
+    const elemStart = ref({ x: 0, y: 0 });
+    const canvasWidth = ref(400);
+    const canvasHeight = ref(400);
+
+    function buildEditElements() {
+      if (!detailResult.value) return;
+      
+      // Parse size like "1200×628" to set canvas ratio
+      const sizeMatch = detailResult.value.size.match(/(\d+)×(\d+)/);
+      if (sizeMatch) {
+        const w = parseInt(sizeMatch[1]);
+        const h = parseInt(sizeMatch[2]);
+        const maxW = 500;
+        const maxH = 500;
+        const ratio = Math.min(maxW/w, maxH/h);
+        canvasWidth.value = Math.floor(w * ratio);
+        canvasHeight.value = Math.floor(h * ratio);
+      } else {
+        canvasWidth.value = 400;
+        canvasHeight.value = 400;
+      }
+
+      const tmpl = templates.value[selectedTemplate.value];
+      const currentProj = projects[currentProject.value];
+      const pName = currentProj.productName || '商品标题';
+      const els = [
+        { text: pName, x: 20, y: 20, size: 24, color: 'rgba(255,255,255,0.9)', align: 'left', z: 3 },
+      ];
+      if (taskType.value !== 'customrec') {
+        els.push({ text: sellingPoints.value || '智能调光\n防水IP65\n3000K色温', x: 20, y: 70, size: 14, color: 'rgba(255,255,255,0.6)', z: 2 });
+      }
+      els.push({ text: tmpl.cta || 'Shop Now', x: 20, y: canvasHeight.value - 50, size: 14, color: '#fff', bg: 'rgba(245,158,11,0.8)', z: 2 });
+      els.push({ text: 'LOGO', x: canvasWidth.value - 70, y: 20, size: 16, color: '#f59e0b', bg: 'rgba(245,158,11,0.1)', z: 1 });
+      editElements.value = els;
+      selectedElementIndex.value = -1;
+    }
+    function startDrag(e, idx) {
+      dragIdx.value = idx;
+      selectedElementIndex.value = idx;
+      dragStart.value = { x: e.clientX, y: e.clientY };
+      elemStart.value = { x: editElements.value[idx].x, y: editElements.value[idx].y };
+    }
+    function onCanvasDrag(e) {
+      if (dragIdx.value < 0) return;
+      const dx = e.clientX - dragStart.value.x;
+      const dy = e.clientY - dragStart.value.y;
+      editElements.value[dragIdx.value].x = elemStart.value.x + dx;
+      editElements.value[dragIdx.value].y = elemStart.value.y + dy;
+    }
+    function onCanvasDrop() { dragIdx.value = -1; }
+    function editText(idx) {
+      selectedElementIndex.value = idx;
+      const el = editElements.value[idx];
+      const txt = prompt('编辑文字：', el.text.replace(/\n/g, '|'));
+      if (txt !== null) {
+        editElements.value[idx].text = txt.replace(/\|/g, '\n');
+      }
+    }
+
+    // Computed
+    const taskType = computed(() => taskPackage.value.split('-').pop());
+    const needsSellingPoints = computed(() => {
+      return taskType.value !== 'customrec';
+    });
+    const canGenerate = computed(() => {
+      return sourceImages.value.length > 0 && taskPackage.value;
+    });
+    const expectedCount = computed(() => {
+      const sizes = activeSizes.value.filter(s => s.enabled).length;
+      const langs = languages.filter(l => l.enabled).length;
+      return sourceImages.value.length * sizes * langs;
+    });
+
+    const groupedResults = computed(() => {
+      const groups = {};
+      results.value.forEach((r, idx) => {
+        r._originalIndex = idx;
+        if (!groups[r.sourceId]) {
+          groups[r.sourceId] = { sourceId: r.sourceId, sourceName: r.sourceName, items: [] };
+        }
+        groups[r.sourceId].items.push(r);
+      });
+      return Object.values(groups);
+    });
+
+    const selectedCount = computed(() => results.value.filter(r => r.selected).length);
+
+    function isGroupAllSelected(group) {
+      return group.items.length > 0 && group.items.every(r => r.selected);
+    }
+    function toggleGroupSelection(group) {
+      const isAll = isGroupAllSelected(group);
+      group.items.forEach(r => { r.selected = !isAll; });
+    }
+
+    // Methods
+    function onTaskPackageChange() {
+      const sizes = taskSizes[taskPackage.value] || [];
+      activeSizes.value = sizes.map(s => ({ label: s, enabled: true }));
+    }
+
+    function selectProject(pi) {
+      currentProject.value = pi;
+      resetWorkspace();
+    }
+    function resetWorkspace() {
+      results.value = [];
+      showDetail.value = false;
+      showEdit.value = false;
+      sourceImages.value = [];
+      taskPackage.value = '';
+      activeSizes.value = [];
+    }
+
+    function createProject() {
+      if (!newProjectSku.value || !newProjectProductName.value) {
+        showToast('请填写 SKU 和商品名称', 'warn');
+        return;
+      }
+      projects.push({
+        name: newProjectName.value || `${newProjectSku.value} ${newProjectProductName.value}`,
+        sku: newProjectSku.value,
+        productName: newProjectProductName.value,
+      });
+      currentProject.value = projects.length - 1;
+      newProjectSku.value = '';
+      newProjectProductName.value = '';
+      newProjectName.value = '';
+      showNewProject.value = false;
+      resetWorkspace();
+    }
+
+    function generate() {
+      const enabledSizes = activeSizes.value.filter(s => s.enabled);
+      const enabledLangs = languages.filter(l => l.enabled);
+      const pkg = taskPackage.value || '';
+      const platform = pkg.startsWith('self') ? '自营站' : pkg.startsWith('ext') ? '站外广告' : '品牌';
+      const tpType = pkg.split('-').slice(1).join('-');
+
+      const currentProj = projects[currentProject.value];
+      const skuName = currentProj.sku || '未命名';
+      const tpLabel = tpType || '素材';
+      results.value = [];
+
+      const bases = sourceImages.value.length ? sourceImages.value : [{id: 1, name: '默认底图'}];
+
+      for (const base of bases) {
+        for (const sz of enabledSizes) {
+          for (const lang of enabledLangs) {
+            results.value.push({
+              sourceId: base.id,
+              sourceName: base.name,
+              size: sz.label,
+              lang: lang.code,
+              platform: platform,
+              type: tpType,
+              template: templates.value[selectedTemplate.value].name,
+              filename: `${skuName}_${base.name}_${tpLabel}_${lang.code}`,
+              saved: false,
+              edited: false,
+              synced: false,
+              selected: false
+            });
+          }
+        }
+      }
+      showDetail.value = false;
+      showEdit.value = false;
+    }
+
+    function handleGenerate() {
+      const unsavedCount = results.value.filter(r => !r.saved).length;
+      if (unsavedCount > 0) {
+        showToast(`当前有 ${unsavedCount} 张未保存结果，继续生成将替换它们`, 'warn', 3500);
+        setTimeout(() => generate(), 400);
+        return;
+      }
+      generate();
+    }
+
+    function previewResult(ri) {
+      detailResult.value = results.value[ri];
+      detailIndex.value = ri;
+      showDetail.value = true;
+      showEdit.value = false;
+    }
+    function enterEdit() {
+      buildEditElements();
+      showEdit.value = true;
+    }
+    function saveCurrent() {
+      detailResult.value.saved = true;
+      detailResult.value.edited = false;
+      showToast('已保存到素材库，可在素材库中检索和复用');
+    }
+    function handleSave() {
+      if (selectedCount.value > 0) {
+        saveSelected();
+      } else {
+        saveAll();
+      }
+    }
+    function handleDownload() {
+      if (selectedCount.value > 0) {
+        downloadSelected();
+      } else {
+        downloadAll();
+      }
+    }
+
+    function saveAll() {
+      results.value.forEach(r => { r.saved = true; r.edited = false; });
+      showToast(`已保存 ${results.value.length} 张素材到素材库`);
+    }
+    function saveSelected() {
+      const selected = results.value.filter(r => r.selected);
+      selected.forEach(r => { r.saved = true; r.edited = false; });
+      showToast(`已保存 ${selected.length} 张已选素材到素材库`);
+    }
+    function downloadCurrent() {
+      showToast(`已下载当前素材：${detailResult.value.filename}`);
+    }
+    function downloadAll() {
+      showToast(`已打包下载 ${results.value.length} 张素材`);
+    }
+    function downloadSelected() {
+      const selected = results.value.filter(r => r.selected);
+      showToast(`已打包下载 ${selected.length} 张已选素材`);
+    }
+    function clearResults() {
+      results.value = [];
+      showDetail.value = false;
+      showEdit.value = false;
+    }
+
+    function exitDetail() {
+      showDetail.value = false;
+      showEdit.value = false;
+    }
+
+    function cancelEdit() {
+      showEdit.value = false;
+      showDetail.value = true;
+    }
+
+    function saveAndExitEdit() {
+      detailResult.value.edited = true;
+      showEdit.value = false;
+      showDetail.value = true;
+    }
+
+    function syncSameSize() {
+      const sameSize = results.value.filter(r => r.size === detailResult.value.size && r !== detailResult.value);
+      sameSize.forEach(r => { r.synced = true; r.edited = true; });
+      showToast(`已将排版同步到 ${sameSize.length} 张同尺寸素材 · 状态：待检查`);
+      saveAndExitEdit();
+    }
+    
+    function syncAllSize() {
+      const otherSize = results.value.filter(r => r !== detailResult.value);
+      otherSize.forEach(r => { r.synced = true; r.edited = true; });
+      showToast(`已将排版套用到 ${otherSize.length} 张其他尺寸素材 · 状态：待检查，请逐张确认`);
+      saveAndExitEdit();
+    }
+
+    return {
+      toast, showToast,
+      showNewProject, newProjectSku, newProjectProductName, newProjectName, updateNewProjectName,
+      projectSearch, projects, filteredProjects, currentProject,
+      sidebarWidth, configWidth, resizing, startResize,
+      sourceImages, addSourceImage, removeSourceImage, taskPackage, taskRuleHint, activeSizes,
+      sellingPoints, selectedTemplate, templates, languages, extraNotes,
+      results, groupedResults, selectedCount, showDetail, showEdit, detailResult, detailIndex,
+      needsSellingPoints, canGenerate, expectedCount,
+      selectProject, createProject,
+      onTaskPackageChange,
+      generate, handleGenerate, previewResult, enterEdit, saveCurrent, saveAll, saveSelected, handleSave, downloadCurrent, downloadAll, downloadSelected, handleDownload, clearResults,
+      exitDetail, cancelEdit,
+      editElements, selectedElementIndex, canvasWidth, canvasHeight, startDrag, onCanvasDrag, onCanvasDrop, editText,
+      saveAndExitEdit, syncSameSize, syncAllSize, isGroupAllSelected, toggleGroupSelection
+    };
+  }
+}).mount('#app');
+console.log('Vue app mounted successfully');
+} catch(e) {
+  console.error('Vue mount failed:', e);
+  document.body.innerHTML += '<div style="position:fixed;top:0;left:0;right:0;background:red;color:white;padding:12px;z-index:9999;font-size:14px;">Vue Error: ' + e.message + '</div>';
+}
+</script>
+</body>
+</html>

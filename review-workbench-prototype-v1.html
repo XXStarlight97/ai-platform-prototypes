@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>素材审核 - 智岩 AI 平台</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+<script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+<script>
+tailwind.config = {
+  darkMode: 'class',
+  theme: {
+    extend: {
+      fontFamily: {
+        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', 'sans-serif'],
+        mono: ['JetBrains Mono', 'SF Mono', 'Consolas', 'monospace']
+      },
+      colors: {
+        primary: { DEFAULT: '#f59e0b', hover: '#fbbf24', active: '#d97706' },
+        bg: { base: '#0a0a0c', elevated: '#16161e', glass: 'rgba(255, 255, 255, 0.06)' },
+        border: { default: 'rgba(255, 255, 255, 0.10)', light: 'rgba(255, 255, 255, 0.05)' },
+        text: { primary: 'rgba(255, 255, 255, 0.92)', secondary: 'rgba(255, 255, 255, 0.64)', tertiary: 'rgba(255, 255, 255, 0.42)' }
+      }
+    }
+  }
+}
+</script>
+
+<style>
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.3); }
+
+.fade-enter-active, .fade-leave-active { transition: opacity 0.2s ease, transform 0.2s ease; }
+.fade-enter-from, .fade-leave-to { opacity: 0; transform: translateY(4px); }
+[v-cloak] { display: none; }
+</style>
+</head>
+<body class="bg-bg-base text-text-primary h-screen w-screen overflow-hidden selection:bg-primary/30">
+
+<div id="app" class="h-full w-full flex flex-col relative" v-cloak>
+
+  <!-- Ambient -->
+  <div class="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+    <div class="absolute -top-[10%] -left-[10%] w-[50vw] h-[50vw] bg-indigo-600/10 rounded-full blur-[120px] mix-blend-screen"></div>
+    <div class="absolute top-[20%] right-[-10%] w-[40vw] h-[40vw] bg-amber-600/10 rounded-full blur-[120px] mix-blend-screen"></div>
+    <div class="absolute -bottom-[20%] left-[20%] w-[60vw] h-[60vw] bg-purple-600/5 rounded-full blur-[150px] mix-blend-screen"></div>
+  </div>
+
+  <!-- AppHeader -->
+  <header class="h-[48px] shrink-0 border-b border-border-default flex items-center justify-between px-4 z-50 relative bg-bg-base/40 backdrop-blur-sm">
+    <div class="flex items-center gap-4">
+      <div class="flex items-center gap-2 pr-4 border-r border-border-default">
+        <div class="w-7 h-7 rounded bg-primary flex items-center justify-center text-bg-base font-bold text-sm">
+          <i class="ph-bold ph-cube"></i>
+        </div>
+        <span class="font-bold text-[15px] tracking-wide">智岩 AI</span>
+      </div>
+      <div class="flex items-center gap-1" v-if="tabs.length > 0">
+        <div v-for="tab in tabs" :key="tab.id"
+             @click="activeTabId = tab.id"
+             class="h-[30px] px-3 flex items-center gap-2 rounded-md text-[13px] transition-colors cursor-pointer max-w-[220px] border"
+             :class="activeTabId === tab.id ? 'bg-primary/10 text-text-primary border-primary/25' : 'text-text-secondary border-transparent hover:bg-white/5 hover:text-text-primary'">
+          <i :class="tab.icon"></i>
+          <span class="truncate">{{ tab.title }}</span>
+          <button @click.stop="closeTab(tab.id)" class="w-4 h-4 rounded hover:bg-white/10 flex items-center justify-center opacity-60 hover:opacity-100 transition-opacity">
+            <i class="ph ph-x text-[10px]"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="flex items-center gap-3">
+      <button class="w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center text-text-secondary hover:text-text-primary transition-colors">
+        <i class="ph ph-moon text-lg"></i>
+      </button>
+      <div class="w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-xs font-semibold shadow-inner border border-white/20">管</div>
+    </div>
+  </header>
+
+  <!-- PageChrome -->
+  <main class="flex-1 overflow-hidden p-[10px_12px_12px] relative z-10 flex">
+    <div class="flex-1 bg-bg-glass backdrop-blur-[12px] border border-border-default rounded-[14px] overflow-hidden flex shadow-lg shadow-black/50 ring-1 ring-white/5 relative">
+
+      <!-- ======================== -->
+      <!-- Left: Review List (280px) -->
+      <!-- ======================== -->
+      <div class="w-[280px] shrink-0 border-r border-border-light flex flex-col overflow-hidden">
+
+        <!-- Header: New Review Button -->
+        <div class="px-4 py-4 border-b border-border-light">
+          <button @click="startNewReview"
+                  class="w-full h-[36px] rounded-lg bg-primary hover:bg-primary-hover active:bg-primary-active text-bg-base text-[13px] font-semibold transition-all flex items-center justify-center gap-2 shadow-[0_0_12px_rgba(245,158,11,0.2)] hover:shadow-[0_0_16px_rgba(245,158,11,0.4)]">
+            <i class="ph-bold ph-plus"></i>新建审核项目
+          </button>
+        </div>
+
+        <!-- Search -->
+        <div class="px-4 py-3 border-b border-border-light">
+          <div class="relative">
+            <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary"></i>
+            <input type="text" v-model="searchQuery" placeholder="搜索审核记录 / SKU"
+                   class="w-full h-[32px] bg-black/20 border border-border-default rounded-lg pl-9 pr-3 text-[13px] outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all placeholder-text-tertiary">
+          </div>
+        </div>
+
+        <!-- List -->
+        <div class="flex-1 overflow-y-auto p-2" v-if="filteredRecords.length > 0">
+          <div v-for="rec in filteredRecords" :key="rec.id"
+               @click="openRecord(rec.id)"
+               class="px-4 py-3 rounded-lg cursor-pointer transition-all duration-200 border mb-1"
+               :class="selectedId === rec.id ? 'bg-primary/8 border-primary/25' : 'border-transparent hover:bg-white/[0.04]'">
+            <div class="text-[13px] font-medium text-text-primary truncate">{{ rec.name }}</div>
+            <div class="text-[11px] text-text-tertiary mt-1" v-if="rec.sku">{{ rec.sku }}<span v-if="rec.productName"> · {{ rec.productName }}</span></div>
+            <div class="flex items-center justify-between mt-1.5">
+              <span class="text-[12px] text-text-tertiary">{{ rec.type }} / {{ rec.images.length }} 张</span>
+              <span class="text-[11px] px-1.5 py-0.5 rounded"
+                    :class="statusBadgeClass(rec.status)">{{ statusLabel(rec.status) }}</span>
+            </div>
+            <div class="text-[11px] text-text-tertiary mt-1.5">{{ rec.createdAt }}</div>
+          </div>
+        </div>
+
+        <!-- Empty list -->
+        <div v-else class="flex-1 flex flex-col items-center justify-center text-text-tertiary gap-2 px-4">
+          <i class="ph-duotone ph-clipboard-text text-[28px] opacity-25"></i>
+          <span class="text-[12px] text-center">暂无审核项目</span>
+          <span class="text-[11px] text-center">点击上方按钮新建审核项目</span>
+        </div>
+      </div>
+
+      <!-- ======================== -->
+      <!-- Right: Content Area -->
+      <!-- ======================== -->
+      <div class="flex-1 flex flex-col overflow-hidden min-w-0">
+
+        <!-- ========================================== -->
+        <!-- VIEW 1: New Review (新建审核项目) -->
+        <!-- ========================================== -->
+        <template v-if="viewMode === 'new'">
+          <div class="h-[56px] border-b border-border-default flex items-center px-6 shrink-0 bg-white/[0.02]">
+            <button @click="cancelNewReview" class="flex items-center gap-1.5 text-text-secondary hover:text-text-primary transition-colors text-[13px]">
+              <i class="ph ph-arrow-left"></i>返回
+            </button>
+            <span class="ml-4 text-sm font-semibold text-text-primary">新建商品审核项目</span>
+            <span class="ml-3 text-[11px] text-text-tertiary bg-amber-500/10 px-2 py-0.5 rounded">Step {{ newStep }} / 2</span>
+          </div>
+
+          <div class="flex-1 overflow-y-auto p-8 flex flex-col items-center">
+            <div class="w-full max-w-[520px]">
+
+              <!-- Step 1: Config -->
+              <template v-if="newStep === 1">
+                <div class="text-lg font-semibold text-text-primary mb-6">填写商品信息</div>
+
+                <div class="flex flex-col gap-5">
+                  <div class="flex flex-col gap-1.5">
+                    <label class="text-[13px] font-medium text-text-secondary">SKU <span class="text-red-500">*</span></label>
+                    <input type="text" v-model="newReview.sku" placeholder="例如：B09ABCDEFG"
+                           class="h-[38px] bg-black/20 border border-border-default rounded-lg px-3 text-[14px] outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all placeholder-text-tertiary">
+                  </div>
+                  <div class="flex flex-col gap-1.5">
+                    <label class="text-[13px] font-medium text-text-secondary">商品名称 <span class="text-red-500">*</span></label>
+                    <input type="text" v-model="newReview.productName" placeholder="例如：智能落地灯（可调光）"
+                           class="h-[38px] bg-black/20 border border-border-default rounded-lg px-3 text-[14px] outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all placeholder-text-tertiary">
+                  </div>
+                  <div class="flex flex-col gap-1.5 mt-2">
+                    <label class="text-[13px] font-medium text-text-secondary">项目名称 <span class="text-text-tertiary font-normal text-xs ml-2">(选填，不填则自动生成)</span></label>
+                    <input type="text" v-model="newReview.name" placeholder="例如：落地灯 Q2 全渠道图片审核"
+                           class="h-[38px] bg-black/20 border border-border-default rounded-lg px-3 text-[14px] outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all placeholder-text-tertiary">
+                  </div>
+                </div>
+
+                <div class="flex justify-end mt-8">
+                  <button @click="newStep = 2"
+                          :disabled="!newReview.sku || !newReview.productName"
+                          class="h-[36px] px-6 rounded-lg bg-primary hover:bg-primary-hover active:bg-primary-active text-bg-base text-[13px] font-semibold transition-all shadow-[0_0_12px_rgba(245,158,11,0.2)] hover:shadow-[0_0_16px_rgba(245,158,11,0.4)] disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none">
+                    下一步：上传图片
+                  </button>
+                </div>
+              </template>
+
+              <!-- Step 2: Upload Images by Groups -->
+              <template v-if="newStep === 2">
+                <div class="text-lg font-semibold text-text-primary mb-2">上传图片</div>
+                <div class="text-[13px] text-text-secondary mb-2 flex items-center gap-2">
+                  <span class="font-medium text-text-primary">{{ newReview.sku }}</span>
+                  <span class="text-text-tertiary">·</span>
+                  <span>{{ newReview.productName }}</span>
+                  <span v-if="newReview.name" class="text-text-tertiary">({{ newReview.name }})</span>
+                </div>
+                <div class="text-[11px] text-text-tertiary mb-6">为每个分组选择图需类型并上传对应图片，AI 将按类型自动匹配审核规则</div>
+
+                <!-- Groups -->
+                <div class="flex flex-col gap-5">
+                  <div v-for="(group, gi) in newReview.groups" :key="gi"
+                       class="bg-white/[0.02] border border-border-default rounded-xl p-5">
+                    <!-- Group header: type selector + delete -->
+                    <div class="flex items-center gap-3 mb-4">
+                      <span class="text-xs text-text-tertiary font-mono shrink-0">分组 {{ gi + 1 }}</span>
+                      <div class="relative flex-1">
+                        <select v-model="group.type" @change="updateCanSubmit"
+                                class="w-full h-[34px] bg-black/20 border border-border-default rounded-lg pl-3 pr-10 text-[13px] outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 text-text-secondary appearance-none transition-all cursor-pointer">
+                          <option value="" disabled>选择图需类型</option>
+                          <option value="SDC">SDC</option>
+                          <option value="Custom REC">Custom REC</option>
+                          <option value="KV">KV / 场景图</option>
+                          <option value="主图">主图</option>
+                          <option value="Banner">Banner</option>
+                          <option value="品牌Paid">品牌 Paid 图</option>
+                          <option value="卖点图">卖点图</option>
+                          <option value="AFF">AFF</option>
+                        </select>
+                        <i class="ph ph-caret-down absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary pointer-events-none"></i>
+                      </div>
+                      <button @click="removeGroup(gi)"
+                              v-if="newReview.groups.length > 1"
+                              class="w-7 h-7 rounded-md hover:bg-red-500/10 flex items-center justify-center text-text-tertiary hover:text-red-400 transition-colors shrink-0">
+                        <i class="ph ph-trash text-sm"></i>
+                      </button>
+                    </div>
+
+                    <!-- File list for this group -->
+                    <div class="flex flex-col gap-2 mb-4" v-if="group.images.length > 0">
+                      <div v-for="(img, i) in group.images" :key="i"
+                           class="flex items-center gap-3 px-3 py-2.5 bg-black/20 border border-border-default rounded-lg">
+                        <div class="w-8 h-8 rounded bg-black/30 flex items-center justify-center shrink-0">
+                          <i class="ph ph-image text-text-tertiary text-sm"></i>
+                        </div>
+                        <span class="flex-1 text-[12px] text-text-primary truncate">{{ img.name }}</span>
+                        <span class="text-[11px] text-text-tertiary">{{ img.size }}</span>
+                        <button @click="group.images.splice(i, 1); updateCanSubmit()" class="w-5 h-5 rounded hover:bg-red-500/10 flex items-center justify-center text-text-tertiary hover:text-red-500 transition-colors">
+                          <i class="ph ph-x text-xs"></i>
+                        </button>
+                      </div>
+                    </div>
+
+                    <!-- Upload zone for this group -->
+                    <div class="flex gap-4">
+                      <!-- Local Upload -->
+                      <div @click="triggerUpload(gi)"
+                           @dragover.prevent @drop.prevent="handleDrop($event, gi)"
+                           class="flex-1 border-2 border-dashed border-border-default rounded-xl p-6 flex flex-col items-center gap-2 cursor-pointer hover:border-primary/50 hover:bg-primary/[0.02] transition-all">
+                        <div class="w-10 h-10 rounded-full bg-white/[0.04] flex items-center justify-center">
+                          <i class="ph ph-upload-simple text-xl text-text-tertiary"></i>
+                        </div>
+                        <div class="text-[13px] font-medium text-text-primary">点击或拖拽上传本地图片</div>
+                        <div class="text-[11px] text-text-tertiary">JPG / PNG / WebP，&le;20MB</div>
+                        <input type="file" :ref="el => uploadRefs[gi] = el" accept="image/jpeg,image/png,image/webp" multiple class="hidden" @change="handleFilesSelect($event, gi)">
+                      </div>
+                      
+                      <!-- Select from Asset Library -->
+                      <div @click="openAssetLibrary(gi)"
+                           class="flex-1 border-2 border-dashed border-border-default rounded-xl p-6 flex flex-col items-center gap-2 cursor-pointer hover:border-indigo-500/50 hover:bg-indigo-500/[0.02] transition-all">
+                        <div class="w-10 h-10 rounded-full bg-white/[0.04] flex items-center justify-center">
+                          <i class="ph ph-folder-open text-xl text-text-tertiary"></i>
+                        </div>
+                        <div class="text-[13px] font-medium text-text-primary">从素材库选择</div>
+                        <div class="text-[11px] text-text-tertiary">直接选取平台已有的素材</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Add group -->
+                <button @click="addGroup"
+                        class="mt-4 w-full h-[40px] rounded-xl border-2 border-dashed border-border-default flex items-center justify-center gap-2 text-text-tertiary hover:text-text-secondary hover:border-border-default/60 transition-colors text-[13px]">
+                  <i class="ph ph-plus"></i>添加分组
+                </button>
+
+                <div class="flex justify-between mt-8">
+                  <button @click="newStep = 1"
+                          class="h-[36px] px-4 rounded-lg text-[13px] font-medium bg-white/[0.06] border border-border-default text-text-primary hover:bg-white/[0.1] transition-all">
+                    上一步
+                  </button>
+                  <button @click="submitReview"
+                          :disabled="!canSubmit"
+                          class="h-[36px] px-6 rounded-lg bg-primary hover:bg-primary-hover active:bg-primary-active text-bg-base text-[13px] font-semibold transition-all shadow-[0_0_12px_rgba(245,158,11,0.2)] hover:shadow-[0_0_16px_rgba(245,158,11,0.4)] disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none">
+                    提交 AI 审核
+                  </button>
+                </div>
+              </template>
+
+            </div>
+          </div>
+        </template>
+
+        <!-- ========================================== -->
+        <!-- VIEW 2: Reviewing (审核中) -->
+        <!-- ========================================== -->
+        <template v-else-if="viewMode === 'reviewing'">
+          <div class="h-[56px] border-b border-border-default flex items-center px-6 shrink-0 bg-white/[0.02]">
+            <span class="text-sm font-semibold text-text-primary">{{ reviewingRecord?.name }}</span>
+            <span class="ml-3 text-[11px] text-text-tertiary">{{ reviewingRecord?.types }} / {{ reviewingRecord?.images.length }} 张</span>
+          </div>
+          <div class="flex-1 flex flex-col items-center justify-center gap-4">
+            <div class="w-10 h-10 rounded-full border-2 border-primary border-t-transparent animate-spin"></div>
+            <div class="text-sm text-text-secondary">AI 审核中...</div>
+            <div class="text-xs text-text-tertiary text-center max-w-[300px]">正在分析每张图片的平台规则、视觉质量、品牌规范、文案风险</div>
+          </div>
+        </template>
+
+        <!-- ========================================== -->
+        <!-- VIEW 3: Record Detail (审核记录详情) -->
+        <!-- ========================================== -->
+        <template v-else-if="viewMode === 'detail' && selectedRecord">
+          <!-- Topbar -->
+          <div class="h-[56px] border-b border-border-default flex items-center px-6 justify-between shrink-0 bg-white/[0.02]">
+            <div class="flex items-center gap-3">
+              <span class="text-sm font-semibold text-text-primary">{{ selectedRecord.name }}</span>
+              <span class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-text-secondary border border-white/5" v-if="selectedRecord.sku">{{ selectedRecord.sku }}</span>
+              <span class="text-[12px] text-text-tertiary">{{ selectedRecord.type }} / {{ selectedRecord.images.length }} 张</span>
+              <span class="text-[11px] px-1.5 py-0.5 rounded" :class="statusBadgeClass(selectedRecord.status)">{{ statusLabel(selectedRecord.status) }}</span>
+            </div>
+            <span class="text-[12px] text-text-tertiary">{{ selectedRecord.createdAt }}</span>
+          </div>
+
+          <!-- Content: Overview grid OR single image detail -->
+          <div class="flex-1 overflow-y-auto">
+            <!-- Overview Grid -->
+            <template v-if="!viewingImage">
+              <div class="p-6">
+                <div class="text-[13px] font-medium text-text-primary mb-4">图片概览（点击查看详情）</div>
+                <div class="grid grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                  <div v-for="(img, i) in selectedRecord.images" :key="i"
+                       @click="viewingImage = img"
+                       class="bg-black/20 border border-border-default rounded-xl p-3 cursor-pointer hover:border-primary/40 hover:-translate-y-0.5 transition-all duration-200">
+                    <div class="w-full aspect-[1.5] bg-black/30 rounded-lg mb-3 flex items-center justify-center">
+                      <i class="ph ph-image text-text-tertiary text-xl"></i>
+                    </div>
+                    <div class="flex items-center gap-1.5 mb-1">
+                      <span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-500" v-if="img.groupType">{{ img.groupType }}</span>
+                    </div>
+                    <div class="text-[12px] font-medium text-text-primary truncate">{{ img.name || '图片 ' + (i + 1) }}</div>
+                    <div class="flex items-center justify-between mt-1.5">
+                      <span class="text-xs text-text-tertiary">{{ img.size }}</span>
+                      <span class="text-sm font-bold font-mono" :class="img.score >= 80 ? 'text-green-500' : 'text-red-500'">{{ img.score }}<span class="text-[11px] font-normal">/100</span></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </template>
+
+            <!-- Single Image Detail -->
+            <template v-else>
+              <div class="p-6 flex flex-col gap-4">
+                <!-- Back -->
+                <button @click="viewingImage = null" class="flex items-center gap-1.5 text-text-secondary hover:text-text-primary transition-colors text-[13px] w-fit">
+                  <i class="ph ph-arrow-left"></i>返回概览
+                </button>
+
+                <!-- Preview -->
+                <div class="bg-black/20 border border-border-default rounded-xl p-5 flex flex-col items-center gap-3">
+                  <div class="w-full max-w-[480px] aspect-[1.5] bg-black/30 rounded-lg flex items-center justify-center">
+                    <i class="ph ph-image text-text-tertiary text-2xl"></i>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <span class="text-[13px] text-text-secondary">{{ viewingImage.name }} / {{ viewingImage.size }}</span>
+                    <span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-500" v-if="viewingImage.groupType">{{ viewingImage.groupType }}</span>
+                  </div>
+                </div>
+
+                <!-- Score -->
+                <div class="bg-black/20 border border-border-default rounded-xl p-5">
+                  <div class="flex items-center gap-5 mb-4">
+                    <div class="w-[68px] h-[68px] rounded-full flex flex-col items-center justify-center shrink-0"
+                         :class="viewingImage.score >= 80 ? 'bg-green-500/10 border-[3px] border-green-500' : 'bg-red-500/10 border-[3px] border-red-500'">
+                      <span class="text-[26px] font-bold font-mono leading-none" :class="viewingImage.score >= 80 ? 'text-green-500' : 'text-red-500'">{{ viewingImage.score }}</span>
+                      <span class="text-[10px] text-text-tertiary">/100</span>
+                    </div>
+                    <div>
+                      <div class="text-base font-semibold" :class="viewingImage.score >= 80 ? 'text-green-500' : 'text-red-500'">
+                        {{ viewingImage.score >= 80 ? '审核通过' : '需修改' }}
+                      </div>
+                      <div class="text-xs text-text-tertiary mt-0.5">综合评分{{ viewingImage.score >= 80 ? '达到' : '未达到' }}通过阈值 (80)</div>
+                    </div>
+                  </div>
+                  <div class="flex flex-col gap-2.5">
+                    <div v-for="d in viewingImage.dimensions" :key="d.label" class="flex items-center gap-3">
+                      <span class="w-[70px] text-xs text-text-secondary text-right shrink-0">{{ d.label }}</span>
+                      <div class="flex-1 h-1.5 bg-white/8 rounded-full overflow-hidden">
+                        <div class="h-full rounded-full" :class="d.level === 'high' ? 'bg-green-500' : d.level === 'medium' ? 'bg-amber-500' : 'bg-red-500'" :style="{ width: d.score + '%' }"></div>
+                      </div>
+                      <span class="w-[36px] text-xs font-semibold font-mono shrink-0" :class="d.level === 'high' ? 'text-green-500' : d.level === 'medium' ? 'text-amber-500' : 'text-red-500'">{{ d.score }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Issues -->
+                <div class="bg-black/20 border border-border-default rounded-xl overflow-hidden">
+                  <div class="px-5 py-3 border-b border-border-light flex items-center justify-between">
+                    <span class="text-sm font-semibold text-text-primary">审核详情</span>
+                    <span class="text-xs text-text-tertiary">{{ viewingImage.issues.length }} 项问题 / 共 {{ viewingImage.issues.length + viewingImage.passedChecks.length }} 项检查</span>
+                  </div>
+                  <template v-if="viewingImage.issues.length > 0">
+                    <div v-for="(issue, i) in viewingImage.issues" :key="i"
+                         class="px-5 py-3 border-b border-border-light last:border-b-0 flex gap-3">
+                      <span class="shrink-0 w-8 h-5 rounded text-[10px] font-semibold flex items-center justify-center"
+                            :class="issue.severity === 'high' ? 'bg-red-500/15 text-red-500' : issue.severity === 'medium' ? 'bg-orange-500/15 text-orange-500' : 'bg-blue-500/15 text-blue-500'">
+                        {{ issue.severity === 'high' ? '高' : issue.severity === 'medium' ? '中' : '低' }}
+                      </span>
+                      <div class="flex-1 min-w-0">
+                        <div class="text-[13px] font-medium text-text-primary mb-1">{{ issue.title }}</div>
+                        <div class="text-xs text-text-tertiary flex flex-wrap gap-x-3">
+                          <span>{{ issue.detail }}</span><span>|</span><span>{{ issue.rule }}</span>
+                          <span class="px-1.5 py-0.5 rounded bg-white/[0.06] text-text-secondary text-[10px]">{{ issue.dimension }}</span>
+                        </div>
+                        <div class="mt-1.5 text-xs text-text-secondary bg-primary/5 px-2.5 py-1.5 rounded border-l-2 border-primary">
+                          {{ issue.suggestion }}
+                        </div>
+                      </div>
+                    </div>
+                  </template>
+                  <div v-else class="px-5 py-4 flex items-center gap-2 text-xs text-green-500">
+                    <i class="ph-bold ph-check-circle text-sm"></i>全部检查项通过
+                  </div>
+                  <!-- Passed items -->
+                  <template v-if="viewingImage.passedChecks.length > 0">
+                    <div @click="showPassedChecks = !showPassedChecks"
+                         class="px-5 py-2.5 border-t border-border-light flex items-center gap-2 text-xs text-text-tertiary cursor-pointer hover:text-text-secondary transition-colors">
+                      <i :class="showPassedChecks ? 'ph ph-caret-down' : 'ph ph-caret-right'"></i>
+                      已通过项 ({{ viewingImage.passedChecks.length }} 项)
+                    </div>
+                    <div v-if="showPassedChecks" class="border-t border-border-light">
+                      <div v-for="(c, i) in viewingImage.passedChecks" :key="i"
+                           class="px-5 py-2 pl-8 flex items-center gap-2 text-xs text-text-secondary">
+                        <i class="ph-bold ph-check-circle text-green-500 text-xs"></i>{{ c }}
+                      </div>
+                    </div>
+                  </template>
+                </div>
+              </div>
+            </template>
+          </div>
+        </template>
+
+        <!-- ========================================== -->
+        <!-- VIEW 4: Empty State -->
+        <!-- ========================================== -->
+        <template v-else>
+          <div class="flex-1 flex flex-col items-center justify-center text-text-tertiary gap-3">
+            <i class="ph-duotone ph-clipboard-text text-[44px] opacity-20"></i>
+            <div class="text-base font-medium text-text-secondary">素材审核</div>
+            <div class="text-xs">点击左侧「新建审核项目」开始，或选择一条历史记录查看详情</div>
+          </div>
+        </template>
+
+      </div><!-- /right -->
+    </div>
+  </main>
+
+  <!-- Mock Asset Library Modal -->
+  <div v-if="assetModalOpen" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+    <div class="bg-bg-elevated border border-border-default rounded-2xl w-[600px] max-h-[80vh] flex flex-col shadow-2xl">
+      <div class="h-[56px] border-b border-border-default flex items-center justify-between px-6 shrink-0">
+        <span class="text-sm font-semibold text-text-primary">选择素材</span>
+        <button @click="assetModalOpen = false" class="text-text-tertiary hover:text-text-primary transition-colors">
+          <i class="ph ph-x"></i>
+        </button>
+      </div>
+      <div class="flex-1 overflow-y-auto p-6 grid grid-cols-3 gap-4">
+        <!-- Mock Assets -->
+        <div v-for="asset in mockAssets" :key="asset.id"
+             @click="toggleAssetSelect(asset)"
+             class="relative border rounded-lg p-2 cursor-pointer transition-all"
+             :class="selectedAssets.includes(asset) ? 'border-primary bg-primary/10' : 'border-border-default hover:border-border-default/80 bg-black/20'">
+          <div class="w-full aspect-square bg-black/30 rounded mb-2 flex items-center justify-center relative">
+            <i class="ph ph-image text-text-tertiary text-2xl"></i>
+            <div v-if="selectedAssets.includes(asset)" class="absolute top-1 right-1 w-5 h-5 rounded-full bg-primary flex items-center justify-center text-bg-base">
+              <i class="ph-bold ph-check text-[10px]"></i>
+            </div>
+          </div>
+          <div class="text-[12px] text-text-primary truncate">{{ asset.name }}</div>
+          <div class="text-[10px] text-text-tertiary mt-0.5">{{ asset.size }}</div>
+        </div>
+      </div>
+      <div class="h-[64px] border-t border-border-default flex items-center justify-between px-6 shrink-0">
+        <span class="text-[13px] text-text-secondary">已选择 {{ selectedAssets.length }} 个文件</span>
+        <div class="flex gap-3">
+          <button @click="assetModalOpen = false" class="px-4 h-[32px] rounded-lg border border-border-default text-[13px] text-text-secondary hover:text-text-primary transition-colors">取消</button>
+          <button @click="confirmAssetSelection" :disabled="selectedAssets.length === 0" class="px-5 h-[32px] rounded-lg bg-primary hover:bg-primary-hover active:bg-primary-active text-bg-base text-[13px] font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed">确认添加</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const { createApp, ref, computed } = Vue;
+
+createApp({
+  setup() {
+    // Tabs
+    const tabs = ref([{ id: 'review', title: '素材审核', icon: 'ph-duotone ph-clipboard-text' }]);
+    const activeTabId = ref('review');
+
+    // View mode: 'empty' | 'new' | 'reviewing' | 'detail'
+    const viewMode = ref('empty');
+    const searchQuery = ref('');
+    const selectedId = ref(null);
+    const viewingImage = ref(null);
+    const showPassedChecks = ref(false);
+
+    // Asset Library Modal
+    const assetModalOpen = ref(false);
+    const targetGroupIndex = ref(null);
+    const selectedAssets = ref([]);
+    const mockAssets = ref([
+      { id: 101, name: 'Library-Img-1.jpg', size: '1.2 MB' },
+      { id: 102, name: 'Library-Img-2.png', size: '840 KB' },
+      { id: 103, name: 'Library-Img-3.webp', size: '450 KB' },
+      { id: 104, name: 'Library-Img-4.jpg', size: '2.1 MB' },
+      { id: 105, name: 'Library-Img-5.jpg', size: '920 KB' }
+    ]);
+
+    // New review form
+    const newStep = ref(1);
+    const newReview = ref({ sku: '', productName: '', name: '', groups: [{ type: '', images: [] }] });
+    const uploadRefs = {};             // plain object for DOM element refs
+    const reviewingRecord = ref(null);
+
+    // Mock records
+    const records = ref([
+      {
+        id: 1, name: '落地灯 Q2 广告图', sku: 'LMP-001', productName: '智能落地灯', type: 'SDC', createdAt: '2026-06-23 14:30', status: 'passed',
+        images: [
+          {
+            name: 'SDC-1200x628-EN.jpg', size: '156 KB', score: 85,
+            dimensions: [
+              { label: '平台规则', score: 90, level: 'high' },
+              { label: '视觉质量', score: 80, level: 'medium' },
+              { label: '品牌规范', score: 85, level: 'high' },
+              { label: '文案风险', score: 85, level: 'high' }
+            ],
+            issues: [
+              { severity: 'medium', title: '文字占比接近上限', detail: '当前值 19.5%', rule: '规则上限 20%', dimension: '平台规则', suggestion: '当前占比在合规范围内但接近临界值，建议适当精简文案或缩小字号。' },
+              { severity: 'low', title: '背景亮度可优化', detail: '当前亮度值 92%', rule: '建议范围 95%-100%', dimension: '平台规则', suggestion: '适当提高背景亮度，确保与平台要求的最佳实践一致。' }
+            ],
+            passedChecks: ['分辨率 1200x628 达标', '文件大小 156KB 合规', 'Logo 位置符合规范', 'CTA 文案正确']
+          },
+          {
+            name: 'SDC-1200x628-DE.jpg', size: '148 KB', score: 92,
+            dimensions: [
+              { label: '平台规则', score: 95, level: 'high' },
+              { label: '视觉质量', score: 90, level: 'high' },
+              { label: '品牌规范', score: 92, level: 'high' },
+              { label: '文案风险', score: 90, level: 'high' }
+            ],
+            issues: [],
+            passedChecks: ['分辨率达标', '文件大小合规', 'Logo 规范', '无文字占比问题', '安全区通过']
+          },
+          {
+            name: 'SDC-300x600-EN.jpg', size: '98 KB', score: 78,
+            dimensions: [
+              { label: '平台规则', score: 82, level: 'high' },
+              { label: '视觉质量', score: 75, level: 'medium' },
+              { label: '品牌规范', score: 78, level: 'medium' },
+              { label: '文案风险', score: 76, level: 'medium' }
+            ],
+            issues: [
+              { severity: 'medium', title: '信息密度偏高', detail: '窄幅尺寸内元素较多', rule: '300x600 建议精简信息', dimension: '视觉质量', suggestion: '将次要文案移至广告文案字段，图片仅保留产品+CTA+Logo。' },
+              { severity: 'low', title: 'Logo 尺寸偏小', detail: 'Logo 高度 18px', rule: '建议 >= 24px', dimension: '品牌规范', suggestion: '适当增大 Logo 尺寸以确保品牌识别度。' }
+            ],
+            passedChecks: ['分辨率达标', '文件大小合规', '无禁止内容']
+          }
+        ]
+      },
+      {
+        id: 2, name: '台灯新品主图', sku: 'LMP-002', productName: '护眼台灯', type: '主图', createdAt: '2026-06-22 10:15', status: 'rejected',
+        images: [
+          {
+            name: '主图-2000x2000.jpg', size: '320 KB', score: 62,
+            dimensions: [
+              { label: '平台规则', score: 55, level: 'low' },
+              { label: '视觉质量', score: 70, level: 'medium' },
+              { label: '品牌规范', score: 65, level: 'medium' },
+              { label: '文案风险', score: 60, level: 'low' }
+            ],
+            issues: [
+              { severity: 'high', title: '背景非纯白', detail: '检测到背景色 #f5f5f5', rule: 'Amazon 要求纯白 #ffffff', dimension: '平台规则', suggestion: '将背景替换为纯白色，确保 RGB 值严格为 (255,255,255)。' },
+              { severity: 'high', title: '产品占比不足', detail: '当前产品占比约 72%', rule: '要求产品占画面 85% 以上', dimension: '视觉质量', suggestion: '裁剪画面或拉近拍摄距离，使产品占画面面积 85% 以上。' },
+              { severity: 'medium', title: '图片上有文字', detail: '检测到产品旁有说明文字', rule: '主图禁止任何文字/水印/Logo', dimension: '平台规则', suggestion: '移除产品旁的文字说明，主图需完全干净的产品展示。' }
+            ],
+            passedChecks: ['分辨率 2000x2000 达标', '文件格式 PNG 合规']
+          }
+        ]
+      },
+      {
+        id: 3, name: '品牌推广图', sku: 'BRD-001', productName: '品牌通用', type: '品牌Paid', createdAt: '2026-06-21 16:45', status: 'passed',
+        images: [
+          {
+            name: 'Paid-1080x1920.jpg', size: '210 KB', score: 92,
+            dimensions: [
+              { label: '平台规则', score: 95, level: 'high' },
+              { label: '视觉质量', score: 90, level: 'high' },
+              { label: '品牌规范', score: 92, level: 'high' },
+              { label: '文案风险', score: 90, level: 'high' }
+            ],
+            issues: [],
+            passedChecks: ['分辨率达标', '品牌色正确', '安全区检查通过', 'Logo 规范']
+          },
+          {
+            name: 'Paid-1080x1080.jpg', size: '195 KB', score: 88,
+            dimensions: [
+              { label: '平台规则', score: 90, level: 'high' },
+              { label: '视觉质量', score: 85, level: 'high' },
+              { label: '品牌规范', score: 88, level: 'high' },
+              { label: '文案风险', score: 88, level: 'high' }
+            ],
+            issues: [
+              { severity: 'low', title: 'CTA 按钮对比度略低', detail: '对比度 3.8:1', rule: '建议 >= 4.5:1', dimension: '视觉质量', suggestion: '适当加深按钮背景色或加粗文字以提升可读性。' }
+            ],
+            passedChecks: ['分辨率达标', '文件大小合规', '品牌色正确', '安全区通过']
+          }
+        ]
+      }
+    ]);
+
+    // Computed
+    const filteredRecords = computed(() => {
+      if (!searchQuery.value) return records.value;
+      const q = searchQuery.value.toLowerCase();
+      return records.value.filter(r => 
+        r.name.toLowerCase().includes(q) || 
+        r.type.toLowerCase().includes(q) ||
+        (r.sku && r.sku.toLowerCase().includes(q)) ||
+        (r.productName && r.productName.toLowerCase().includes(q))
+      );
+    });
+
+    const selectedRecord = computed(() => records.value.find(r => r.id === selectedId.value));
+
+    // Helpers
+    function statusLabel(s) {
+      return { passed: '已通过', rejected: '未通过' }[s] || s;
+    }
+    function statusBadgeClass(s) {
+      return s === 'passed' ? 'bg-green-500/15 text-green-500' : 'bg-red-500/15 text-red-500';
+    }
+
+    // Actions
+    function startNewReview() {
+      viewMode.value = 'new';
+      selectedId.value = null;
+      newStep.value = 1;
+      newReview.value = { sku: '', productName: '', name: '', groups: [{ type: '', images: [] }] };
+      viewingImage.value = null;
+      updateCanSubmit();
+    }
+    function cancelNewReview() {
+      viewMode.value = selectedId.value ? 'detail' : 'empty';
+    }
+    function openRecord(id) {
+      selectedId.value = id;
+      viewMode.value = 'detail';
+      viewingImage.value = null;
+      showPassedChecks.value = false;
+    }
+
+    // Can submit — reactive flag, manually updated after each group mutation
+    const canSubmit = ref(false);
+    function updateCanSubmit() {
+      canSubmit.value = newReview.value.groups.some(g => g.type !== '' && g.images.length > 0);
+    }
+
+    // Group management
+    function addGroup() {
+      newReview.value.groups.push({ type: '', images: [] });
+      updateCanSubmit();
+    }
+    function removeGroup(gi) {
+      if (newReview.value.groups.length > 1) {
+        newReview.value.groups.splice(gi, 1);
+        updateCanSubmit();
+      }
+    }
+
+    // File handling (per group)
+    function triggerUpload(gi) {
+      const el = uploadRefs[gi];
+      if (el) el.click();
+    }
+    function handleFilesSelect(e, gi) {
+      const files = Array.from(e.target.files);
+      if (files.length === 0) return;
+      files.forEach(f => {
+        newReview.value.groups[gi].images.push({
+          name: f.name,
+          size: formatSize(f.size),
+          raw: f
+        });
+      });
+      updateCanSubmit();
+      // Reset so re-selecting same file works
+      e.target.value = '';
+    }
+    function handleDrop(e, gi) {
+      const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+      if (files.length === 0) return;
+      files.forEach(f => {
+        newReview.value.groups[gi].images.push({
+          name: f.name,
+          size: formatSize(f.size),
+          raw: f
+        });
+      });
+      updateCanSubmit();
+    }
+    function formatSize(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+      return (bytes / 1048576).toFixed(1) + ' MB';
+    }
+
+        // Submit
+    function openAssetLibrary(gi) {
+      targetGroupIndex.value = gi;
+      selectedAssets.value = [];
+      assetModalOpen.value = true;
+    }
+    function toggleAssetSelect(asset) {
+      const idx = selectedAssets.value.indexOf(asset);
+      if (idx > -1) selectedAssets.value.splice(idx, 1);
+      else selectedAssets.value.push(asset);
+    }
+    function confirmAssetSelection() {
+      if (targetGroupIndex.value !== null && selectedAssets.value.length > 0) {
+        selectedAssets.value.forEach(asset => {
+          newReview.value.groups[targetGroupIndex.value].images.push({
+            name: asset.name,
+            size: asset.size,
+            raw: null // simulated library asset
+          });
+        });
+        updateCanSubmit();
+      }
+      assetModalOpen.value = false;
+    }
+
+    // Submit
+    function submitReview() {
+      // Flatten all group images, tagging each with its group type
+      const allImages = [];
+      const typeSet = new Set();
+      newReview.value.groups.forEach(g => {
+        if (g.type && g.images.length > 0) {
+          typeSet.add(g.type);
+          g.images.forEach(img => {
+            allImages.push({ ...img, groupType: g.type });
+          });
+        }
+      });
+      const typesDisplay = [...typeSet].join('、');
+      
+      const finalProjectName = newReview.value.name || `${newReview.value.productName} 审核`;
+
+      reviewingRecord.value = {
+        name: finalProjectName,
+        types: typesDisplay,
+        images: allImages
+      };
+      viewMode.value = 'reviewing';
+
+      // Simulate AI review
+      setTimeout(() => {
+        const reviewedImages = allImages.map(img => ({
+          name: img.name,
+          size: img.size,
+          groupType: img.groupType,
+          score: Math.random() > 0.3 ? 80 + Math.floor(Math.random() * 15) : 55 + Math.floor(Math.random() * 24),
+          dimensions: [
+            { label: '平台规则', score: 75 + Math.floor(Math.random() * 20), level: 'high' },
+            { label: '视觉质量', score: 70 + Math.floor(Math.random() * 25), level: 'medium' },
+            { label: '品牌规范', score: 70 + Math.floor(Math.random() * 25), level: 'medium' },
+            { label: '文案风险', score: 75 + Math.floor(Math.random() * 20), level: 'high' }
+          ],
+          issues: [],
+          passedChecks: ['分辨率达标', '文件大小合规', '无禁止内容']
+        }));
+
+        // Assign some issues to first image if low score
+        if (reviewedImages[0] && reviewedImages[0].score < 80) {
+          reviewedImages[0].issues = [
+            { severity: 'medium', title: '文字占比接近上限', detail: '当前值 19.5%', rule: '规则上限 20%', dimension: '平台规则', suggestion: '建议适当精简文案或缩小字号。' },
+            { severity: 'low', title: '背景亮度可优化', detail: '当前亮度值 92%', rule: '建议范围 95%-100%', dimension: '平台规则', suggestion: '适当提高背景亮度。' }
+          ];
+          reviewedImages[0].dimensions.forEach(d => {
+            if (d.label === '平台规则') d.score = Math.max(60, d.score - 10);
+            if (d.label === '视觉质量') d.score = Math.max(60, d.score - 8);
+            d.level = d.score >= 85 ? 'high' : d.score >= 70 ? 'medium' : 'low';
+          });
+        }
+
+        // Finalize dimensions levels
+        reviewedImages.forEach(img => {
+          img.dimensions.forEach(d => {
+            d.level = d.score >= 85 ? 'high' : d.score >= 70 ? 'medium' : 'low';
+          });
+        });
+
+        const overallStatus = reviewedImages.every(img => img.score >= 80) ? 'passed' : 'rejected';
+
+        const newRecord = {
+          id: Date.now(),
+          name: finalProjectName,
+          sku: newReview.value.sku,
+          productName: newReview.value.productName,
+          type: typesDisplay,
+          createdAt: new Date().toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }),
+          status: overallStatus,
+          images: reviewedImages
+        };
+
+        records.value.unshift(newRecord);
+        selectedId.value = newRecord.id;
+        viewMode.value = 'detail';
+        reviewingRecord.value = null;
+        viewingImage.value = null;
+        newReview.value = { sku: '', productName: '', name: '', groups: [{ type: '', images: [] }] };
+      }, 2500);
+    }
+
+    function closeTab(id) {
+      tabs.value = tabs.value.filter(t => t.id !== id);
+      if (activeTabId.value === id) activeTabId.value = tabs.value[0]?.id || 'review';
+    }
+
+    return {
+      tabs, activeTabId,
+      viewMode, searchQuery, selectedId,
+      viewingImage, showPassedChecks,
+      newStep, newReview, uploadRefs, reviewingRecord,
+      records, filteredRecords, selectedRecord,
+      canSubmit, updateCanSubmit,
+      statusLabel, statusBadgeClass,
+      startNewReview, cancelNewReview, openRecord,
+      addGroup, removeGroup,
+      triggerUpload, handleFilesSelect, handleDrop, submitReview,
+      assetModalOpen, mockAssets, selectedAssets, openAssetLibrary, toggleAssetSelect, confirmAssetSelection,
+      closeTab
+    };
+  }
+}).mount('#app');
+</script>
+</body>
+</html>
