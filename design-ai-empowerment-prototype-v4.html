@@ -508,12 +508,31 @@ select.text-input { appearance: none; cursor: pointer; }
                 </div>
               </div>
 
+              <!-- 【新增】产品一致性 / 可控生成（回应调研：产品变形、透视不一致痛点） -->
+              <div class="config-group">
+                <div class="config-group-title">产品一致性 · 可控生成</div>
+                <div style="display:flex;flex-wrap:wrap;gap:6px;">
+                  <span class="chip" v-for="(ctrl, ci) in controls" :key="ci"
+                        :class="{active: ctrl.enabled}" @click="ctrl.enabled=!ctrl.enabled"
+                        :title="ctrl.tip">
+                    {{ ctrl.label }}
+                  </span>
+                </div>
+                <div class="rule-banner" style="margin-top:8px;" v-if="subjectProtect">
+                  已开启<b style="color:var(--green);"> 主体保护 </b>：生成时锁定产品结构与比例，避免变形（适合复杂灯具）。
+                </div>
+              </div>
+
               <!-- 商品名称已移至项目层级 -->
 
               <div class="config-group" v-if="needsSellingPoints">
-                <div class="config-group-title">卖点信息</div>
-                <textarea class="text-input" v-model="sellingPoints"
-                  placeholder="每行一个卖点&#10;如：&#10;智能调光&#10;防水等级 IP65&#10;3000K-6500K 色温"></textarea>
+                <div class="config-group-title">主标题</div>
+                <input class="text-input" v-model="mainTitle" placeholder="如：智能调光落地灯">
+              </div>
+
+              <div class="config-group" v-if="needsSellingPoints">
+                <div class="config-group-title">副标题</div>
+                <input class="text-input" v-model="subTitle" placeholder="如：防水 IP65 · 3000K-6500K 色温">
               </div>
 
               <div class="config-group">
@@ -521,7 +540,7 @@ select.text-input { appearance: none; cursor: pointer; }
                 <div style="display:flex;flex-wrap:wrap;gap:6px;">
                   <span class="chip" v-for="(tmpl, ti) in templates" :key="ti"
                         :class="{active: selectedTemplate===ti}" @click="selectedTemplate=ti">
-                    {{ tmpl.name }} <span style="font-size:10px;opacity:0.6;">({{ tmpl.cta }})</span>
+                    {{ tmpl.name }}
                   </span>
                 </div>
               </div>
@@ -618,6 +637,9 @@ select.text-input { appearance: none; cursor: pointer; }
                       <span class="badge badge-orange" v-else-if="r.edited">已编辑</span>
                       <span class="badge badge-amber" v-else-if="r.synced">待检查</span>
                       <span class="badge" style="background:rgba(255,255,255,0.1);color:var(--text-dim);" v-else>未保存</span>
+                      <!-- 【新增】生成即打分 + 一键送审 -->
+                      <span class="badge" :style="{background: r.qaScore>=80?'rgba(16,185,129,0.2)':'rgba(249,115,22,0.2)', color: r.qaScore>=80?'var(--green)':'var(--orange)'}" :title="'AI 质量分'">质量 {{ r.qaScore }}</span>
+                      <span class="badge" style="background:rgba(245,158,11,0.15);color:var(--amber);cursor:pointer;" @click.stop="sendToReview(r)" title="一键送审核工作台">送审</span>
                     </div>
                   </div>
                 </template>
@@ -892,12 +914,15 @@ createApp({
     }
     const taskPackage = ref('');
     const activeSizes = ref([]);
-    const sellingPoints = ref('');
+    const mainTitle = ref('');
+    const subTitle = ref('');
     const selectedTemplate = ref(0);
     const templates = ref([
-      { name: '默认版式', cta: 'Shop Now' },
-      { name: '促销版式', cta: 'Shop Now' },
-      { name: '简约版式', cta: 'Learn More' }
+      { name: '居左', align: 'left' },
+      { name: '居中', align: 'center' },
+      { name: '居右', align: 'right' },
+      { name: '居上', align: 'top' },
+      { name: '居下', align: 'bottom' }
     ]);
     const languages = reactive([
       { code: 'EN', enabled: true },
@@ -908,7 +933,15 @@ createApp({
     ]);
     const extraNotes = ref('');
 
-    // Task package definitions
+    // 【新增】可控生成 / 主体保护 控制项
+    const controls = reactive([
+      { key:'subject', label:'主体保护', enabled:true, tip:'锁定产品结构与比例，避免变形' },
+      { key:'canny', label:'结构控制(Canny)', enabled:false, tip:'按参考图边缘约束结构' },
+      { key:'depth', label:'透视控制(Depth)', enabled:false, tip:'保持透视与空间关系' },
+      { key:'pose', label:'角度对齐', enabled:false, tip:'统一产品角度' },
+    ]);
+    const subjectProtect = Vue.computed(()=> controls.find(c=>c.key==='subject')?.enabled );
+
     const taskSizes = {
       'self-ad-kv': ['1200×1200','1200×628','960×1200','1080×1920'],
       'self-ad-carousel': ['1200×1200'],
@@ -963,17 +996,41 @@ createApp({
         canvasHeight.value = 400;
       }
 
-      const tmpl = templates.value[selectedTemplate.value];
+      const tmplIdx = detailResult.value?.template
+        ? templates.value.findIndex(t => t.name === detailResult.value.template)
+        : selectedTemplate.value;
+      const tmpl = templates.value[tmplIdx >= 0 ? tmplIdx : selectedTemplate.value];
       const currentProj = projects[currentProject.value];
-      const pName = currentProj.productName || '商品标题';
+      const titleText = mainTitle.value || currentProj.productName || '主标题';
+      const subtitleText = subTitle.value || '副标题';
+      const cw = canvasWidth.value;
+      const ch = canvasHeight.value;
+
+      let titleX = 20, titleY = 20, subY = 70, textAlign = 'left';
+      let logoX = cw - 70, logoY = 20, ctaX = 20, ctaY = ch - 50;
+
+      if (tmpl.align === 'center') {
+        titleX = cw / 2; titleY = ch / 2 - 30; subY = ch / 2 + 10; textAlign = 'center';
+        logoX = cw / 2 - 25; ctaX = cw / 2;
+      } else if (tmpl.align === 'right') {
+        titleX = cw - 20; titleY = ch / 2 - 30; subY = ch / 2 + 10; textAlign = 'right';
+        logoX = cw - 70; ctaX = cw - 20;
+      } else if (tmpl.align === 'top') {
+        titleX = cw / 2; titleY = 60; subY = 100; textAlign = 'center';
+        logoX = cw / 2 - 25; ctaX = cw / 2;
+      } else if (tmpl.align === 'bottom') {
+        titleX = cw / 2; titleY = ch - 120; subY = ch - 80; textAlign = 'center';
+        logoX = cw - 70; ctaX = cw / 2; ctaY = ch - 40;
+      }
+
       const els = [
-        { text: pName, x: 20, y: 20, size: 24, color: 'rgba(255,255,255,0.9)', align: 'left', z: 3 },
+        { text: titleText, x: titleX, y: titleY, size: 24, color: 'rgba(255,255,255,0.9)', align: textAlign, z: 3 },
       ];
       if (taskType.value !== 'customrec') {
-        els.push({ text: sellingPoints.value || '智能调光\n防水IP65\n3000K色温', x: 20, y: 70, size: 14, color: 'rgba(255,255,255,0.6)', z: 2 });
+        els.push({ text: subtitleText, x: titleX, y: subY, size: 14, color: 'rgba(255,255,255,0.6)', align: textAlign, z: 2 });
+        els.push({ text: 'Shop Now', x: ctaX, y: ctaY, size: 14, color: '#fff', bg: 'rgba(245,158,11,0.8)', align: textAlign, z: 2 });
+        els.push({ text: 'LOGO', x: logoX, y: logoY, size: 16, color: '#f59e0b', bg: 'rgba(245,158,11,0.1)', z: 1 });
       }
-      els.push({ text: tmpl.cta || 'Shop Now', x: 20, y: canvasHeight.value - 50, size: 14, color: '#fff', bg: 'rgba(245,158,11,0.8)', z: 2 });
-      els.push({ text: 'LOGO', x: canvasWidth.value - 70, y: 20, size: 16, color: '#f59e0b', bg: 'rgba(245,158,11,0.1)', z: 1 });
       editElements.value = els;
       selectedElementIndex.value = -1;
     }
@@ -1102,6 +1159,7 @@ createApp({
               saved: false,
               edited: false,
               synced: false,
+              qaScore: 72 + Math.floor(Math.random() * 26),
               selected: false
             });
           }
@@ -1149,6 +1207,11 @@ createApp({
       } else {
         downloadAll();
       }
+    }
+    // 【新增】一键送审核工作台
+    function sendToReview(r) {
+      r.synced = true;
+      showToast(`已将「${r.filename}」送至审核工作台（按 ${r.type} 规则审核）`);
     }
 
     function saveAll() {
@@ -1212,12 +1275,13 @@ createApp({
       projectSearch, projects, filteredProjects, currentProject,
       sidebarWidth, configWidth, resizing, startResize,
       sourceImages, addSourceImage, removeSourceImage, taskPackage, taskRuleHint, activeSizes,
-      sellingPoints, selectedTemplate, templates, languages, extraNotes,
+      mainTitle, subTitle, selectedTemplate, templates, languages, extraNotes,
+      controls, subjectProtect,
       results, groupedResults, selectedCount, showDetail, showEdit, detailResult, detailIndex,
       needsSellingPoints, canGenerate, expectedCount,
       selectProject, createProject,
       onTaskPackageChange,
-      generate, handleGenerate, previewResult, enterEdit, saveCurrent, saveAll, saveSelected, handleSave, downloadCurrent, downloadAll, downloadSelected, handleDownload, clearResults,
+      generate, handleGenerate, previewResult, enterEdit, saveCurrent, saveAll, saveSelected, handleSave, downloadCurrent, downloadAll, downloadSelected, handleDownload, sendToReview, clearResults,
       exitDetail, cancelEdit,
       editElements, selectedElementIndex, canvasWidth, canvasHeight, startDrag, onCanvasDrag, onCanvasDrop, editText,
       saveAndExitEdit, syncSameSize, syncAllSize, isGroupAllSelected, toggleGroupSelection
