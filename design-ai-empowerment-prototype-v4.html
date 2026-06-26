@@ -508,20 +508,6 @@ select.text-input { appearance: none; cursor: pointer; }
                 </div>
               </div>
 
-              <!-- 【新增】产品一致性 / 可控生成（回应调研：产品变形、透视不一致痛点） -->
-              <div class="config-group">
-                <div class="config-group-title">产品一致性 · 可控生成</div>
-                <div style="display:flex;flex-wrap:wrap;gap:6px;">
-                  <span class="chip" v-for="(ctrl, ci) in controls" :key="ci"
-                        :class="{active: ctrl.enabled}" @click="ctrl.enabled=!ctrl.enabled"
-                        :title="ctrl.tip">
-                    {{ ctrl.label }}
-                  </span>
-                </div>
-                <div class="rule-banner" style="margin-top:8px;" v-if="subjectProtect">
-                  已开启<b style="color:var(--green);"> 主体保护 </b>：生成时锁定产品结构与比例，避免变形（适合复杂灯具）。
-                </div>
-              </div>
 
               <!-- 商品名称已移至项目层级 -->
 
@@ -933,14 +919,6 @@ createApp({
     ]);
     const extraNotes = ref('');
 
-    // 【新增】可控生成 / 主体保护 控制项
-    const controls = reactive([
-      { key:'subject', label:'主体保护', enabled:true, tip:'锁定产品结构与比例，避免变形' },
-      { key:'canny', label:'结构控制(Canny)', enabled:false, tip:'按参考图边缘约束结构' },
-      { key:'depth', label:'透视控制(Depth)', enabled:false, tip:'保持透视与空间关系' },
-      { key:'pose', label:'角度对齐', enabled:false, tip:'统一产品角度' },
-    ]);
-    const subjectProtect = Vue.computed(()=> controls.find(c=>c.key==='subject')?.enabled );
 
     const taskSizes = {
       'self-ad-kv': ['1200×1200','1200×628','960×1200','1080×1920'],
@@ -1276,7 +1254,6 @@ createApp({
       sidebarWidth, configWidth, resizing, startResize,
       sourceImages, addSourceImage, removeSourceImage, taskPackage, taskRuleHint, activeSizes,
       mainTitle, subTitle, selectedTemplate, templates, languages, extraNotes,
-      controls, subjectProtect,
       results, groupedResults, selectedCount, showDetail, showEdit, detailResult, detailIndex,
       needsSellingPoints, canGenerate, expectedCount,
       selectProject, createProject,
