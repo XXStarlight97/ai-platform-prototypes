@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>素材审核 - 智岩 AI 平台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+<script src="https://unpkg.com/@phosphor-icons/web"></script>
+<script>
+tailwind.config = {
+  darkMode: 'class',
+  theme: {
+    extend: {
+      fontFamily: {
+        sans: ['Inter','-apple-system','BlinkMacSystemFont','Segoe UI','PingFang SC','Microsoft YaHei','sans-serif'],
+        mono: ['JetBrains Mono','SF Mono','Consolas','monospace']
+      },
+      colors: {
+        primary: { DEFAULT:'#f59e0b', hover:'#fbbf24', active:'#d97706' },
+        bg: { base:'#0a0a0c', elevated:'#16161e', glass:'rgba(255,255,255,0.06)' },
+        border: { default:'rgba(255,255,255,0.10)', light:'rgba(255,255,255,0.05)' },
+        text: { primary:'rgba(255,255,255,0.92)', secondary:'rgba(255,255,255,0.64)', tertiary:'rgba(255,255,255,0.42)' }
+      }
+    }
+  }
+}
+</script>
+<style>
+::-webkit-scrollbar { width:6px; height:6px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.15); border-radius:3px; }
+::-webkit-scrollbar-thumb:hover { background:rgba(255,255,255,0.3); }
+[v-cloak] { display:none; }
+.risk-badge-red { background:rgba(239,68,68,0.18); color:#f87171; border:1px solid rgba(239,68,68,0.3); border-radius:4px; padding:2px 8px; font-size:12px; font-weight:500; }
+.risk-badge-amber { background:rgba(245,158,11,0.18); color:#fbbf24; border:1px solid rgba(245,158,11,0.3); border-radius:4px; padding:2px 8px; font-size:12px; font-weight:500; }
+.risk-badge-slate { background:rgba(148,163,184,0.15); color:#94a3b8; border:1px solid rgba(148,163,184,0.25); border-radius:4px; padding:2px 8px; font-size:12px; font-weight:500; }
+.risk-badge-green { background:rgba(34,197,94,0.15); color:#4ade80; border:1px solid rgba(34,197,94,0.25); border-radius:4px; padding:2px 8px; font-size:12px; font-weight:500; }
+.status-dot { display:inline-block; width:6px; height:6px; border-radius:50%; margin-right:5px; flex-shrink:0; }
+.status-dot-red { background:#ef4444; box-shadow:0 0 6px rgba(239,68,68,0.5); }
+.status-dot-amber { background:#f59e0b; box-shadow:0 0 6px rgba(245,158,11,0.5); }
+.status-dot-green { background:#22c55e; box-shadow:0 0 6px rgba(34,197,94,0.5); }
+.status-dot-blue { background:#3b82f6; box-shadow:0 0 6px rgba(59,130,246,0.5); }
+.status-dot-slate { background:#64748b; }
+.bbox-overlay { position:absolute; border:2px solid #ef4444; border-radius:3px; background:rgba(239,68,68,0.12); pointer-events:none; animation:bbox-pulse 2s ease-in-out infinite; }
+.bbox-overlay.amber { border-color:#f59e0b; background:rgba(245,158,11,0.12); }
+@keyframes bbox-pulse { 0%,100% { box-shadow:0 0 0 0 rgba(239,68,68,0.4); } 50% { box-shadow:0 0 0 6px rgba(239,68,68,0); } }
+.upload-dropzone { border:2px dashed rgba(255,255,255,0.15); border-radius:12px; transition:all 0.2s ease; cursor:pointer; }
+.upload-dropzone:hover { border-color:rgba(245,158,11,0.5); background:rgba(245,158,11,0.05); }
+</style>
+</head>
+<body class="bg-bg-base text-text-primary h-screen w-screen overflow-hidden selection:bg-primary/30">
+<div id="app" class="h-full w-full flex flex-col relative" v-cloak>
+
+  <!-- Ambient -->
+  <div class="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+    <div class="absolute -top-[10%] -left-[10%] w-[50vw] h-[50vw] bg-indigo-600/8 rounded-full blur-[120px] mix-blend-screen"></div>
+    <div class="absolute top-[30%] right-[-10%] w-[40vw] h-[40vw] bg-amber-600/8 rounded-full blur-[120px] mix-blend-screen"></div>
+    <div class="absolute -bottom-[20%] left-[20%] w-[60vw] h-[60vw] bg-purple-600/5 rounded-full blur-[150px] mix-blend-screen"></div>
+  </div>
+
+  <!-- AppHeader -->
+  <header class="h-[48px] shrink-0 border-b border-border-default flex items-center justify-between px-4 z-50 relative bg-bg-base/40 backdrop-blur-sm">
+    <div class="flex items-center gap-4 min-w-0">
+      <div class="flex items-center gap-2 pr-4 border-r border-border-default shrink-0">
+        <div class="w-7 h-7 rounded bg-primary flex items-center justify-center text-bg-base font-bold text-sm"><i class="ph-bold ph-cube"></i></div>
+        <span class="font-bold text-[15px] tracking-wide">智岩 AI</span>
+      </div>
+      <div class="flex items-center gap-1 overflow-x-auto">
+        <div v-for="tab in navTabs" :key="tab.id"
+             class="h-[30px] px-3 flex items-center gap-2 rounded-md text-[13px] transition-colors cursor-pointer max-w-[220px] border shrink-0"
+             :class="tab.active ? 'bg-primary/10 text-text-primary border-primary/25' : 'text-text-secondary border-transparent hover:bg-white/5 hover:text-text-primary'">
+          <i :class="tab.icon" class="text-sm"></i>
+          <span class="truncate">{{ tab.title }}</span>
+          <button v-if="tab.closable" class="w-4 h-4 rounded hover:bg-white/10 flex items-center justify-center opacity-60 hover:opacity-100 transition-opacity"><i class="ph ph-x text-[10px]"></i></button>
+        </div>
+      </div>
+    </div>
+    <div class="flex items-center gap-3 shrink-0">
+      <button class="w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center text-text-secondary hover:text-text-primary transition-colors"><i class="ph ph-moon text-lg"></i></button>
+      <div class="w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-xs font-semibold shadow-inner border border-white/20">张</div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="flex-1 overflow-hidden p-[10px_12px_12px] relative z-10 flex flex-col gap-3">
+
+    <!-- ====== PAGE: 任务首页 ====== -->
+    <template v-if="currentPage === 'taskList'">
+      <div class="shrink-0 bg-bg-glass backdrop-blur-[12px] border border-border-default rounded-[14px] shadow-lg shadow-black/50 ring-1 ring-white/5 px-5 py-3 flex items-center gap-3">
+        <div class="relative flex-1 max-w-[280px]">
+          <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary text-sm"></i>
+          <input type="text" v-model="taskSearch" placeholder="搜索任务名称 / SKU" class="w-full h-[32px] bg-black/20 border border-border-default rounded-lg pl-9 pr-3 text-[13px] outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all placeholder-text-tertiary">
+        </div>
+        <select v-model="taskStatusFilter" class="h-[32px] px-3 bg-black/20 border border-border-default rounded-lg text-[13px] text-text-secondary outline-none focus:border-primary/50 transition-all cursor-pointer">
+          <option value="">全部任务状态</option>
+          <option value="draft">待提交</option>
+          <option value="queued">排队中</option>
+          <option value="pending">待审核</option>
+          <option value="auditing">审核中</option>
+          <option value="needReview">待人工确认</option>
+          <option value="needFix">待整改</option>
+          <option value="reAuditing">复检中</option>
+          <option value="done">已完成</option>
+          <option value="failed">审核失败</option>
+          <option value="cancelled">已取消</option>
+        </select>
+        <select v-model="taskResultFilter" class="h-[32px] px-3 bg-black/20 border border-border-default rounded-lg text-[13px] text-text-secondary outline-none focus:border-primary/50 transition-all cursor-pointer">
+          <option value="">全部审核结果</option>
+          <option value="pass">未发现明显风险</option>
+          <option value="low">低风险提醒</option>
+          <option value="yellow">存在疑似风险</option>
+          <option value="red">存在高风险</option>
+        </select>
+        <div class="flex-1"></div>
+        <button @click="startCreateTask" class="h-[32px] px-4 rounded-lg bg-primary hover:bg-primary-hover active:bg-primary-active text-bg-base text-[13px] font-semibold transition-all flex items-center gap-2 shadow-[0_0_12px_rgba(245,158,11,0.2)] hover:shadow-[0_0_16px_rgba(245,158,11,0.4)]"><i class="ph-bold ph-plus"></i>新建素材审核任务</button>
+      </div>
+      <div class="flex-1 bg-bg-glass backdrop-blur-[12px] border border-border-default rounded-[14px] shadow-lg shadow-black/50 ring-1 ring-white/5 overflow-hidden flex flex-col">
+        <div class="flex-1 overflow-auto">
+          <table class="w-full text-[13px]">
+            <thead>
+              <tr class="border-b border-border-light bg-white/[0.03]">
+                <th class="text-left px-6 py-3 text-text-tertiary font-medium text-[12px]">任务名称</th>
+                <th class="text-left px-4 py-3 text-text-tertiary font-medium text-[12px]">素材数量</th>
+                <th class="text-left px-4 py-3 text-text-tertiary font-medium text-[12px]">任务状态</th>
+                <th class="text-left px-4 py-3 text-text-tertiary font-medium text-[12px]">审核结果</th>
+                <th class="text-left px-4 py-3 text-text-tertiary font-medium text-[12px]">操作人</th>
+                <th class="text-left px-4 py-3 text-text-tertiary font-medium text-[12px]">审核时间</th>
+                <th class="text-left px-6 py-3 text-text-tertiary font-medium text-[12px]">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="task in filteredTasks" :key="task.id" class="border-b border-border-light hover:bg-white/[0.03] transition-colors">
+                <td class="px-6 py-3.5">
+                  <div class="font-medium text-text-primary">{{ task.name }}</div>
+                  <div class="text-[12px] text-text-tertiary mt-0.5" v-if="task.sku">{{ task.sku }}</div>
+                </td>
+                <td class="px-4 py-3.5 text-text-secondary">{{ task.totalCount }} 张</td>
+                <td class="px-4 py-3.5"><div class="flex items-center gap-1.5 text-[12px]" :class="taskStatusTextClass(task.taskStatus)"><span class="status-dot" :class="taskStatusDotClass(task.taskStatus)"></span>{{ taskStatusLabel(task.taskStatus) }}</div></td>
+                <td class="px-4 py-3.5">
+                  <span v-if="!shouldShowAuditResult(task)" class="text-text-tertiary text-[12px]">--</span>
+                  <span v-else :class="auditResultBadgeClass(task.auditResult)">{{ auditResultLabel(task.auditResult) }}</span>
+                </td>
+                <td class="px-4 py-3.5 text-text-secondary">{{ task.creator }}</td>
+                <td class="px-4 py-3.5 text-text-secondary text-[12px]">{{ task.auditTime || '--' }}</td>
+                <td class="px-6 py-3.5">
+                  <button v-if="task.taskStatus === 'auditing' || task.taskStatus === 'reAuditing'" @click="openAuditingTask(task)" class="text-[12px] text-primary hover:text-primary-hover transition-colors font-medium">查看进度</button>
+                  <button v-else-if="task.taskStatus === 'draft'" @click="startCreateTask" class="text-[12px] text-primary hover:text-primary-hover transition-colors font-medium">继续编辑</button>
+                  <button v-else-if="task.taskStatus === 'queued' || task.taskStatus === 'pending'" class="text-[12px] text-text-tertiary cursor-not-allowed">等待审核</button>
+                  <button v-else-if="task.taskStatus === 'cancelled'" class="text-[12px] text-text-tertiary cursor-not-allowed">已取消</button>
+                  <button v-else @click="viewTaskResult(task)" class="text-[12px] text-primary hover:text-primary-hover transition-colors font-medium">查看结果</button>
+                </td>
+              </tr>
+              <tr v-if="filteredTasks.length === 0"><td colspan="7" class="px-6 py-16 text-center text-text-tertiary text-[13px]"><i class="ph ph-folder-open text-2xl block mb-2 opacity-40"></i>暂无审核任务记录，点击上方按钮新建</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="px-6 py-3 border-t border-border-light flex items-center justify-between shrink-0 text-[12px] text-text-tertiary"><span>共 {{ filteredTasks.length }} 条记录</span><div class="flex items-center gap-1"><button class="w-7 h-7 rounded-md hover:bg-white/5 flex items-center justify-center"><i class="ph ph-caret-left"></i></button><button class="w-7 h-7 rounded-md bg-primary/15 text-primary font-medium">1</button><button class="w-7 h-7 rounded-md hover:bg-white/5 flex items-center justify-center"><i class="ph ph-caret-right"></i></button></div></div>
+      </div>
+    </template>
+
+    <!-- ====== PAGE: 新建&上传 ====== -->
+    <div v-if="currentPage === 'createAndUpload'" class="flex-1 bg-bg-glass backdrop-blur-[12px] border border-border-default rounded-[14px] overflow-hidden flex flex-col shadow-lg shadow-black/50 ring-1 ring-white/5">
+      <div class="px-6 py-4 border-b border-border-light flex items-center gap-3 shrink-0">
+        <button @click="currentPage='taskList'" class="w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center text-text-secondary hover:text-text-primary transition-colors"><i class="ph ph-arrow-left"></i></button>
+        <h1 class="text-[16px] font-semibold text-text-primary">新建素材审核</h1>
+      </div>
+      <div class="flex-1 overflow-auto p-6 flex justify-center">
+        <div class="w-full max-w-[560px]">
+          <div class="mb-6">
+            <h3 class="text-[13px] font-semibold text-text-primary mb-3">任务信息</h3>
+            <div>
+              <label class="block text-[13px] font-medium text-text-primary mb-1.5">任务名称 <span class="text-red-400">*</span></label>
+              <input v-model="formData.taskName" type="text" placeholder="建议格式：SKU + 产品名称 + 素材用途，如 H123456 落地灯 广告图审核" class="w-full h-[36px] bg-black/20 border border-border-default rounded-lg px-3 text-[13px] outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all placeholder-text-tertiary">
+            </div>
+          </div>
+          <div>
+            <h3 class="text-[13px] font-semibold text-text-primary mb-3">上传素材</h3>
+            <div class="flex items-stretch gap-3 mb-4">
+              <div class="upload-dropzone flex-1 py-8 px-4 flex flex-col items-center justify-center text-center" @click="simulateFileUpload">
+                <i class="ph ph-cloud-arrow-up text-3xl text-text-tertiary mb-3"></i>
+                <p class="text-[14px] text-text-secondary mb-1">拖拽文件到此处，或点击上传</p>
+                <p class="text-[12px] text-text-tertiary">支持 JPG / PNG / WebP / MP4 / ZIP</p>
+              </div>
+              <button @click="openLibraryModal" class="shrink-0 w-[120px] rounded-lg border border-border-default text-[13px] text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all flex flex-col items-center justify-center gap-2">
+                <i class="ph ph-images text-xl"></i>
+                <span>从素材库选择</span>
+              </button>
+            </div>
+            <div v-if="uploadedFiles.length > 0">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-[13px] font-medium text-text-primary">已添加素材 ({{ uploadedFiles.length }})</span>
+                <button @click="uploadedFiles=[]" class="text-[12px] text-text-tertiary hover:text-red-400 transition-colors">清空全部</button>
+              </div>
+              <div class="flex flex-wrap gap-2">
+                <div v-for="(file,i) in uploadedFiles" :key="i" class="relative group w-16 h-16 rounded-lg overflow-hidden border border-border-default bg-bg-elevated">
+                  <img :src="file.thumb" class="w-full h-full object-cover" :title="file.name">
+                  <button @click="uploadedFiles.splice(i,1)" class="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-black/70 hover:bg-red-600/90 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all">
+                    <i class="ph ph-x text-[10px]"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="px-6 py-4 border-t border-border-light flex items-center justify-between shrink-0">
+        <button @click="currentPage='taskList'" class="h-[36px] px-4 rounded-lg border border-border-default text-[13px] text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all">取消</button>
+        <button @click="startAuditing" :disabled="!formData.taskName||uploadedFiles.length===0" class="h-[36px] px-5 rounded-lg text-[13px] font-semibold transition-all flex items-center gap-2" :class="(formData.taskName&&uploadedFiles.length>0)?'bg-primary hover:bg-primary-hover text-bg-base shadow-[0_0_12px_rgba(245,158,11,0.2)]':'bg-white/5 text-text-tertiary cursor-not-allowed'"><i class="ph-bold ph-shield-check"></i>开始预检</button>
+      </div>
+    </div>
+
+    <!-- ====== PAGE: 审核中 ====== -->
+    <div v-if="currentPage === 'auditing'" class="flex-1 bg-bg-glass backdrop-blur-[12px] border border-border-default rounded-[14px] overflow-hidden flex flex-col shadow-lg shadow-black/50 ring-1 ring-white/5">
+      <div class="px-6 py-4 border-b border-border-light flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-3">
+          <button @click="leaveAuditing" class="w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center text-text-secondary hover:text-text-primary transition-colors"><i class="ph ph-arrow-left"></i></button>
+          <div><h1 class="text-[16px] font-semibold text-text-primary">审核中</h1><p class="text-[12px] text-text-tertiary mt-0.5">{{ activeTaskName }} &middot; 审核进行中，可随时离开</p></div>
+        </div>
+      </div>
+      <div class="flex-1 overflow-auto p-6">
+        <div class="bg-black/20 border border-border-default rounded-xl p-5 mb-6">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-8 text-[13px]">
+              <div><span class="text-text-tertiary">素材数量</span><p class="text-text-primary font-medium mt-0.5">{{ uploadedFiles.length }} 张</p></div>
+              <div><span class="text-text-tertiary">已完成</span><p class="text-text-primary font-medium mt-0.5">{{ auditCompleted }} / {{ uploadedFiles.length }}</p></div>
+              <div v-if="auditCompleted >= uploadedFiles.length && uploadedFiles.length > 0"><span class="text-green-400 font-medium">全部审核完成</span></div>
+            </div>
+            <button v-if="auditCompleted >= uploadedFiles.length && uploadedFiles.length > 0" @click="goToResults" class="h-[36px] px-5 rounded-lg bg-primary hover:bg-primary-hover text-bg-base text-[13px] font-semibold transition-all flex items-center gap-2 shadow-[0_0_12px_rgba(245,158,11,0.2)]">查看审核结果 <i class="ph ph-arrow-right"></i></button>
+          </div>
+          <div class="mt-4 h-2 bg-white/5 rounded-full overflow-hidden"><div class="h-full bg-primary rounded-full transition-all duration-500" :style="{width:(uploadedFiles.length?auditCompleted/uploadedFiles.length*100:0)+'%'}"></div></div>
+        </div>
+        <h3 class="text-[13px] font-medium text-text-primary mb-3">素材状态</h3>
+        <div class="border border-border-default rounded-xl overflow-hidden">
+          <table class="w-full text-[13px]">
+            <thead><tr class="border-b border-border-light bg-white/[0.02]"><th class="text-left px-4 py-3 text-text-tertiary font-medium text-[12px] w-[60px]"></th><th class="text-left px-2 py-3 text-text-tertiary font-medium text-[12px]">文件名</th><th class="text-left px-4 py-3 text-text-tertiary font-medium text-[12px]">当前步骤</th><th class="text-left px-4 py-3 text-text-tertiary font-medium text-[12px]">状态</th></tr></thead>
+            <tbody>
+              <tr v-for="(file,i) in uploadedFiles" :key="i" class="border-b border-border-light last:border-0" :class="i < auditCompleted ? '' : i === auditCompleted ? 'bg-primary/[0.02]' : ''">
+                <td class="px-4 py-3"><div class="w-8 h-8 rounded-md bg-bg-elevated overflow-hidden flex items-center justify-center"><img :src="file.thumb" class="w-full h-full object-cover"></div></td>
+                <td class="px-2 py-3 font-medium text-text-primary text-[12px]">{{ file.name }}</td>
+                <td class="px-4 py-3 text-text-secondary text-[12px]">{{ i < auditCompleted ? '审核完成' : i === auditCompleted ? auditStepLabels[Math.min(auditCompleted,4)] : '等待中' }}</td>
+                <td class="px-4 py-3"><div class="flex items-center gap-1.5 text-[12px]" :class="i < auditCompleted ? 'text-green-400' : i === auditCompleted ? 'text-primary' : 'text-text-tertiary'"><span class="status-dot" :class="i < auditCompleted ? 'status-dot-green' : i === auditCompleted ? 'status-dot-amber' : 'status-dot-slate'"></span>{{ i < auditCompleted ? '已完成' : i === auditCompleted ? '进行中' : '排队中' }}</div></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====== PAGE: 结果总览 ====== -->
+    <div v-if="currentPage === 'resultOverview'" class="flex-1 bg-bg-glass backdrop-blur-[12px] border border-border-default rounded-[14px] overflow-hidden flex flex-col shadow-lg shadow-black/50 ring-1 ring-white/5">
+      <div class="px-6 py-4 border-b border-border-light shrink-0">
+        <div class="flex items-start justify-between">
+          <div>
+            <div class="flex items-center gap-2 mb-1">
+              <button @click="goBackToTaskList" class="w-7 h-7 rounded-lg hover:bg-white/10 flex items-center justify-center text-text-secondary hover:text-text-primary transition-colors"><i class="ph ph-arrow-left"></i></button>
+              <h1 class="text-[16px] font-semibold text-text-primary">{{ activeTaskName || formData.taskName }}</h1>
+              <span :class="auditResultBadgeClass(activeAuditResult)" class="text-[12px] ml-2">{{ auditResultLabel(activeAuditResult) }}</span>
+            </div>
+            <div class="flex items-center gap-4 text-[12px] text-text-tertiary ml-9">
+              <span>{{ auditMaterials.length }} 张素材</span><span class="w-1 h-1 rounded-full bg-text-tertiary"></span>
+              <span>审核时间：{{ currentTime }}</span><span class="w-1 h-1 rounded-full bg-text-tertiary"></span>
+              <span :class="overallConclusionClass" class="font-medium">{{ overallConclusionText }}</span>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <button @click="currentPage='auditReport'" class="h-[32px] px-4 rounded-lg border border-border-default text-[12px] text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all flex items-center gap-1.5"><i class="ph ph-file-text"></i>查看报告</button>
+            <button @click="startAuditing" class="h-[32px] px-4 rounded-lg bg-primary/10 border border-primary/25 text-[12px] text-primary hover:bg-primary/20 transition-all flex items-center gap-1.5"><i class="ph ph-arrows-clockwise"></i>重新审核</button>
+            <button v-if="activeTaskStatus==='needReview'" @click="confirmComplete" class="h-[32px] px-4 rounded-lg bg-green-600 hover:bg-green-500 text-white text-[12px] font-semibold transition-all flex items-center gap-1.5"><i class="ph ph-check-circle"></i>确认完成</button>
+          </div>
+        </div>
+      </div>
+      <div class="flex-1 overflow-auto p-6">
+        <div class="grid grid-cols-5 gap-3 mb-6">
+          <div @click="materialFilter=''" class="bg-black/20 border rounded-xl p-4 cursor-pointer transition-all hover:bg-white/[0.04]" :class="materialFilter===''?'border-white/20':'border-border-default'"><div class="text-[28px] font-bold text-text-primary">{{ materialStats.total }}</div><div class="text-[12px] text-text-tertiary mt-1">素材总数</div></div>
+          <div @click="materialFilter='pass'" class="bg-black/20 border rounded-xl p-4 cursor-pointer transition-all hover:bg-white/[0.04]" :class="materialFilter==='pass'?'border-green-500/30 bg-green-500/[0.03]':'border-border-default'"><div class="text-[28px] font-bold text-green-400">{{ materialStats.pass }}</div><div class="text-[12px] text-text-tertiary mt-1">未发现明显风险</div></div>
+          <div @click="materialFilter='red'" class="bg-black/20 border rounded-xl p-4 cursor-pointer transition-all hover:bg-white/[0.04]" :class="materialFilter==='red'?'border-red-500/30 bg-red-500/[0.03]':'border-border-default'"><div class="text-[28px] font-bold text-red-400">{{ materialStats.red }}</div><div class="text-[12px] text-text-tertiary mt-1">红线风险</div></div>
+          <div @click="materialFilter='yellow'" class="bg-black/20 border rounded-xl p-4 cursor-pointer transition-all hover:bg-white/[0.04]" :class="materialFilter==='yellow'?'border-amber-500/30 bg-amber-500/[0.03]':'border-border-default'"><div class="text-[28px] font-bold text-amber-400">{{ materialStats.yellow }}</div><div class="text-[12px] text-text-tertiary mt-1">黄线风险</div></div>
+          <div @click="materialFilter='low'" class="bg-black/20 border rounded-xl p-4 cursor-pointer transition-all hover:bg-white/[0.04]" :class="materialFilter==='low'?'border-slate-500/30 bg-slate-500/[0.03]':'border-border-default'"><div class="text-[28px] font-bold text-slate-400">{{ materialStats.low }}</div><div class="text-[12px] text-text-tertiary mt-1">低风险提醒</div></div>
+        </div>
+        <div class="flex items-center gap-1 mb-4">
+          <button v-for="tab in materialFilterTabs" :key="tab.value" @click="materialFilter=tab.value" class="h-[30px] px-3 rounded-md text-[12px] font-medium transition-all" :class="materialFilter===tab.value?'bg-white/10 text-text-primary':'text-text-tertiary hover:text-text-secondary hover:bg-white/5'">{{ tab.label }}</button>
+        </div>
+        <div class="border border-border-default rounded-xl overflow-hidden">
+          <table class="w-full text-[13px]">
+            <thead><tr class="border-b border-border-light bg-white/[0.02]"><th class="text-left px-4 py-3 text-text-tertiary font-medium text-[12px] w-[60px]"></th><th class="text-left px-2 py-3 text-text-tertiary font-medium text-[12px]">文件名</th><th class="text-left px-4 py-3 text-text-tertiary font-medium text-[12px]">审核结果</th><th class="text-left px-4 py-3 text-text-tertiary font-medium text-[12px]">风险概况</th><th class="text-left px-4 py-3 text-text-tertiary font-medium text-[12px]">操作</th></tr></thead>
+            <tbody>
+              <tr v-for="(mat,i) in filteredMaterials" :key="i" class="border-b border-border-light hover:bg-white/[0.03] transition-colors last:border-0">
+                <td class="px-4 py-3"><div class="w-10 h-10 rounded-md bg-bg-elevated overflow-hidden"><img :src="mat.thumb" class="w-full h-full object-cover"></div></td>
+                <td class="px-2 py-3 font-medium text-text-primary text-[12px]">{{ mat.name }}</td>
+                <td class="px-4 py-3"><span :class="auditResultBadgeClass(mat.auditStatus)">{{ auditResultLabel(mat.auditStatus) }}</span></td>
+                <td class="px-4 py-3">
+                  <div v-if="mat.redCount===0&&mat.yellowCount===0&&mat.lowCount===0" class="text-[12px] text-text-tertiary">--</div>
+                  <div v-else class="flex items-center gap-2 text-[12px]">
+                    <span v-if="mat.redCount>0" class="flex items-center gap-1"><span class="status-dot status-dot-red"></span>红线 {{ mat.redCount }}</span>
+                    <span v-if="mat.yellowCount>0" class="flex items-center gap-1"><span class="status-dot status-dot-amber"></span>黄线 {{ mat.yellowCount }}</span>
+                    <span v-if="mat.lowCount>0" class="flex items-center gap-1 text-text-tertiary"><span class="status-dot status-dot-slate"></span>低风险 {{ mat.lowCount }}</span>
+                  </div>
+                </td>
+                <td class="px-4 py-3"><button @click="viewDetail(mat)" class="text-[12px] text-primary hover:text-primary-hover transition-colors font-medium">查看详情</button></td>
+              </tr>
+              <tr v-if="filteredMaterials.length===0"><td colspan="5" class="px-6 py-12 text-center text-text-tertiary text-[13px]">无匹配素材</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====== PAGE: 单素材详情 ====== -->
+    <div v-if="currentPage === 'detail'" class="flex-1 bg-bg-glass backdrop-blur-[12px] border border-border-default rounded-[14px] overflow-hidden flex shadow-lg shadow-black/50 ring-1 ring-white/5">
+      <div class="flex-1 bg-black/30 flex flex-col items-center justify-center relative overflow-hidden border-r border-border-light">
+        <div class="relative inline-block">
+          <img :src="currentMaterial.thumb" class="max-w-full max-h-[60vh] object-contain rounded-lg shadow-2xl">
+          <div v-for="(risk,ri) in currentMaterial.risks" :key="ri" v-show="activeRiskIndex===null||activeRiskIndex===ri" class="bbox-overlay" :class="risk.level==='yellow'?'amber':''" :style="{left:risk.bbox.x+'%',top:risk.bbox.y+'%',width:risk.bbox.w+'%',height:risk.bbox.h+'%'}"></div>
+          <div v-for="(risk,ri) in currentMaterial.risks" :key="'dot-'+ri" @click="activeRiskIndex=ri" class="absolute w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold cursor-pointer transition-all hover:scale-110 shadow-lg" :class="risk.level==='red'?'bg-red-500 text-white':risk.level==='yellow'?'bg-amber-500 text-black':'bg-slate-500 text-white'" :style="{left:(risk.bbox.x+risk.bbox.w/2)+'%',top:(risk.bbox.y+risk.bbox.h/2)+'%'}">{{ ri+1 }}</div>
+        </div>
+        <div class="absolute bottom-4 left-4 text-[11px] text-text-tertiary bg-black/60 px-2 py-1 rounded">点击风险编号定位</div>
+      </div>
+      <div class="w-[420px] shrink-0 flex flex-col overflow-hidden">
+        <div class="px-5 py-4 border-b border-border-light shrink-0">
+          <button @click="currentPage='resultOverview'" class="text-[13px] text-text-secondary hover:text-text-primary transition-colors flex items-center gap-1 mb-2"><i class="ph ph-arrow-left text-xs"></i>返回总览</button>
+          <div class="flex items-center justify-between">
+            <button @click="prevMaterial" :disabled="detailIdx===0" class="w-7 h-7 rounded-lg hover:bg-white/10 flex items-center justify-center text-text-secondary transition-colors" :class="detailIdx===0?'opacity-30 cursor-not-allowed':'hover:text-text-primary'"><i class="ph ph-caret-left"></i></button>
+            <div class="text-center"><h2 class="text-[15px] font-semibold text-text-primary">{{ currentMaterial.name }}</h2><div class="text-[12px] text-text-tertiary">{{ detailIdx+1 }} / {{ auditMaterials.length }}</div></div>
+            <button @click="nextMaterial" :disabled="detailIdx===auditMaterials.length-1" class="w-7 h-7 rounded-lg hover:bg-white/10 flex items-center justify-center text-text-secondary transition-colors" :class="detailIdx===auditMaterials.length-1?'opacity-30 cursor-not-allowed':'hover:text-text-primary'"><i class="ph ph-caret-right"></i></button>
+          </div>
+        </div>
+        <div class="px-5 py-3 border-b border-border-light flex gap-4 shrink-0">
+          <div class="flex items-center gap-1.5 text-[12px]"><span class="w-2 h-2 rounded-full bg-red-400"></span><span class="text-text-secondary">红线 <span class="text-red-400 font-semibold">{{ currentMaterial.redCount }}</span></span></div>
+          <div class="flex items-center gap-1.5 text-[12px]"><span class="w-2 h-2 rounded-full bg-amber-400"></span><span class="text-text-secondary">黄线 <span class="text-amber-400 font-semibold">{{ currentMaterial.yellowCount }}</span></span></div>
+          <div class="flex items-center gap-1.5 text-[12px]"><span class="w-2 h-2 rounded-full bg-slate-400"></span><span class="text-text-secondary">低风险 <span class="text-slate-400 font-semibold">{{ currentMaterial.lowCount }}</span></span></div>
+          <div class="flex-1"></div>
+          <span :class="auditResultBadgeClass(currentMaterial.auditStatus)" class="text-[12px]">{{ auditResultLabel(currentMaterial.auditStatus) }}</span>
+        </div>
+        <div class="flex-1 overflow-auto p-4 space-y-3">
+          <div v-if="currentMaterial.risks.length===0" class="text-center py-12 text-text-tertiary text-[13px]"><i class="ph ph-check-circle text-2xl text-green-400 block mb-2"></i>未发现明显风险</div>
+          <div v-for="(risk,i) in currentMaterial.risks" :key="i" @click="activeRiskIndex=i" class="rounded-xl border p-4 cursor-pointer transition-all" :class="activeRiskIndex===i?(risk.level==='red'?'border-red-500/40 bg-red-500/[0.05]':risk.level==='yellow'?'border-amber-500/40 bg-amber-500/[0.05]':'border-slate-500/40 bg-slate-500/[0.03]'):'border-border-default hover:bg-white/[0.02]'">
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center gap-2">
+                <span :class="risk.level==='red'?'risk-badge-red':risk.level==='yellow'?'risk-badge-amber':'risk-badge-slate'">{{ risk.level==='red'?'红线风险':risk.level==='yellow'?'黄线风险':'低风险提醒' }}</span>
+                <span class="text-[13px] font-medium text-text-primary">{{ risk.type }}</span>
+              </div>
+              <span class="text-[11px] text-text-tertiary">#{{ i+1 }}</span>
+            </div>
+            <div class="space-y-2 text-[12px]">
+              <div class="flex justify-between"><span class="text-text-tertiary">命中内容</span><span class="text-text-primary font-medium">{{ risk.hitContent }}</span></div>
+              <div class="flex justify-between"><span class="text-text-tertiary">命中位置</span><span class="text-text-primary">{{ risk.hitLocation }}</span></div>
+              <div class="flex justify-between"><span class="text-text-tertiary">命中依据</span><span class="text-text-primary">{{ risk.hitBasis }}</span></div>
+            </div>
+            <div class="mt-3 p-3 rounded-lg bg-black/20 border border-border-light">
+              <p class="text-[12px] text-text-secondary leading-relaxed"><span class="text-text-tertiary">风险说明：</span>{{ risk.desc }}</p>
+              <p class="text-[12px] text-text-secondary leading-relaxed mt-1.5"><span class="text-text-tertiary">建议处理：</span>{{ risk.suggestion }}</p>
+            </div>
+            <div class="flex items-center gap-2 mt-3" v-if="!risk.ignored"><button @click.stop="openIgnoreDialog(i)" class="h-[28px] px-3 rounded-md border border-border-default text-[11px] text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all">忽略并备注</button></div>
+            <div v-else class="mt-3 text-[12px] text-text-tertiary flex items-center gap-1.5"><i class="ph ph-check-circle text-green-400"></i> 已忽略 &middot; {{ risk.ignoreReason }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====== PAGE: 审核报告 ====== -->
+    <div v-if="currentPage === 'auditReport'" class="flex-1 bg-bg-glass backdrop-blur-[12px] border border-border-default rounded-[14px] overflow-hidden flex flex-col shadow-lg shadow-black/50 ring-1 ring-white/5">
+      <div class="px-6 py-4 border-b border-border-light flex items-center gap-3 shrink-0">
+        <button @click="currentPage='resultOverview'" class="w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center text-text-secondary hover:text-text-primary transition-colors"><i class="ph ph-arrow-left"></i></button>
+        <div><h1 class="text-[16px] font-semibold text-text-primary">审核报告</h1><p class="text-[12px] text-text-tertiary mt-0.5">{{ activeTaskName || formData.taskName }}</p></div>
+      </div>
+      <div class="flex-1 overflow-auto p-6 space-y-6">
+        <div class="bg-black/20 border border-border-default rounded-xl p-5">
+          <h3 class="text-[13px] font-semibold text-text-primary mb-4">任务信息</h3>
+          <div class="grid grid-cols-3 gap-4 text-[13px]">
+            <div><span class="text-text-tertiary text-[12px]">任务名称</span><p class="text-text-primary font-medium mt-0.5">{{ activeTaskName || formData.taskName }}</p></div>
+            <div><span class="text-text-tertiary text-[12px]">素材数量</span><p class="text-text-primary font-medium mt-0.5">{{ auditMaterials.length }} 张</p></div>
+            <div><span class="text-text-tertiary text-[12px]">操作人</span><p class="text-text-primary font-medium mt-0.5">张三</p></div>
+            <div><span class="text-text-tertiary text-[12px]">审核时间</span><p class="text-text-primary font-medium mt-0.5">{{ currentTime }}</p></div>
+          </div>
+        </div>
+        <div class="bg-black/20 border border-border-default rounded-xl p-5">
+          <h3 class="text-[13px] font-semibold text-text-primary mb-3">审核结论</h3>
+          <div class="flex items-center gap-3"><span :class="overallConclusionClass" class="text-[15px] font-semibold">{{ overallConclusionText }}</span><span class="text-[12px] text-text-tertiary">系统审核结果作为风险预检参考，不替代最终人工、品牌或法务判断</span></div>
+        </div>
+        <div class="bg-black/20 border border-border-default rounded-xl p-5">
+          <h3 class="text-[13px] font-semibold text-text-primary mb-4">风险统计</h3>
+          <div class="grid grid-cols-5 gap-3 text-center">
+            <div><div class="text-[24px] font-bold text-text-primary">{{ materialStats.total }}</div><div class="text-[12px] text-text-tertiary">素材总数</div></div>
+            <div><div class="text-[24px] font-bold text-green-400">{{ materialStats.pass }}</div><div class="text-[12px] text-text-tertiary">无明显风险</div></div>
+            <div><div class="text-[24px] font-bold text-red-400">{{ materialStats.red }}</div><div class="text-[12px] text-text-tertiary">红线风险</div></div>
+            <div><div class="text-[24px] font-bold text-amber-400">{{ materialStats.yellow }}</div><div class="text-[12px] text-text-tertiary">黄线风险</div></div>
+            <div><div class="text-[24px] font-bold text-slate-400">{{ materialStats.low }}</div><div class="text-[12px] text-text-tertiary">低风险提醒</div></div>
+          </div>
+        </div>
+        <div class="bg-black/20 border border-border-default rounded-xl p-5">
+          <h3 class="text-[13px] font-semibold text-text-primary mb-4">风险明细</h3>
+          <div class="border border-border-light rounded-lg overflow-hidden">
+            <table class="w-full text-[12px]"><thead><tr class="border-b border-border-light bg-white/[0.02]"><th class="text-left px-4 py-2.5 text-text-tertiary font-medium">素材名称</th><th class="text-left px-4 py-2.5 text-text-tertiary font-medium">风险等级</th><th class="text-left px-4 py-2.5 text-text-tertiary font-medium">风险类型</th><th class="text-left px-4 py-2.5 text-text-tertiary font-medium">命中内容</th><th class="text-left px-4 py-2.5 text-text-tertiary font-medium">处理建议</th><th class="text-left px-4 py-2.5 text-text-tertiary font-medium">处理状态</th></tr></thead><tbody>
+              <template v-for="(mat,mi) in auditMaterials" :key="'m-'+mi">
+                <tr v-if="mat.risks.length===0"><td class="px-4 py-2.5 text-text-primary">{{ mat.name }}</td><td class="px-4 py-2.5"><span class="risk-badge-green">无明显风险</span></td><td class="px-4 py-2.5 text-text-tertiary">--</td><td class="px-4 py-2.5 text-text-tertiary">--</td><td class="px-4 py-2.5 text-text-tertiary">--</td><td class="px-4 py-2.5 text-text-tertiary">--</td></tr>
+                <tr v-for="(risk,ri) in mat.risks" :key="mi+'-'+ri" class="border-b border-border-light hover:bg-white/[0.02]"><td class="px-4 py-2.5 text-text-primary">{{ mat.name }}</td><td class="px-4 py-2.5"><span :class="risk.level==='red'?'risk-badge-red':risk.level==='yellow'?'risk-badge-amber':'risk-badge-slate'">{{ risk.level==='red'?'红线':risk.level==='yellow'?'黄线':'低风险' }}</span></td><td class="px-4 py-2.5 text-text-secondary">{{ risk.type }}</td><td class="px-4 py-2.5 text-text-secondary">{{ risk.hitContent }}</td><td class="px-4 py-2.5 text-text-secondary max-w-[200px] truncate">{{ risk.suggestion }}</td><td class="px-4 py-2.5 text-text-secondary">{{ risk.ignored?'已忽略':'待处理' }}</td></tr>
+              </template>
+            </tbody></table>
+          </div>
+        </div>
+        <div class="bg-black/20 border border-border-default rounded-xl p-5">
+          <h3 class="text-[13px] font-semibold text-text-primary mb-4">操作记录</h3>
+          <div class="space-y-2"><div v-for="(rec,i) in operationRecords" :key="i" class="flex items-center gap-3 text-[12px] py-2 border-b border-border-light last:border-0"><span class="text-text-tertiary w-[140px] shrink-0">{{ rec.time }}</span><span class="text-text-secondary">{{ rec.action }}</span><span class="text-text-tertiary">{{ rec.detail }}</span><span class="flex-1"></span><span class="text-text-tertiary">{{ rec.operator }}</span></div></div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- MODAL: 素材库选择 -->
+  <div v-if="libraryModalOpen" class="fixed inset-0 z-[1000] flex items-center justify-center">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="libraryModalOpen=false"></div>
+    <div class="relative bg-bg-elevated border border-border-default rounded-2xl w-[720px] max-h-[80vh] flex flex-col shadow-2xl shadow-black/50 overflow-hidden">
+      <div class="px-6 py-4 border-b border-border-light flex items-center justify-between shrink-0">
+        <div>
+          <h3 class="text-[15px] font-semibold text-text-primary">从素材库选择</h3>
+          <p class="text-[12px] text-text-tertiary mt-0.5">选择平台已有素材加入本次审核任务</p>
+        </div>
+        <button @click="libraryModalOpen=false" class="w-7 h-7 rounded-lg hover:bg-white/10 flex items-center justify-center text-text-secondary hover:text-text-primary transition-colors"><i class="ph ph-x"></i></button>
+      </div>
+      <div class="px-6 py-3 border-b border-border-light flex items-center gap-3 shrink-0">
+        <div class="relative flex-1 max-w-[240px]">
+          <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary text-sm"></i>
+          <input type="text" v-model="librarySearch" placeholder="搜索素材名称 / SKU" class="w-full h-[32px] bg-black/20 border border-border-default rounded-lg pl-9 pr-3 text-[13px] outline-none focus:border-primary/50 transition-all placeholder-text-tertiary">
+        </div>
+        <select v-model="libraryTypeFilter" class="h-[32px] px-3 bg-black/20 border border-border-default rounded-lg text-[13px] text-text-secondary outline-none focus:border-primary/50 transition-all cursor-pointer">
+          <option value="">全部类型</option>
+          <option value="主图">主图</option>
+          <option value="SDC">SDC</option>
+          <option value="Banner">Banner</option>
+          <option value="社媒">社媒</option>
+        </select>
+        <select v-model="librarySourceFilter" class="h-[32px] px-3 bg-black/20 border border-border-default rounded-lg text-[13px] text-text-secondary outline-none focus:border-primary/50 transition-all cursor-pointer">
+          <option value="">全部来源</option>
+          <option value="图像生成">图像生成</option>
+          <option value="镜头生成">镜头生成</option>
+          <option value="素材适配">素材适配</option>
+          <option value="本地上传">本地上传</option>
+        </select>
+      </div>
+      <div class="flex-1 overflow-y-auto p-6">
+        <div class="grid grid-cols-4 gap-3">
+          <div v-for="asset in filteredLibraryAssets" :key="asset.id"
+               @click="toggleLibrarySelect(asset)"
+               class="relative border rounded-xl p-2 cursor-pointer transition-all"
+               :class="isLibrarySelected(asset) ? 'border-primary bg-primary/10' : 'border-border-default hover:border-primary/30 bg-black/20'">
+            <div class="w-full aspect-square rounded-lg overflow-hidden bg-bg-elevated mb-2 relative">
+              <img :src="asset.thumb" class="w-full h-full object-cover">
+              <div v-if="isLibrarySelected(asset)" class="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-primary flex items-center justify-center text-bg-base">
+                <i class="ph-bold ph-check text-[10px]"></i>
+              </div>
+            </div>
+            <div class="text-[12px] font-medium text-text-primary truncate">{{ asset.name }}</div>
+            <div class="text-[10px] text-text-tertiary mt-0.5 truncate">{{ asset.sku }} · {{ asset.type }}</div>
+          </div>
+        </div>
+        <div v-if="filteredLibraryAssets.length === 0" class="py-16 text-center text-text-tertiary text-[13px]">
+          <i class="ph ph-folder-open text-2xl block mb-2 opacity-40"></i>
+          暂无匹配素材
+        </div>
+      </div>
+      <div class="px-6 py-4 border-t border-border-light flex items-center justify-between shrink-0">
+        <span class="text-[13px] text-text-secondary">已选择 {{ selectedLibraryAssets.length }} 个素材</span>
+        <div class="flex gap-3">
+          <button @click="libraryModalOpen=false" class="h-[36px] px-5 rounded-lg border border-border-default text-[13px] text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all">取消</button>
+          <button @click="confirmLibrarySelection" :disabled="selectedLibraryAssets.length===0" class="h-[36px] px-5 rounded-lg text-[13px] font-semibold transition-all" :class="selectedLibraryAssets.length>0?'bg-primary hover:bg-primary-hover text-bg-base':'bg-white/5 text-text-tertiary cursor-not-allowed'">确认添加</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: 忽略弹窗 -->
+  <div v-if="showIgnoreDialog" class="fixed inset-0 z-[1000] flex items-center justify-center">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="showIgnoreDialog=false"></div>
+    <div class="relative bg-bg-elevated border border-border-default rounded-2xl w-[460px] shadow-2xl shadow-black/50 overflow-hidden">
+      <div class="px-6 py-4 border-b border-border-light flex items-center justify-between"><h3 class="text-[15px] font-semibold text-text-primary">忽略该风险</h3><button @click="showIgnoreDialog=false" class="w-7 h-7 rounded-lg hover:bg-white/10 flex items-center justify-center text-text-secondary hover:text-text-primary transition-colors"><i class="ph ph-x"></i></button></div>
+      <div class="p-6" v-if="ignoreTarget">
+        <div class="bg-black/20 border border-border-light rounded-xl p-4 mb-5">
+          <div class="grid grid-cols-2 gap-3 text-[13px]"><div><span class="text-text-tertiary text-[12px]">风险类型</span><p class="text-text-primary font-medium mt-0.5">{{ ignoreTarget.type }}</p></div><div><span class="text-text-tertiary text-[12px]">风险等级</span><p class="mt-0.5"><span :class="ignoreTarget.level==='red'?'risk-badge-red':ignoreTarget.level==='yellow'?'risk-badge-amber':'risk-badge-slate'">{{ ignoreTarget.level==='red'?'红线风险':ignoreTarget.level==='yellow'?'黄线风险':'低风险提醒' }}</span></p></div><div class="col-span-2"><span class="text-text-tertiary text-[12px]">命中内容</span><p class="text-text-primary font-medium mt-0.5">{{ ignoreTarget.hitContent }}</p></div></div>
+        </div>
+        <label class="block text-[13px] font-medium text-text-primary mb-2">忽略原因 <span class="text-red-400">*</span></label>
+        <div class="space-y-2 mb-5">
+          <label class="flex items-center gap-3 px-4 py-2.5 rounded-lg border cursor-pointer transition-all" :class="ignoreForm.reason==='false-positive'?'bg-primary/8 border-primary/30':'bg-black/20 border-border-default hover:bg-white/[0.03]'"><input type="radio" value="false-positive" v-model="ignoreForm.reason" class="accent-primary"><div><div class="text-[13px] text-text-primary">系统误报</div><div class="text-[11px] text-text-tertiary">命中内容不是实际风险</div></div></label>
+          <label class="flex items-center gap-3 px-4 py-2.5 rounded-lg border cursor-pointer transition-all" :class="ignoreForm.reason==='other'?'bg-primary/8 border-primary/30':'bg-black/20 border-border-default hover:bg-white/[0.03]'"><input type="radio" value="other" v-model="ignoreForm.reason" class="accent-primary"><div><div class="text-[13px] text-text-primary">其他</div><div class="text-[11px] text-text-tertiary">手动填写原因</div></div></label>
+        </div>
+        <div v-if="ignoreForm.reason==='other'" class="mb-5"><textarea v-model="ignoreForm.notes" placeholder="请填写忽略原因" class="w-full h-[72px] bg-black/20 border border-border-default rounded-lg px-3 py-2 text-[13px] outline-none focus:border-primary/50 transition-all resize-none placeholder-text-tertiary"></textarea></div>
+        <div class="text-[12px] text-text-tertiary mb-5 p-3 bg-black/20 rounded-lg"><p>操作留痕：操作人、操作时间、忽略原因将被记录</p></div>
+        <div class="flex gap-3 justify-end"><button @click="showIgnoreDialog=false" class="h-[36px] px-5 rounded-lg border border-border-default text-[13px] text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all">取消</button><button @click="confirmIgnore" :disabled="!ignoreForm.reason" class="h-[36px] px-5 rounded-lg text-[13px] font-semibold transition-all" :class="ignoreForm.reason?'bg-amber-600 hover:bg-amber-500 text-white':'bg-white/5 text-text-tertiary cursor-not-allowed'">确认忽略</button></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const { createApp, ref, computed } = Vue;
+createApp({
+  setup() {
+    const currentPage = ref('taskList');
+    const formData = ref({ taskName: '' });
+    const activeTaskName = ref('');
+    const activeTaskStatus = ref('');
+    const activeAuditResult = ref('');
+    const uploadedFiles = ref([]);
+    const taskSearch = ref('');
+    const taskStatusFilter = ref('');
+    const taskResultFilter = ref('');
+    const auditCompleted = ref(0);
+    let auditTimer = null;
+    const auditStepLabels = ['文件解析','OCR 文字识别','图像内容安全检测','多模态风险判断','生成审核报告'];
+    const detailIdx = ref(0);
+    const activeRiskIndex = ref(null);
+    const materialFilter = ref('');
+    const showIgnoreDialog = ref(false);
+    const ignoreTarget = ref(null);
+    const ignoreTargetIdx = ref(null);
+    const ignoreForm = ref({ reason:'', notes:'' });
+    const libraryModalOpen = ref(false);
+    const librarySearch = ref('');
+    const libraryTypeFilter = ref('');
+    const librarySourceFilter = ref('');
+    const selectedLibraryAssets = ref([]);
+    const currentTime = '2026-07-07 10:30';
+
+    const placeholderThumbs = [
+      'data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect fill="#1e293b" width="200" height="200"/><rect fill="#334155" x="20" y="40" width="160" height="100" rx="8"/><circle fill="#475569" cx="80" cy="80" r="20"/><rect fill="#475569" x="20" y="150" width="160" height="6" rx="3"/></svg>'),
+      'data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect fill="#1e293b" width="200" height="200"/><rect fill="#334155" x="30" y="20" width="140" height="120" rx="8"/><polygon fill="#475569" points="100,50 60,100 140,100"/><rect fill="#475569" x="30" y="152" width="140" height="6" rx="3"/></svg>'),
+      'data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect fill="#1e293b" width="200" height="200"/><rect fill="#334155" x="15" y="30" width="170" height="110" rx="8"/><rect fill="#475569" x="40" y="50" width="50" height="50" rx="4"/><rect fill="#475569" x="110" y="50" width="50" height="50" rx="4"/><rect fill="#475569" x="15" y="152" width="170" height="6" rx="3"/></svg>'),
+      'data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect fill="#1e293b" width="200" height="200"/><rect fill="#334155" x="20" y="30" width="160" height="80" rx="8"/><circle fill="#475569" cx="60" cy="65" r="16"/><circle fill="#475569" cx="100" cy="65" r="16"/><circle fill="#475569" cx="140" cy="65" r="16"/><rect fill="#475569" x="20" y="122" width="160" height="6" rx="3"/></svg>'),
+      'data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect fill="#1e293b" width="200" height="200"/><rect fill="#0f172a" x="20" y="20" width="160" height="120" rx="8"/><text fill="#94a3b8" font-size="14" font-family="sans-serif" x="50" y="85">Sample</text><rect fill="#475569" x="20" y="152" width="160" height="6" rx="3"/></svg>'),
+      'data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect fill="#1e293b" width="200" height="200"/><rect fill="#334155" x="25" y="25" width="150" height="100" rx="6"/><rect fill="#475569" x="40" y="40" width="120" height="6" rx="3"/><rect fill="#475569" x="40" y="55" width="80" height="6" rx="3"/><rect fill="#475569" x="40" y="70" width="100" height="6" rx="3"/><rect fill="#475569" x="25" y="140" width="150" height="6" rx="3"/></svg>')
+    ];
+
+    const navTabs = ref([
+      { id:'lens', title:'镜头生成', icon:'ph ph-video-camera', active:false, closable:false },
+      { id:'image', title:'图像生成', icon:'ph ph-image', active:false, closable:false },
+      { id:'overview', title:'企业全局总览', icon:'ph ph-chart-pie-slice', active:false, closable:false },
+      { id:'audit', title:'素材审核', icon:'ph ph-shield-check', active:true, closable:true }
+    ]);
+
+    const mockTasks = [
+      { id:1, name:'落地灯 Q2 广告素材审核', sku:'H123456', totalCount:12, taskStatus:'done', auditResult:'red', creator:'张三', auditTime:'2026-07-07 09:30' },
+      { id:2, name:'夏季促销横幅素材审核', sku:'', totalCount:20, taskStatus:'needReview', auditResult:'yellow', creator:'李四', auditTime:'2026-07-06 14:15' },
+      { id:3, name:'新产品线品牌素材预检', sku:'H789012', totalCount:8, taskStatus:'done', auditResult:'pass', creator:'王五', auditTime:'2026-07-06 10:00' },
+      { id:4, name:'TikTok 社媒素材批次审核', sku:'', totalCount:15, taskStatus:'needReview', auditResult:'low', creator:'赵六', auditTime:'2026-07-05 16:45' },
+      { id:5, name:'Amazon Listing 主图审核', sku:'H345678', totalCount:6, taskStatus:'needFix', auditResult:'red', creator:'张三', auditTime:'2026-07-05 11:00' },
+      { id:6, name:'中东市场素材合规检查', sku:'', totalCount:18, taskStatus:'auditing', auditResult:'', creator:'李四', auditTime:'' },
+      { id:7, name:'新品上市系列素材', sku:'H555111', totalCount:10, taskStatus:'queued', auditResult:'', creator:'钱七', auditTime:'' },
+      { id:8, name:'品牌夏季 KV 素材', sku:'H888222', totalCount:5, taskStatus:'draft', auditResult:'', creator:'张三', auditTime:'' },
+      { id:9, name:'Prime Day 倒计时素材', sku:'', totalCount:8, taskStatus:'reAuditing', auditResult:'yellow', creator:'王五', auditTime:'2026-07-04 18:20' },
+      { id:10, name:'独立站 Banner 素材', sku:'H999333', totalCount:4, taskStatus:'failed', auditResult:'', creator:'李四', auditTime:'2026-07-04 15:00' },
+      { id:11, name:'测试素材批次', sku:'', totalCount:3, taskStatus:'cancelled', auditResult:'', creator:'钱七', auditTime:'' },
+      { id:12, name:'欧洲站 A+ 素材审核', sku:'H777444', totalCount:9, taskStatus:'pending', auditResult:'', creator:'赵六', auditTime:'' }
+    ];
+
+    const mockLibraryAssets = [
+      { id:1, name:'LMP-001_Main_White.jpg', sku:'H123456', type:'主图', source:'图像生成', size:'2.4 MB', thumb:placeholderThumbs[0] },
+      { id:2, name:'SDC_1200x628_EN.jpg', sku:'H123456', type:'SDC', source:'素材适配', size:'1.8 MB', thumb:placeholderThumbs[1] },
+      { id:3, name:'Banner_Summer_Sale.jpg', sku:'', type:'Banner', source:'镜头生成', size:'3.1 MB', thumb:placeholderThumbs[2] },
+      { id:4, name:'Social_Story_01.jpg', sku:'H789012', type:'社媒', source:'图像生成', size:'1.2 MB', thumb:placeholderThumbs[3] },
+      { id:5, name:'Main_Scene_Lifestyle.jpg', sku:'H345678', type:'主图', source:'本地上传', size:'2.9 MB', thumb:placeholderThumbs[4] },
+      { id:6, name:'SDC_300x600_DE.jpg', sku:'H345678', type:'SDC', source:'素材适配', size:'1.5 MB', thumb:placeholderThumbs[5] },
+      { id:7, name:'Prime_Banner_KV.jpg', sku:'H555111', type:'Banner', source:'图像生成', size:'2.1 MB', thumb:placeholderThumbs[0] },
+      { id:8, name:'TikTok_Creative_03.jpg', sku:'', type:'社媒', source:'镜头生成', size:'1.7 MB', thumb:placeholderThumbs[1] }
+    ];
+
+    const filteredLibraryAssets = computed(() => mockLibraryAssets.filter(asset => {
+      if (librarySearch.value && !asset.name.includes(librarySearch.value) && !asset.sku.includes(librarySearch.value)) return false;
+      if (libraryTypeFilter.value && asset.type !== libraryTypeFilter.value) return false;
+      if (librarySourceFilter.value && asset.source !== librarySourceFilter.value) return false;
+      return true;
+    }));
+
+    const filteredTasks = computed(() => mockTasks.filter(t => {
+      if (taskSearch.value && !t.name.includes(taskSearch.value) && !t.sku.includes(taskSearch.value)) return false;
+      if (taskStatusFilter.value && t.taskStatus !== taskStatusFilter.value) return false;
+      if (taskResultFilter.value && t.auditResult !== taskResultFilter.value) return false;
+      return true;
+    }));
+
+    const auditMaterials = ref([
+      { name:'main_01.png', thumb:placeholderThumbs[0], auditStatus:'red', redCount:1, yellowCount:2, lowCount:0,
+        risks:[
+          { level:'red', type:'图库水印风险', hitContent:'Getty Images', hitLocation:'图片右下角', hitBasis:'OCR 识别到疑似图库水印文字', desc:'素材中疑似残留第三方图库水印，存在版权侵权风险。', suggestion:'替换为无水印素材或重新生成背景。', bbox:{x:70,y:80,w:22,h:12}, ignored:false, ignoreReason:'' },
+          { level:'yellow', type:'疑似第三方品牌', hitContent:'背景中疑似 Apple 字样', hitLocation:'图片左下区域', hitBasis:'OCR 识别到品牌关键词', desc:'素材背景中出现疑似第三方品牌名称，可能存在商标侵权风险。', suggestion:'人工确认或替换背景元素。', bbox:{x:10,y:65,w:18,h:10}, ignored:false, ignoreReason:'' },
+          { level:'yellow', type:'AI 乱码文字', hitContent:'背景招牌文字不可识别', hitLocation:'图片中上部', hitBasis:'多模态模型检测到异常文字区域', desc:'AI 生成素材中背景招牌文字为无意义乱码，可能影响素材专业度。', suggestion:'确认是否影响素材使用，建议修复或替换。', bbox:{x:40,y:15,w:25,h:10}, ignored:false, ignoreReason:'' }
+        ]},
+      { name:'sdc_03.png', thumb:placeholderThumbs[1], auditStatus:'yellow', redCount:0, yellowCount:1, lowCount:1,
+        risks:[
+          { level:'yellow', type:'疑似公众人物', hitContent:'人物肖像与知名网红相似度 78%', hitLocation:'图片中央人物', hitBasis:'人脸比对相似度超过阈值', desc:'素材中人物肖像与已知公众人物相似度较高，存在肖像权风险。', suggestion:'人工确认是否为授权素材，如无授权建议替换。', bbox:{x:30,y:20,w:35,h:45}, ignored:false, ignoreReason:'' }
+        ]},
+      { name:'ad_banner_02.png', thumb:placeholderThumbs[2], auditStatus:'red', redCount:1, yellowCount:0, lowCount:0,
+        risks:[
+          { level:'red', type:'成人内容 / 过度暴露', hitContent:'图片中存在性暗示姿势和暴露着装', hitLocation:'图片中央人物区域', hitBasis:'内容安全模型检测到成人内容特征', desc:'素材内容被识别为含有性暗示元素，可能违反平台广告政策。', suggestion:'修改素材内容，确保符合平台内容政策。', bbox:{x:25,y:15,w:45,h:55}, ignored:false, ignoreReason:'' }
+        ]},
+      { name:'detail_05.png', thumb:placeholderThumbs[3], auditStatus:'pass', redCount:0, yellowCount:0, lowCount:0, risks:[] },
+      { name:'social_01.png', thumb:placeholderThumbs[4], auditStatus:'low', redCount:0, yellowCount:0, lowCount:1,
+        risks:[
+          { level:'low', type:'AI 生成标识提醒', hitContent:'素材为 AI 生成，未添加 AI 标识', hitLocation:'--', hitBasis:'素材来源标记为 AI 生成', desc:'部分平台要求 AI 生成内容需明确标注，建议添加 AI 生成标识。', suggestion:'根据发布平台要求添加 AI 标识或声明。', bbox:{x:0,y:0,w:100,h:100}, ignored:false, ignoreReason:'' }
+        ]},
+      { name:'pp_07.png', thumb:placeholderThumbs[5], auditStatus:'pass', redCount:0, yellowCount:0, lowCount:0, risks:[] }
+    ]);
+
+    const filteredMaterials = computed(() => {
+      if (!materialFilter.value) return auditMaterials.value;
+      return auditMaterials.value.filter(m => m.auditStatus === materialFilter.value);
+    });
+
+    const materialFilterTabs = [
+      { label:'全部', value:'' }, { label:'存在高风险', value:'red' }, { label:'存在疑似风险', value:'yellow' },
+      { label:'低风险提醒', value:'low' }, { label:'未发现明显风险', value:'pass' }
+    ];
+
+    const materialStats = computed(() => {
+      const ms = auditMaterials.value;
+      return { total:ms.length, pass:ms.filter(m=>m.auditStatus==='pass').length, red:ms.filter(m=>m.auditStatus==='red').length, yellow:ms.filter(m=>m.auditStatus==='yellow').length, low:ms.filter(m=>m.auditStatus==='low').length };
+    });
+
+    const currentMaterial = computed(() => auditMaterials.value[detailIdx.value] || auditMaterials.value[0]);
+
+    const overallConclusionText = computed(() => {
+      if (materialStats.value.red > 0) return '存在高风险内容，不建议直接使用';
+      if (materialStats.value.yellow > 0) return '发现疑似风险，建议确认后使用';
+      return '未发现明显风险';
+    });
+
+    const overallConclusionClass = computed(() => {
+      if (materialStats.value.red > 0) return 'text-red-400';
+      if (materialStats.value.yellow > 0) return 'text-amber-400';
+      return 'text-green-400';
+    });
+
+    const operationRecords = ref([
+      { time:'2026-07-07 09:30:25', action:'系统自动审核完成', detail:'6 张素材审核完毕，发现 1 条红线、3 条黄线、1 条低风险提醒', operator:'系统' },
+      { time:'2026-07-07 09:28:00', action:'创建审核任务', detail:'任务已创建，上传 6 张素材', operator:'张三' }
+    ]);
+
+    function taskStatusLabel(s) {
+      const m = {
+        draft:'待提交', queued:'排队中', pending:'待审核', auditing:'审核中',
+        needReview:'待人工确认', needFix:'待整改', reAuditing:'复检中',
+        done:'已完成', failed:'审核失败', cancelled:'已取消'
+      };
+      return m[s] || s;
+    }
+    function taskStatusDotClass(s) {
+      const m = {
+        draft:'status-dot-slate', queued:'status-dot-slate', pending:'status-dot-slate',
+        auditing:'status-dot-blue', needReview:'status-dot-amber', needFix:'status-dot-red',
+        reAuditing:'status-dot-blue', done:'status-dot-green', failed:'status-dot-red', cancelled:'status-dot-slate'
+      };
+      return m[s] || '';
+    }
+    function taskStatusTextClass(s) {
+      const m = {
+        draft:'text-text-tertiary', queued:'text-text-tertiary', pending:'text-text-tertiary',
+        auditing:'text-blue-400', needReview:'text-amber-400', needFix:'text-red-400',
+        reAuditing:'text-blue-400', done:'text-green-400', failed:'text-red-400', cancelled:'text-text-tertiary'
+      };
+      return m[s] || '';
+    }
+    function auditResultLabel(s) {
+      const m = { pass:'未发现明显风险', yellow:'存在疑似风险', red:'存在高风险', low:'低风险提醒' };
+      return m[s] || s;
+    }
+    function auditResultBadgeClass(s) {
+      const m = { pass:'risk-badge-green', yellow:'risk-badge-amber', red:'risk-badge-red', low:'risk-badge-slate' };
+      return m[s] || 'risk-badge-slate';
+    }
+    function shouldShowAuditResult(task) {
+      return ['needReview', 'needFix', 'reAuditing', 'done'].includes(task.taskStatus) && !!task.auditResult;
+    }
+
+    function startCreateTask() { formData.value = { taskName:'' }; uploadedFiles.value = []; currentPage.value = 'createAndUpload'; }
+    function simulateFileUpload() {
+      const names = ['main_01.png','sdc_03.png','ad_banner_02.png','detail_05.png','social_01.png','pp_07.png'];
+      const sizes = ['2.4 MB','1.8 MB','3.1 MB','1.2 MB','2.9 MB','1.5 MB'];
+      for (let i=0; i<6; i++) { if (!uploadedFiles.value.find(f=>f.name===names[i])) uploadedFiles.value.push({ name:names[i], size:sizes[i], thumb:placeholderThumbs[i] }); }
+    }
+    function openLibraryModal() {
+      librarySearch.value = '';
+      libraryTypeFilter.value = '';
+      librarySourceFilter.value = '';
+      selectedLibraryAssets.value = [];
+      libraryModalOpen.value = true;
+    }
+    function isLibrarySelected(asset) { return selectedLibraryAssets.value.some(item => item.id === asset.id); }
+    function toggleLibrarySelect(asset) {
+      const idx = selectedLibraryAssets.value.findIndex(item => item.id === asset.id);
+      if (idx > -1) selectedLibraryAssets.value.splice(idx, 1);
+      else selectedLibraryAssets.value.push(asset);
+    }
+    function confirmLibrarySelection() {
+      selectedLibraryAssets.value.forEach(asset => {
+        if (!uploadedFiles.value.find(f => f.name === asset.name)) {
+          uploadedFiles.value.push({ name: asset.name, size: asset.size, thumb: asset.thumb });
+        }
+      });
+      libraryModalOpen.value = false;
+      selectedLibraryAssets.value = [];
+    }
+
+    function startAuditing() {
+      activeTaskName.value = formData.value.taskName;
+      currentPage.value = 'auditing';
+      auditCompleted.value = 0;
+      if (auditTimer) clearInterval(auditTimer);
+      auditTimer = setInterval(() => {
+        if (auditCompleted.value < uploadedFiles.value.length) auditCompleted.value++;
+        if (auditCompleted.value >= uploadedFiles.value.length) clearInterval(auditTimer);
+      }, 500);
+    }
+
+    function leaveAuditing() { if (auditTimer) clearInterval(auditTimer); currentPage.value = 'taskList'; }
+
+    function goToResults() {
+      if (auditTimer) clearInterval(auditTimer);
+      if (materialStats.value.red > 0) activeAuditResult.value = 'red';
+      else if (materialStats.value.yellow > 0) activeAuditResult.value = 'yellow';
+      else if (materialStats.value.low > 0) activeAuditResult.value = 'low';
+      else activeAuditResult.value = 'pass';
+      activeTaskStatus.value = 'needReview';
+      currentPage.value = 'resultOverview';
+    }
+
+    function openAuditingTask(task) {
+      activeTaskName.value = task.name;
+      formData.value.taskName = task.name;
+      uploadedFiles.value = Array.from({length:6}, (_,i) => ({ name:'file_'+(i+1).toString().padStart(2,'0')+'.png', size:(Math.random()*3+1).toFixed(1)+' MB', thumb:placeholderThumbs[i%placeholderThumbs.length] }));
+      startAuditing();
+    }
+
+    function viewTaskResult(task) {
+      activeTaskName.value = task.name;
+      activeTaskStatus.value = task.taskStatus;
+      activeAuditResult.value = task.auditResult;
+      formData.value.taskName = task.name;
+      currentPage.value = 'resultOverview';
+    }
+
+    function goBackToTaskList() { currentPage.value = 'taskList'; }
+
+    function viewDetail(mat) {
+      const idx = auditMaterials.value.findIndex(m => m.name === mat.name);
+      detailIdx.value = idx >= 0 ? idx : 0;
+      activeRiskIndex.value = null;
+      currentPage.value = 'detail';
+    }
+
+    function prevMaterial() { if (detailIdx.value > 0) { detailIdx.value--; activeRiskIndex.value = null; } }
+    function nextMaterial() { if (detailIdx.value < auditMaterials.value.length - 1) { detailIdx.value++; activeRiskIndex.value = null; } }
+
+    function openIgnoreDialog(riskIdx) {
+      ignoreTargetIdx.value = riskIdx;
+      ignoreTarget.value = currentMaterial.value.risks[riskIdx];
+      ignoreForm.value = { reason:'', notes:'' };
+      showIgnoreDialog.value = true;
+    }
+
+    function confirmIgnore() {
+      if (!ignoreForm.value.reason) return;
+      const risk = currentMaterial.value.risks[ignoreTargetIdx.value];
+      risk.ignored = true;
+      risk.ignoreReason = ignoreForm.value.reason === 'other' ? (ignoreForm.value.notes || '其他原因') : '系统误报';
+      operationRecords.value.unshift({ time:'2026-07-07 10:45:00', action:'忽略风险', detail:'忽略"'+risk.type+'"，原因：'+risk.ignoreReason, operator:'张三' });
+      const mat = currentMaterial.value;
+      const active = mat.risks.filter(r => !r.ignored);
+      mat.redCount = active.filter(r => r.level==='red').length;
+      mat.yellowCount = active.filter(r => r.level==='yellow').length;
+      mat.lowCount = active.filter(r => r.level==='low').length;
+      if (mat.redCount===0 && mat.yellowCount===0) mat.auditStatus = mat.lowCount>0 ? 'low' : 'pass';
+      else if (mat.redCount>0) mat.auditStatus = 'red';
+      else mat.auditStatus = 'yellow';
+      showIgnoreDialog.value = false;
+      ignoreTarget.value = null;
+      ignoreTargetIdx.value = null;
+    }
+
+    function confirmComplete() {
+      activeTaskStatus.value = 'done';
+      operationRecords.value.unshift({ time:'2026-07-07 11:00:00', action:'确认完成', detail:'品牌团队确认审核结果，任务完成', operator:'张三' });
+    }
+
+    return {
+      currentPage, navTabs, formData, uploadedFiles,
+      taskSearch, taskStatusFilter, taskResultFilter, filteredTasks,
+      activeTaskName, activeTaskStatus, activeAuditResult,
+      auditCompleted, auditStepLabels,
+      auditMaterials, materialFilter, filteredMaterials, materialFilterTabs, materialStats,
+      detailIdx, currentMaterial, activeRiskIndex,
+      showIgnoreDialog, ignoreTarget, ignoreForm,
+      libraryModalOpen, librarySearch, libraryTypeFilter, librarySourceFilter,
+      filteredLibraryAssets, selectedLibraryAssets,
+      operationRecords, currentTime,
+      overallConclusionText, overallConclusionClass,
+      taskStatusLabel, taskStatusDotClass, taskStatusTextClass,
+      auditResultLabel, auditResultBadgeClass, shouldShowAuditResult,
+      startCreateTask, simulateFileUpload, openLibraryModal, isLibrarySelected, toggleLibrarySelect, confirmLibrarySelection,
+      startAuditing, leaveAuditing, goToResults,
+      openAuditingTask, viewTaskResult, goBackToTaskList,
+      viewDetail, prevMaterial, nextMaterial,
+      openIgnoreDialog, confirmIgnore, confirmComplete
+    };
+  }
+}).mount('#app');
+</script>
+</body>
+</html>
