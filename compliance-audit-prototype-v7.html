@@ -1,0 +1,2222 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>素材审核 v7 - 智岩 AI 平台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="assets/vendor/vue.global.prod.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/@phosphor-icons/web"></script>
+<script>
+if (typeof Vue === 'undefined') {
+  document.write('<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"><\\/script>');
+}
+</script>
+<script>
+if (typeof tailwind !== 'undefined') {
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        fontFamily: { sans: ['Inter','-apple-system','BlinkMacSystemFont','Segoe UI','PingFang SC','Microsoft YaHei','sans-serif'] },
+        colors: {
+          primary: { DEFAULT:'#f59e0b', hover:'#fbbf24', active:'#d97706' },
+          bg: { base:'#0a0a0c', elevated:'#16161e', glass:'rgba(255,255,255,0.06)' },
+          border: { default:'rgba(255,255,255,0.10)', light:'rgba(255,255,255,0.05)' },
+          text: { primary:'rgba(255,255,255,0.92)', secondary:'rgba(255,255,255,0.64)', tertiary:'rgba(255,255,255,0.42)' }
+        }
+      }
+    }
+  };
+}
+</script>
+<style>
+::-webkit-scrollbar { width:6px; height:6px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.15); border-radius:3px; }
+[v-cloak] { display:none; }
+.risk-badge-red { background:rgba(239,68,68,0.18); color:#f87171; border:1px solid rgba(239,68,68,0.3); border-radius:4px; padding:2px 8px; font-size:12px; font-weight:500; white-space:nowrap; display:inline-block; }
+.risk-badge-amber { background:rgba(245,158,11,0.18); color:#fbbf24; border:1px solid rgba(245,158,11,0.3); border-radius:4px; padding:2px 8px; font-size:12px; font-weight:500; white-space:nowrap; display:inline-block; }
+.risk-badge-slate { background:rgba(148,163,184,0.15); color:#94a3b8; border:1px solid rgba(148,163,184,0.25); border-radius:4px; padding:2px 8px; font-size:12px; font-weight:500; white-space:nowrap; display:inline-block; }
+.risk-badge-green { background:rgba(34,197,94,0.15); color:#4ade80; border:1px solid rgba(34,197,94,0.25); border-radius:4px; padding:2px 8px; font-size:12px; font-weight:500; white-space:nowrap; display:inline-block; }
+.risk-badge-blue { background:rgba(59,130,246,0.15); color:#60a5fa; border:1px solid rgba(59,130,246,0.28); border-radius:4px; padding:2px 8px; font-size:12px; font-weight:500; white-space:nowrap; display:inline-block; }
+.replace-badge { background:rgba(59,130,246,0.15); color:#60a5fa; border:1px solid rgba(59,130,246,0.28); border-radius:4px; padding:1px 6px; font-size:10px; font-weight:500; white-space:nowrap; }
+.rechecking-badge { background:rgba(245,158,11,0.15); color:#fbbf24; border:1px solid rgba(245,158,11,0.28); border-radius:4px; padding:1px 6px; font-size:10px; font-weight:500; white-space:nowrap; }
+.status-dot { display:inline-block; width:6px; height:6px; border-radius:50%; margin-right:5px; flex-shrink:0; }
+.status-dot-red { background:#ef4444; box-shadow:0 0 6px rgba(239,68,68,0.5); }
+.status-dot-amber { background:#f59e0b; box-shadow:0 0 6px rgba(245,158,11,0.5); }
+.status-dot-green { background:#22c55e; box-shadow:0 0 6px rgba(34,197,94,0.5); }
+.status-dot-blue { background:#3b82f6; box-shadow:0 0 6px rgba(59,130,246,0.5); }
+.status-dot-slate { background:#64748b; }
+.upload-dropzone { border:2px dashed rgba(255,255,255,0.15); border-radius:12px; transition:all .2s ease; cursor:pointer; }
+.upload-dropzone:hover { border-color:rgba(245,158,11,.5); background:rgba(245,158,11,.05); }
+.bbox-overlay { position:absolute; border:2px solid #ef4444; border-radius:3px; background:rgba(239,68,68,.12); pointer-events:none; animation:bbox-pulse 2s ease-in-out infinite; }
+.bbox-overlay.amber { border-color:#f59e0b; background:rgba(245,158,11,.12); }
+.bbox-overlay.slate { border-color:#64748b; background:rgba(100,116,139,.12); animation:none; }
+@keyframes bbox-pulse { 0%,100% { box-shadow:0 0 0 0 rgba(239,68,68,.4); } 50% { box-shadow:0 0 0 6px rgba(239,68,68,0); } }
+.media-type-badge { background:rgba(255,255,255,0.08); color:rgba(255,255,255,0.72); border:1px solid rgba(255,255,255,0.12); border-radius:4px; padding:1px 6px; font-size:10px; font-weight:500; white-space:nowrap; }
+.media-type-badge.video { background:rgba(168,85,247,0.15); color:#c084fc; border-color:rgba(168,85,247,0.28); }
+.video-play-overlay { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.35); pointer-events:none; }
+.video-timeline { height:4px; background:rgba(255,255,255,0.12); border-radius:2px; position:relative; }
+.video-timeline-marker { position:absolute; top:50%; transform:translate(-50%,-50%); width:8px; height:8px; border-radius:50%; cursor:pointer; transition:transform .15s; }
+.video-timeline-marker:hover { transform:translate(-50%,-50%) scale(1.3); }
+.video-timeline-marker.active { box-shadow:0 0 0 3px rgba(245,158,11,0.35); }
+.audit-table th, .audit-table td { text-align:left; vertical-align:middle; }
+.audit-table th { white-space:nowrap; font-weight:500; }
+.audit-table tbody td { padding:14px 16px; }
+.audit-table .cell-nowrap { white-space:nowrap; }
+.audit-table .cell-actions { white-space:nowrap; min-width:200px; }
+.history-version-row { transition:background .15s; }
+.history-version-row:hover { background:rgba(255,255,255,0.03); }
+.history-version-row.is-current { background:rgba(59,130,246,0.06); border-left:2px solid rgba(59,130,246,0.5); }
+.audit-table .cell-actions .action-link { white-space:nowrap; flex-shrink:0; }
+.filter-label-inline { font-size:13px; color:rgba(255,255,255,0.64); white-space:nowrap; shrink:0; }
+.filter-inline { display:flex; align-items:center; gap:8px; shrink:0; white-space:nowrap; }
+.filter-control { height:32px; padding:0 12px; background:rgba(0,0,0,0.20); border:1px solid rgba(255,255,255,0.10); border-radius:8px; font-size:13px; color:rgba(255,255,255,0.92); outline:none; transition:border-color .2s; }
+.filter-control:focus { border-color:rgba(245,158,11,0.5); }
+.filter-control option { background:#16161e; color:rgba(255,255,255,0.92); }
+.filter-btn { height:32px; padding:0 16px; border-radius:8px; border:1px solid rgba(255,255,255,0.10); font-size:13px; transition:all .2s; white-space:nowrap; shrink:0; }
+.filter-btn-query { background:rgba(255,255,255,0.06); color:rgba(255,255,255,0.92); }
+.filter-btn-query:hover { background:rgba(255,255,255,0.10); }
+.filter-btn-reset { background:transparent; color:rgba(255,255,255,0.64); }
+.filter-btn-reset:hover { color:rgba(255,255,255,0.92); background:rgba(255,255,255,0.05); }
+</style>
+</head>
+<body class="bg-bg-base text-text-primary h-screen w-screen overflow-hidden selection:bg-primary/30">
+<div id="app" class="h-full w-full flex flex-col relative" v-cloak>
+  <div class="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+    <div class="absolute -top-[10%] -left-[10%] w-[50vw] h-[50vw] bg-indigo-600/8 rounded-full blur-[120px] mix-blend-screen"></div>
+    <div class="absolute top-[30%] right-[-10%] w-[40vw] h-[40vw] bg-amber-600/8 rounded-full blur-[120px] mix-blend-screen"></div>
+    <div class="absolute -bottom-[20%] left-[20%] w-[60vw] h-[60vw] bg-purple-600/5 rounded-full blur-[150px] mix-blend-screen"></div>
+  </div>
+
+  <header class="h-[48px] shrink-0 border-b border-border-default flex items-center justify-between px-4 z-50 relative bg-bg-base/40 backdrop-blur-sm">
+    <div class="flex items-center gap-4 min-w-0">
+      <div class="flex items-center gap-2 pr-4 border-r border-border-default shrink-0">
+        <div class="w-7 h-7 rounded bg-primary flex items-center justify-center text-bg-base font-bold text-sm"><i class="ph-bold ph-cube"></i></div>
+        <span class="font-bold text-[15px] tracking-wide">智岩 AI</span>
+      </div>
+      <div class="flex items-center gap-1 overflow-x-auto">
+        <div v-for="tab in navTabs" :key="tab.id" @click="switchTab(tab.id)" class="h-[30px] px-3 flex items-center gap-2 rounded-md text-[13px] transition-colors cursor-pointer max-w-[220px] border shrink-0" :class="activeTabId === tab.id ? 'bg-primary/10 text-text-primary border-primary/25' : 'text-text-secondary border-transparent hover:bg-white/5 hover:text-text-primary'">
+          <i :class="tab.icon" class="text-sm"></i>
+          <span class="truncate">{{ tab.title }}</span>
+          <button v-if="tab.closable" @click.stop="closeTab(tab.id)" class="w-4 h-4 rounded hover:bg-white/10 flex items-center justify-center opacity-60 hover:opacity-100 transition-opacity"><i class="ph ph-x text-[10px]"></i></button>
+        </div>
+      </div>
+    </div>
+    <div class="flex items-center gap-3 shrink-0">
+      <button class="w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center text-text-secondary hover:text-text-primary transition-colors"><i class="ph ph-moon text-lg"></i></button>
+      <div class="w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-xs font-semibold shadow-inner border border-white/20">张</div>
+    </div>
+  </header>
+
+  <main class="flex-1 overflow-hidden p-[10px_12px_12px] relative z-10 flex flex-col gap-3">
+    <template v-if="isHomeTab && currentPage === 'taskList'">
+      <div class="shrink-0 bg-bg-glass backdrop-blur-[12px] border border-border-default rounded-[14px] shadow-lg shadow-black/50 ring-1 ring-white/5 px-5 py-3 flex items-center gap-4 flex-nowrap">
+        <div class="filter-inline">
+          <span class="filter-label-inline">任务名称</span>
+          <input type="text" v-model="taskSearch" placeholder="请输入" class="filter-control w-[200px] placeholder-text-tertiary">
+        </div>
+        <div class="filter-inline">
+          <span class="filter-label-inline">审核进度</span>
+          <select v-model="taskStatusFilter" class="filter-control w-[140px] cursor-pointer" :class="!taskStatusFilter ? 'text-text-tertiary' : ''">
+            <option value="">请选择</option>
+            <option value="running">审核中</option>
+            <option value="finished">审核完成</option>
+            <option value="terminated">已终止</option>
+            <option value="failed">审核失败</option>
+          </select>
+        </div>
+        <div class="filter-inline">
+          <span class="filter-label-inline">审核结果</span>
+          <select v-model="taskResultFilter" class="filter-control w-[160px] cursor-pointer" :class="!taskResultFilter ? 'text-text-tertiary' : ''">
+            <option value="">请选择</option>
+            <option value="high">存在高风险</option>
+            <option value="medium">存在中风险</option>
+            <option value="low">存在低风险</option>
+            <option value="pass">未发现明显风险</option>
+          </select>
+        </div>
+        <div class="flex-1 min-w-[8px]"></div>
+        <button @click="submitTaskQuery" class="filter-btn filter-btn-query">查询</button>
+        <button @click="resetTaskFilters" class="filter-btn filter-btn-reset">重置</button>
+      </div>
+
+      <div class="flex-1 bg-bg-glass backdrop-blur-[12px] border border-border-default rounded-[14px] shadow-lg shadow-black/50 ring-1 ring-white/5 overflow-hidden flex flex-col">
+        <div class="px-5 py-3 shrink-0">
+          <button @click="startCreateTask" class="h-[32px] px-4 rounded-lg bg-primary hover:bg-primary-hover active:bg-primary-active text-bg-base text-[13px] font-semibold transition-all shadow-[0_0_12px_rgba(245,158,11,0.2)] hover:shadow-[0_0_16px_rgba(245,158,11,0.4)]">新建任务</button>
+        </div>
+        <div class="flex-1 overflow-auto">
+          <table class="w-full text-[13px]">
+            <thead>
+              <tr class="border-b border-border-light bg-white/[0.03]">
+                <th class="text-left px-4 py-3 text-text-tertiary font-medium text-[12px] w-[56px]">序号</th>
+                <th class="text-left px-4 py-3 text-text-tertiary font-medium text-[12px]">任务名称</th>
+                <th class="text-left px-4 py-3 text-text-tertiary font-medium text-[12px]">素材数量</th>
+                <th class="text-left px-4 py-3 text-text-tertiary font-medium text-[12px]">审核进度</th>
+                <th class="text-left px-4 py-3 text-text-tertiary font-medium text-[12px]">审核结果</th>
+                <th class="text-left px-4 py-3 text-text-tertiary font-medium text-[12px]">审核时间</th>
+                <th class="text-left px-4 py-3 text-text-tertiary font-medium text-[12px] w-[72px]">操作人</th>
+                <th class="text-left px-6 py-3 text-text-tertiary font-medium text-[12px]">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-if="paginatedTasks.length === 0">
+                <td colspan="8" class="px-6 py-16 text-center text-text-tertiary text-[13px]">
+                  <i class="ph-duotone ph-clipboard-text text-[32px] opacity-30 block mb-2"></i>
+                  暂无数据
+                </td>
+              </tr>
+              <tr v-for="(task, index) in paginatedTasks" :key="task.id" class="border-b border-border-light hover:bg-white/[0.03] transition-colors">
+                <td class="px-4 py-3.5 text-text-secondary text-[12px]">{{ taskRowIndex(index) }}</td>
+                <td class="px-4 py-3.5">
+                  <div class="font-medium text-text-primary">{{ task.name }}</div>
+                </td>
+                <td class="px-4 py-3.5 text-text-secondary">{{ task.totalCount }} 个</td>
+                <td class="px-4 py-3.5"><div class="flex items-center gap-1.5 text-[12px]" :class="auditProgressTextClass(task)"><span class="status-dot" :class="auditProgressDotClass(task)"></span>{{ auditProgressLabel(task) }}</div></td>
+                <td class="px-4 py-3.5">
+                  <span v-if="!getTaskDisplayAuditResult(task)" class="text-text-tertiary text-[12px]">--</span>
+                  <span v-else :class="auditResultBadgeClass(getTaskDisplayAuditResult(task))">{{ auditResultLabel(getTaskDisplayAuditResult(task)) }}</span>
+                </td>
+                <td class="px-4 py-3.5 text-text-secondary text-[12px]">{{ task.auditTime || '--' }}</td>
+                <td class="px-4 py-3.5 text-text-secondary text-[12px]">{{ task.creator || '--' }}</td>
+                <td class="px-6 py-3.5">
+                  <div class="flex items-center gap-4 flex-nowrap">
+                    <button @click="openTaskDetail(task)" class="text-[12px] text-primary hover:text-primary-hover font-medium">查看详情</button>
+                    <button v-if="canDeleteTask(task)" @click="openDeleteConfirm(task)" class="text-[12px] text-text-secondary hover:text-red-400 font-medium transition-colors">删除</button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="px-5 py-3 border-t border-border-light flex items-center justify-end shrink-0 text-[12px] text-text-tertiary gap-3">
+          <button @click="goTaskPage(taskPage - 1)" :disabled="taskPage <= 1" class="w-7 h-7 rounded-md border border-border-default flex items-center justify-center transition-colors" :class="taskPage <= 1 ? 'opacity-40 cursor-not-allowed' : 'hover:bg-white/5 hover:text-text-primary'"><i class="ph ph-caret-left text-sm"></i></button>
+          <button class="min-w-[28px] h-7 px-2 rounded-md bg-primary/15 text-primary font-medium">{{ taskPage }}</button>
+          <button @click="goTaskPage(taskPage + 1)" :disabled="taskPage >= taskTotalPages" class="w-7 h-7 rounded-md border border-border-default flex items-center justify-center transition-colors" :class="taskPage >= taskTotalPages ? 'opacity-40 cursor-not-allowed' : 'hover:bg-white/5 hover:text-text-primary'"><i class="ph ph-caret-right text-sm"></i></button>
+          <select v-model.number="taskPageSize" @change="onTaskPageSizeChange" class="h-7 px-2 bg-black/20 border border-border-default rounded-md text-[12px] text-text-secondary outline-none cursor-pointer">
+            <option :value="10">10 / 页</option>
+            <option :value="20">20 / 页</option>
+            <option :value="30">30 / 页</option>
+          </select>
+          <div class="flex items-center gap-1.5">
+            <span>跳至</span>
+            <input type="text" v-model="taskGotoPage" @keyup.enter="gotoTaskPage" class="w-10 h-7 bg-black/20 border border-border-default rounded-md text-center text-[12px] text-text-primary outline-none focus:border-primary/50 transition-all">
+            <span>页</span>
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <div v-if="!isHomeTab && currentPage === 'resultOverview'" class="flex-1 bg-bg-glass backdrop-blur-[12px] border border-border-default rounded-[14px] overflow-hidden flex flex-col shadow-lg shadow-black/50 ring-1 ring-white/5">
+      <div class="px-6 py-4 border-b border-border-light shrink-0">
+        <h1 class="text-[16px] font-semibold text-text-primary mb-4">{{ activeTaskName || formData.taskName }}</h1>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-x-10 gap-y-3">
+          <div>
+            <div class="text-[12px] text-text-tertiary mb-1.5">审核进度</div>
+            <div class="flex items-center gap-1.5 text-[13px]" :class="activeTaskProgressTextClass"><span class="status-dot" :class="activeTaskProgressDotClass"></span>{{ activeTaskProgressLabel }}</div>
+          </div>
+          <div>
+            <div class="text-[12px] text-text-tertiary mb-1.5">审核结果</div>
+            <span v-if="shouldShowActiveTaskAuditResult" :class="auditResultBadgeClass(taskAuditResult)">{{ auditResultLabel(taskAuditResult) }}</span>
+            <span v-else class="text-[13px] text-text-tertiary">--</span>
+          </div>
+          <div>
+            <div class="text-[12px] text-text-tertiary mb-1.5">素材数量</div>
+            <span class="text-[13px] text-text-primary">{{ materialComposeLabel }}</span>
+          </div>
+          <div>
+            <div class="text-[12px] text-text-tertiary mb-1.5">审核时间</div>
+            <span class="text-[13px] text-text-primary">{{ activeTaskAuditTime || '--' }}</span>
+          </div>
+        </div>
+        <div v-if="selectedChannelLabel" class="mt-3 flex items-center gap-2">
+          <span class="text-[12px] text-text-tertiary">渠道</span>
+          <span class="text-[12px] px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">{{ selectedChannelLabel }}</span>
+          <span class="text-[12px] text-text-tertiary">已启用安全区检测</span>
+        </div>
+      </div>
+      <div class="flex-1 overflow-auto p-6">
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
+          <div @click="materialFilter=''" class="bg-black/20 border rounded-xl p-4 cursor-pointer transition-all hover:bg-white/[0.04]" :class="materialFilter===''?'border-white/20':'border-border-default'"><div class="text-[28px] font-bold text-text-primary">{{ materialStats.total }}</div><div class="text-[12px] text-text-tertiary mt-1">素材总数</div></div>
+          <div @click="materialFilter='high'" class="bg-black/20 border rounded-xl p-4 cursor-pointer transition-all hover:bg-white/[0.04]" :class="materialFilter==='high'?'border-red-500/30 bg-red-500/[0.03]':'border-border-default'"><div class="text-[28px] font-bold text-red-400">{{ materialStats.high }}</div><div class="text-[12px] text-text-tertiary mt-1">存在高风险</div></div>
+          <div @click="materialFilter='medium'" class="bg-black/20 border rounded-xl p-4 cursor-pointer transition-all hover:bg-white/[0.04]" :class="materialFilter==='medium'?'border-amber-500/30 bg-amber-500/[0.03]':'border-border-default'"><div class="text-[28px] font-bold text-amber-400">{{ materialStats.medium }}</div><div class="text-[12px] text-text-tertiary mt-1">存在中风险</div></div>
+          <div @click="materialFilter='low'" class="bg-black/20 border rounded-xl p-4 cursor-pointer transition-all hover:bg-white/[0.04]" :class="materialFilter==='low'?'border-blue-500/30 bg-blue-500/[0.03]':'border-border-default'"><div class="text-[28px] font-bold text-blue-400">{{ materialStats.low }}</div><div class="text-[12px] text-text-tertiary mt-1">存在低风险</div></div>
+          <div @click="materialFilter='pass'" class="bg-black/20 border rounded-xl p-4 cursor-pointer transition-all hover:bg-white/[0.04]" :class="materialFilter==='pass'?'border-green-500/30 bg-green-500/[0.03]':'border-border-default'"><div class="text-[28px] font-bold text-green-400">{{ materialStats.pass }}</div><div class="text-[12px] text-text-tertiary mt-1">未发现明显风险</div></div>
+        </div>
+        <div class="border border-border-default rounded-xl overflow-hidden overflow-x-auto">
+          <table class="audit-table w-full text-[13px] min-w-[1080px]">
+            <thead>
+              <tr class="border-b border-border-light bg-white/[0.02]">
+                <th class="px-4 py-3.5 text-text-tertiary text-[12px] w-[64px]">预览</th>
+                <th class="px-4 py-3.5 text-text-tertiary text-[12px] min-w-[180px]">文件名</th>
+                <th class="px-4 py-3.5 text-text-tertiary text-[12px] w-[88px]">素材类型</th>
+                <th class="px-4 py-3.5 text-text-tertiary text-[12px] min-w-[132px]">审核结果</th>
+                <th class="px-4 py-3.5 text-text-tertiary text-[12px] min-w-[148px]">风险命中</th>
+                <th class="px-4 py-3.5 text-text-tertiary text-[12px] min-w-[220px]">主要命中项</th>
+                <th class="px-4 py-3.5 text-text-tertiary text-[12px] min-w-[148px]">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(mat,i) in filteredSortedMaterials" :key="i" class="border-b border-border-light hover:bg-white/[0.03] transition-colors last:border-0">
+                <td><div class="w-10 h-10 rounded-md bg-bg-elevated overflow-hidden relative"><img :src="mat.thumb" class="w-full h-full object-cover"><div v-if="mat.mediaType==='video'" class="absolute inset-0 flex items-center justify-center bg-black/40"><i class="ph-fill ph-play text-white text-sm"></i></div></div></td>
+                <td>
+                  <div class="flex items-center gap-2 flex-nowrap min-w-0">
+                    <span class="font-medium text-text-primary text-[12px] truncate">{{ mat.name }}</span>
+                    <span v-if="mat.rechecking" class="rechecking-badge shrink-0">复审中</span>
+                    <span v-else-if="mat.replaced" class="replace-badge shrink-0">已替换</span>
+                  </div>
+                  <div v-if="mat.replaced && mat.originalName" class="text-[11px] text-text-tertiary mt-1 truncate max-w-[280px]">原文件 {{ mat.originalName }}<span v-if="mat.replaceRound"> · 第 {{ mat.replaceRound }} 轮替换</span></div>
+                </td>
+                <td class="cell-nowrap"><span class="media-type-badge" :class="mat.mediaType==='video'?'video':''">{{ mediaTypeLabel(mat.mediaType) }}</span></td>
+                <td class="cell-nowrap"><span :class="auditResultBadgeClass(mat.auditStatus)">{{ auditResultLabel(mat.auditStatus) }}</span></td>
+                <td class="text-[12px] leading-relaxed cell-nowrap">
+                  <template v-if="mat.highCount===0 && mat.mediumCount===0 && mat.lowCount===0"><span class="text-text-tertiary">无</span></template>
+                  <template v-else>
+                    <span v-if="mat.highCount>0" class="text-red-400">高风险{{ mat.highCount }}个</span><span v-if="mat.highCount>0 && (mat.mediumCount>0 || mat.lowCount>0)" class="text-text-tertiary">，</span><span v-if="mat.mediumCount>0" class="text-amber-400">中风险{{ mat.mediumCount }}个</span><span v-if="mat.mediumCount>0 && mat.lowCount>0" class="text-text-tertiary">，</span><span v-if="mat.lowCount>0" class="text-slate-400">低风险{{ mat.lowCount }}个</span>
+                  </template>
+                </td>
+                <td class="text-[12px] text-text-secondary">{{ mat.primaryHit || '--' }}</td>
+                <td class="cell-actions">
+                  <div class="flex items-center gap-4 flex-nowrap">
+                    <button @click="viewDetail(mat)" class="action-link text-[12px] text-primary hover:text-primary-hover font-medium">查看详情</button>
+                    <button @click="openReplaceDialog(mat)" class="action-link text-[12px] text-primary hover:text-primary-hover font-medium">替换复审</button>
+                    <button v-if="hasAuditHistory(mat)" @click="openAuditHistoryModal(mat)" class="action-link text-[12px] text-primary hover:text-primary-hover font-medium">审核记录</button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+      <div class="px-6 py-4 border-t border-border-light flex items-center justify-end gap-3 shrink-0">
+        <button v-if="!['auditing','reAuditing','failed','terminated'].includes(activeTaskStatus)" @click="confirmReAudit('all')" class="h-[36px] px-4 rounded-lg border border-border-default text-[13px] text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all">重新审核全部</button>
+        <button @click="closeCurrentTaskTab" class="h-[36px] px-4 rounded-lg bg-primary hover:bg-primary-hover text-bg-base text-[13px] font-semibold transition-all shadow-[0_0_12px_rgba(245,158,11,0.2)] hover:shadow-[0_0_16px_rgba(245,158,11,0.4)]">关闭</button>
+      </div>
+    </div>
+
+    <div v-if="!isHomeTab && currentPage === 'terminatedOverview'" class="flex-1 bg-bg-glass backdrop-blur-[12px] border border-border-default rounded-[14px] overflow-hidden flex flex-col shadow-lg shadow-black/50 ring-1 ring-white/5">
+      <div class="px-6 py-4 border-b border-border-light shrink-0">
+        <h1 class="text-[16px] font-semibold text-text-primary mb-4">{{ activeTaskName }}</h1>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-x-10 gap-y-3">
+          <div>
+            <div class="text-[12px] text-text-tertiary mb-1.5">审核进度</div>
+            <div class="flex items-center gap-1.5 text-[13px] text-text-secondary"><span class="status-dot status-dot-slate"></span>已终止</div>
+          </div>
+          <div>
+            <div class="text-[12px] text-text-tertiary mb-1.5">审核结果</div>
+            <span class="text-[13px] text-text-tertiary">--</span>
+          </div>
+          <div>
+            <div class="text-[12px] text-text-tertiary mb-1.5">完成进度</div>
+            <span class="text-[13px] text-text-primary">{{ terminatedProgressLabel }}</span>
+          </div>
+          <div>
+            <div class="text-[12px] text-text-tertiary mb-1.5">终止时间</div>
+            <span class="text-[13px] text-text-primary">{{ activeTaskAuditTime || '--' }}</span>
+          </div>
+        </div>
+      </div>
+      <div class="flex-1 overflow-auto p-6">
+        <div class="border border-border-default rounded-xl overflow-hidden overflow-x-auto">
+          <table class="audit-table w-full text-[13px] min-w-[760px]">
+            <thead>
+              <tr class="border-b border-border-light bg-white/[0.02]">
+                <th class="px-4 py-3.5 text-text-tertiary text-[12px] w-[64px]">预览</th>
+                <th class="px-4 py-3.5 text-text-tertiary text-[12px] min-w-[180px]">文件名</th>
+                <th class="px-4 py-3.5 text-text-tertiary text-[12px] w-[88px]">素材类型</th>
+                <th class="px-4 py-3.5 text-text-tertiary text-[12px] min-w-[120px]">审核状态</th>
+                <th class="px-4 py-3.5 text-text-tertiary text-[12px] min-w-[220px]">说明</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(file,i) in terminatedMaterials" :key="i" class="border-b border-border-light hover:bg-white/[0.03] transition-colors last:border-0">
+                <td><div class="w-10 h-10 rounded-md bg-bg-elevated overflow-hidden relative"><img :src="file.thumb" class="w-full h-full object-cover"><div v-if="file.mediaType==='video'" class="absolute inset-0 flex items-center justify-center bg-black/40"><i class="ph-fill ph-play text-white text-sm"></i></div></div></td>
+                <td><span class="font-medium text-text-primary text-[12px]">{{ file.name }}</span></td>
+                <td class="cell-nowrap"><span class="media-type-badge" :class="file.mediaType==='video'?'video':''">{{ mediaTypeLabel(file.mediaType) }}</span></td>
+                <td class="cell-nowrap"><div class="flex items-center gap-1.5 text-[12px]" :class="terminatedFileStatusClass(file.fileStatus)"><span class="status-dot" :class="terminatedFileStatusDot(file.fileStatus)"></span>{{ terminatedFileStatusLabel(file.fileStatus) }}</div></td>
+                <td class="text-[12px] text-text-secondary">{{ terminatedFileDetail(file) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="px-6 py-4 border-t border-border-light flex items-center justify-end gap-3 shrink-0">
+        <button @click="confirmReAudit('all')" class="h-[36px] px-4 rounded-lg border border-border-default text-[13px] text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all">重新审核</button>
+        <button @click="closeCurrentTaskTab" class="h-[36px] px-4 rounded-lg bg-primary hover:bg-primary-hover text-bg-base text-[13px] font-semibold transition-all shadow-[0_0_12px_rgba(245,158,11,0.2)] hover:shadow-[0_0_16px_rgba(245,158,11,0.4)]">关闭</button>
+      </div>
+    </div>
+
+    <div v-if="!isHomeTab && currentPage === 'failedOverview'" class="flex-1 bg-bg-glass backdrop-blur-[12px] border border-border-default rounded-[14px] overflow-hidden flex flex-col shadow-lg shadow-black/50 ring-1 ring-white/5">
+      <div class="px-6 py-4 border-b border-border-light shrink-0">
+        <h1 class="text-[16px] font-semibold text-text-primary mb-4">{{ activeTaskName }}</h1>
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-x-10 gap-y-3">
+          <div>
+            <div class="text-[12px] text-text-tertiary mb-1.5">审核进度</div>
+            <div class="flex items-center gap-1.5 text-[13px] text-red-400"><span class="status-dot status-dot-red"></span>审核失败</div>
+          </div>
+          <div>
+            <div class="text-[12px] text-text-tertiary mb-1.5">失败原因</div>
+            <span class="text-[13px] text-text-primary">{{ activeFailureReason }}</span>
+          </div>
+          <div>
+            <div class="text-[12px] text-text-tertiary mb-1.5">失败时间</div>
+            <span class="text-[13px] text-text-primary">{{ activeTaskAuditTime || '--' }}</span>
+          </div>
+        </div>
+      </div>
+      <div class="flex-1 overflow-auto p-6">
+        <div class="border border-border-default rounded-xl overflow-hidden overflow-x-auto">
+          <table class="audit-table w-full text-[13px] min-w-[760px]">
+            <thead>
+              <tr class="border-b border-border-light bg-white/[0.02]">
+                <th class="px-4 py-3.5 text-text-tertiary text-[12px] w-[64px]">预览</th>
+                <th class="px-4 py-3.5 text-text-tertiary text-[12px] min-w-[180px]">文件名</th>
+                <th class="px-4 py-3.5 text-text-tertiary text-[12px] w-[88px]">素材类型</th>
+                <th class="px-4 py-3.5 text-text-tertiary text-[12px] min-w-[120px]">审核状态</th>
+                <th class="px-4 py-3.5 text-text-tertiary text-[12px] min-w-[220px]">说明</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(file,i) in failedMaterials" :key="i" class="border-b border-border-light hover:bg-white/[0.03] transition-colors last:border-0">
+                <td><div class="w-10 h-10 rounded-md bg-bg-elevated overflow-hidden relative"><img :src="file.thumb" class="w-full h-full object-cover"><div v-if="file.mediaType==='video'" class="absolute inset-0 flex items-center justify-center bg-black/40"><i class="ph-fill ph-play text-white text-sm"></i></div></div></td>
+                <td><span class="font-medium text-text-primary text-[12px]">{{ file.name }}</span></td>
+                <td class="cell-nowrap"><span class="media-type-badge" :class="file.mediaType==='video'?'video':''">{{ mediaTypeLabel(file.mediaType) }}</span></td>
+                <td class="cell-nowrap"><div class="flex items-center gap-1.5 text-[12px]" :class="failedFileStatusClass(file.fileStatus)"><span class="status-dot" :class="failedFileStatusDot(file.fileStatus)"></span>{{ failedFileStatusLabel(file.fileStatus) }}</div></td>
+                <td class="text-[12px] text-text-secondary">{{ failedFileDetail(file) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="px-6 py-4 border-t border-border-light flex items-center justify-end gap-3 shrink-0">
+        <button @click="confirmReAudit('retry')" class="h-[36px] px-4 rounded-lg border border-border-default text-[13px] text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all">重试审核</button>
+        <button @click="closeCurrentTaskTab" class="h-[36px] px-4 rounded-lg bg-primary hover:bg-primary-hover text-bg-base text-[13px] font-semibold transition-all shadow-[0_0_12px_rgba(245,158,11,0.2)] hover:shadow-[0_0_16px_rgba(245,158,11,0.4)]">关闭</button>
+      </div>
+    </div>
+
+    <div v-if="!isHomeTab && currentPage === 'detail'" class="flex-1 bg-bg-glass backdrop-blur-[12px] border border-border-default rounded-[14px] overflow-hidden flex flex-col shadow-lg shadow-black/50 ring-1 ring-white/5">
+      <div v-if="isHistoryDetailView" class="px-5 py-2.5 border-b border-amber-500/20 bg-amber-500/[0.06] shrink-0 flex items-center justify-between gap-3">
+        <div class="flex items-center gap-2 min-w-0">
+          <i class="ph ph-clock-counter-clockwise text-amber-400 shrink-0"></i>
+          <span class="text-[12px] text-amber-200/90 truncate">历史版本 · {{ displayMaterial.name }} · {{ historyVersionLabel(displayMaterial) }}</span>
+        </div>
+        <button @click="exitHistoryDetailView" class="h-[28px] px-3 rounded-lg border border-border-default text-[12px] text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all shrink-0">返回审核记录</button>
+      </div>
+      <div class="px-5 py-3 border-b border-border-light shrink-0 flex items-center justify-between">
+        <button @click="backFromDetail" class="h-[32px] px-3 rounded-lg border border-border-default text-[13px] text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all flex items-center gap-1"><i class="ph ph-arrow-left text-xs"></i>返回</button>
+        <button v-if="!isHistoryDetailView" @click="openReplaceDialog(currentMaterial)" class="h-[32px] px-3 rounded-lg border border-primary/30 text-[13px] text-primary hover:bg-primary/10 transition-all flex items-center gap-1"><i class="ph ph-arrows-clockwise text-xs"></i>替换复审</button>
+      </div>
+      <div class="flex flex-1 overflow-hidden min-h-0">
+        <div class="flex-1 min-w-0 flex flex-col border-r border-border-light bg-black/30">
+          <div class="flex-1 relative flex items-center justify-center overflow-hidden px-14">
+            <button @click="prevMaterial" :disabled="detailIdx===0 || isHistoryDetailView" class="absolute left-4 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full border border-border-default bg-black/40 hover:bg-white/10 flex items-center justify-center text-text-secondary transition-colors z-10" :class="detailIdx===0 || isHistoryDetailView ? 'opacity-30 cursor-not-allowed':'hover:text-text-primary'"><i class="ph ph-caret-left"></i></button>
+            <div class="relative inline-block max-w-full max-h-full">
+              <template v-if="displayMaterial.mediaType==='video'">
+                <div class="relative">
+                  <img :src="displayMaterial.thumb" class="max-w-full max-h-[calc(100vh-320px)] object-contain rounded-lg shadow-2xl">
+                  <div class="video-play-overlay rounded-lg"><div class="w-14 h-14 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center"><i class="ph-fill ph-play text-white text-2xl ml-1"></i></div></div>
+                  <div v-for="(risk,ri) in displayMaterial.risks" :key="ri" v-show="activeRiskIndex===null||activeRiskIndex===ri" class="bbox-overlay" :class="risk.level==='medium'?'amber':risk.level==='low'?'slate':''" :style="{left:(risk.bbox?.x||20)+'%',top:(risk.bbox?.y||20)+'%',width:(risk.bbox?.w||30)+'%',height:(risk.bbox?.h||25)+'%'}"></div>
+                </div>
+                <div class="mt-4 w-full max-w-[560px] mx-auto">
+                  <div class="flex items-center justify-between text-[11px] text-text-tertiary mb-1.5 px-1">
+                    <span>00:00</span>
+                    <span v-if="activeVideoRisk && activeVideoRisk.timeRange">{{ activeVideoRisk.timeRange }}</span>
+                    <span>{{ displayMaterial.duration || '00:15' }}</span>
+                  </div>
+                  <div class="video-timeline">
+                    <div v-for="(risk,ri) in displayMaterial.risks" :key="'tm-'+ri" @click="activeRiskIndex=ri" class="video-timeline-marker" :class="[risk.level==='high'?'bg-red-500':risk.level==='medium'?'bg-amber-500':'bg-slate-400', activeRiskIndex===ri?'active':'']" :style="{left:(risk.timePercent||((ri+1)*15))+'%'}"></div>
+                  </div>
+                </div>
+              </template>
+              <template v-else>
+                <img :src="displayMaterial.thumb" class="max-w-full max-h-[calc(100vh-280px)] object-contain rounded-lg shadow-2xl">
+                <div v-for="(risk,ri) in displayMaterial.risks" :key="ri" v-show="activeRiskIndex===null||activeRiskIndex===ri" class="bbox-overlay" :class="risk.level==='medium'?'amber':risk.level==='low'?'slate':''" :style="{left:risk.bbox.x+'%',top:risk.bbox.y+'%',width:risk.bbox.w+'%',height:risk.bbox.h+'%'}"></div>
+                <div v-for="(risk,ri) in displayMaterial.risks" :key="'dot-'+ri" @click="activeRiskIndex=ri" class="absolute w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold cursor-pointer transition-all hover:scale-110 shadow-lg" :class="risk.level==='high'?'bg-red-500 text-white':risk.level==='medium'?'bg-amber-500 text-black':'bg-slate-500 text-white'" :style="{left:(risk.bbox.x+risk.bbox.w/2)+'%',top:(risk.bbox.y+risk.bbox.h/2)+'%'}">{{ ri+1 }}</div>
+              </template>
+            </div>
+            <button @click="nextMaterial" :disabled="detailIdx===auditMaterials.length-1 || isHistoryDetailView" class="absolute right-4 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full border border-border-default bg-black/40 hover:bg-white/10 flex items-center justify-center text-text-secondary transition-colors z-10" :class="detailIdx===auditMaterials.length-1 || isHistoryDetailView ? 'opacity-30 cursor-not-allowed':'hover:text-text-primary'"><i class="ph ph-caret-right"></i></button>
+          </div>
+          <div class="shrink-0 px-5 py-3 border-t border-border-light flex flex-col items-center justify-center gap-1 text-center">
+            <div class="flex items-center gap-2 max-w-full">
+              <span class="text-[14px] font-medium text-text-primary truncate">{{ displayMaterial.name }}</span>
+              <span class="media-type-badge shrink-0" :class="displayMaterial.mediaType==='video'?'video':''">{{ mediaTypeLabel(displayMaterial.mediaType) }}</span>
+              <span v-if="isHistoryDetailView" class="text-[10px] text-amber-400 px-1.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 shrink-0">历史版本</span>
+              <template v-else>
+                <span v-if="currentMaterial.rechecking" class="rechecking-badge shrink-0">复审中</span>
+                <span v-else-if="currentMaterial.replaced" class="replace-badge shrink-0">已替换</span>
+              </template>
+            </div>
+            <div v-if="!isHistoryDetailView && currentMaterial.replaced && currentMaterial.originalName" class="text-[11px] text-text-tertiary">原文件 {{ currentMaterial.originalName }}<span v-if="currentMaterial.replaceRound"> · 第 {{ currentMaterial.replaceRound }} 轮替换</span></div>
+            <span v-if="!isHistoryDetailView" class="text-[12px] text-text-tertiary">{{ detailIdx+1 }} / {{ auditMaterials.length }}</span>
+          </div>
+        </div>
+        <div class="w-[460px] shrink-0 flex flex-col overflow-hidden">
+          <div class="px-5 py-3 border-b border-border-light shrink-0 text-[13px] leading-relaxed">
+            <span class="text-text-tertiary">风险命中：</span>
+            <template v-if="displayMaterial.risks.length === 0"><span class="text-green-400">无</span></template>
+            <template v-else>
+              <span v-if="displayMaterialRiskCounts.high > 0" class="text-red-400">高风险{{ displayMaterialRiskCounts.high }}个</span><span v-if="displayMaterialRiskCounts.high > 0 && (displayMaterialRiskCounts.medium > 0 || displayMaterialRiskCounts.low > 0)">，</span><span v-if="displayMaterialRiskCounts.medium > 0" class="text-amber-400">中风险{{ displayMaterialRiskCounts.medium }}个</span><span v-if="displayMaterialRiskCounts.medium > 0 && displayMaterialRiskCounts.low > 0">，</span><span v-if="displayMaterialRiskCounts.low > 0" class="text-slate-400">低风险{{ displayMaterialRiskCounts.low }}个</span>
+            </template>
+          </div>
+          <div class="flex-1 overflow-auto p-4 space-y-3">
+          <div v-if="displayMaterial.risks.length===0" class="text-center py-12 text-text-tertiary text-[13px]"><i class="ph ph-check-circle text-2xl text-green-400 block mb-2"></i>未发现明显风险</div>
+          <div v-for="(risk,i) in displayMaterial.risks" :key="i" @click="activeRiskIndex=i" class="rounded-xl border p-4 cursor-pointer transition-all" :class="riskCardClass(risk,i)">
+            <div class="flex items-center gap-2 mb-3">
+              <span class="text-[12px] font-mono font-semibold text-primary shrink-0">{{ risk.pointCode }}</span>
+              <span :class="riskBadgeClass(risk.level)">{{ riskLevelLabel(risk.level) }}</span>
+              <span v-if="risk.confirmed" class="text-[10px] text-green-400 ml-auto shrink-0">已确认</span>
+              <span v-else-if="risk.misreported" class="text-[10px] text-text-tertiary ml-auto shrink-0">已反馈误判</span>
+            </div>
+            <div class="space-y-2.5 text-[12px] mb-3 pb-3 border-b border-border-light">
+              <p class="text-text-primary leading-relaxed"><span class="text-text-tertiary">审核规则类型：</span>{{ risk.ruleCategory }}</p>
+              <p class="text-text-primary leading-relaxed"><span class="text-text-tertiary">审核点：</span>{{ risk.pointName }}</p>
+              <div>
+                <p class="text-text-secondary leading-relaxed" :class="!expandedRules[i] && isRuleLong(risk.ruleText) ? 'line-clamp-3' : ''"><span class="text-text-tertiary">审核规则：</span>{{ risk.ruleText }}</p>
+                <button v-if="isRuleLong(risk.ruleText)" @click.stop="toggleRuleExpand(i)" class="text-[11px] text-primary hover:text-primary-hover mt-1">{{ expandedRules[i] ? '收起' : '展开' }}</button>
+              </div>
+            </div>
+            <div class="space-y-2 text-[12px] mb-3">
+              <p class="text-text-primary leading-relaxed"><span class="text-text-tertiary">发现问题：</span><span class="font-medium">{{ risk.problem }}</span></p>
+              <p v-if="risk.timeRange" class="text-text-primary leading-relaxed"><span class="text-text-tertiary">命中时间点：</span>{{ risk.timeRange }}</p>
+              <p class="text-text-primary leading-relaxed"><span class="text-text-tertiary">命中位置：</span>{{ risk.hitLocation }}</p>
+              <p class="text-text-primary leading-relaxed"><span class="text-text-tertiary">命中依据：</span>{{ risk.hitBasis }}</p>
+            </div>
+            <div class="p-3 rounded-lg bg-black/20 border border-border-light">
+              <p class="text-[12px] text-text-secondary leading-relaxed"><span class="text-text-tertiary">建议处理：</span>{{ risk.suggestion }}</p>
+            </div>
+            <div class="flex items-center gap-2 mt-3" v-if="!isHistoryDetailView && !risk.confirmed && !risk.misreported">
+              <button @click.stop="confirmRiskHit(i)" class="h-[28px] px-3 rounded-md bg-primary/15 border border-primary/30 text-[11px] text-primary hover:bg-primary/25 transition-all">确认</button>
+              <button @click.stop="openMisreportDialog(i)" class="h-[28px] px-3 rounded-md border border-border-default text-[11px] text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all">反馈误判</button>
+            </div>
+            <div v-else-if="risk.confirmed" class="mt-3 text-[12px] text-green-400 flex items-center gap-1.5"><i class="ph ph-check-circle"></i> 已确认</div>
+            <div v-else class="mt-3 text-[12px] text-text-tertiary flex items-center gap-1.5"><i class="ph ph-flag"></i> 误判说明：{{ risk.misreportReason }}</div>
+          </div>
+        </div>
+      </div>
+      </div>
+    </div>
+  </main>
+
+  <div v-if="replaceDialogOpen" class="fixed inset-0 z-[1000] flex items-center justify-center">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="replaceDialogPhase==='upload' ? closeReplaceDialog() : backgroundAuditProgress()"></div>
+    <div class="relative bg-bg-elevated border border-border-default rounded-2xl w-[560px] shadow-2xl shadow-black/50 overflow-hidden flex flex-col max-h-[85vh]">
+      <div class="px-6 py-4 border-b border-border-light flex items-center justify-between shrink-0">
+        <div>
+          <h3 class="text-[15px] font-semibold text-text-primary">{{ replaceDialogPhase === 'progress' ? '复审中' : '替换复审' }}</h3>
+          <p v-if="replaceDialogPhase === 'progress' && replaceTarget" class="text-[12px] text-text-tertiary mt-0.5">{{ replaceTarget.originalName || replaceTarget.name }}</p>
+        </div>
+        <button @click="replaceDialogPhase==='upload' ? closeReplaceDialog() : backgroundAuditProgress()" class="w-7 h-7 rounded-lg hover:bg-white/10 flex items-center justify-center text-text-secondary hover:text-text-primary transition-colors"><i class="ph ph-x"></i></button>
+      </div>
+      <div class="flex-1 overflow-y-auto p-6">
+        <template v-if="replaceDialogPhase === 'upload'">
+          <div class="bg-black/20 border border-border-light rounded-xl p-4 mb-4" v-if="replaceTarget">
+            <div class="text-[12px] text-text-tertiary">原素材</div>
+            <div class="text-[13px] font-medium text-text-primary mt-1">{{ replaceTarget.name }}</div>
+          </div>
+          <div class="flex items-stretch gap-3 mb-4">
+            <div class="upload-dropzone flex-1 py-8 px-4 flex flex-col items-center justify-center text-center" @click="simulateReplaceFileUpload">
+              <i class="ph ph-cloud-arrow-up text-3xl text-text-tertiary mb-3"></i>
+              <p class="text-[14px] text-text-secondary mb-1">拖拽文件到此处，或点击上传</p>
+              <p class="text-[12px] text-text-tertiary">支持 JPG / PNG / WebP / MP4 / MOV · 替换后保留原任务</p>
+            </div>
+            <button @click="openLibraryModal('replace')" class="shrink-0 w-[120px] rounded-lg border border-border-default text-[13px] text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all flex flex-col items-center justify-center gap-2">
+              <i class="ph ph-images text-xl"></i>
+              <span>从素材库选择</span>
+            </button>
+          </div>
+          <div v-if="replacePendingFiles.length > 0">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-[13px] font-medium text-text-primary">已添加素材 ({{ replacePendingFiles.length }})</span>
+              <button @click="replacePendingFiles=[]" class="text-[12px] text-text-tertiary hover:text-red-400 transition-colors">清空全部</button>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <div v-for="(file,i) in replacePendingFiles" :key="i" class="relative group w-16 h-16 rounded-lg overflow-hidden border border-border-default bg-bg-elevated">
+                <img :src="file.thumb" class="w-full h-full object-cover" :title="file.name">
+                <div v-if="file.mediaType==='video'" class="absolute inset-0 flex items-center justify-center bg-black/35 pointer-events-none"><i class="ph-fill ph-play text-white text-xs"></i></div>
+                <button @click="replacePendingFiles.splice(i,1)" class="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-black/70 hover:bg-red-600/90 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"><i class="ph ph-x text-[10px]"></i></button>
+              </div>
+            </div>
+          </div>
+        </template>
+        <template v-else>
+          <div class="mb-4 flex items-center justify-between text-[13px]">
+            <span class="text-text-tertiary">已完成 {{ auditCompleted }} / {{ uploadedFiles.length }}</span>
+            <span v-if="auditIsComplete" class="text-green-400 font-medium">复审完成</span>
+          </div>
+          <div class="h-2 bg-white/5 rounded-full overflow-hidden mb-4"><div class="h-full bg-primary rounded-full transition-all duration-500" :style="{width:(uploadedFiles.length?auditCompleted/uploadedFiles.length*100:0)+'%'}"></div></div>
+          <div class="border border-border-default rounded-xl overflow-hidden">
+            <table class="w-full text-[13px]">
+              <tbody>
+                <tr v-for="(file,i) in uploadedFiles" :key="i" class="border-b border-border-light last:border-0" :class="i===auditCompleted && !auditIsComplete ? 'bg-primary/[0.02]' : ''">
+                  <td class="px-3 py-2.5 w-10"><div class="w-8 h-8 rounded-md bg-bg-elevated overflow-hidden"><img :src="file.thumb" class="w-full h-full object-cover"></div></td>
+                  <td class="px-2 py-2.5 font-medium text-text-primary text-[12px] truncate max-w-[200px]">{{ file.name }}</td>
+                  <td class="px-3 py-2.5 text-right"><div class="flex items-center justify-end gap-1.5 text-[12px]" :class="getFileAuditStatus(i).textClass"><span class="status-dot" :class="getFileAuditStatus(i).dotClass"></span>{{ getFileAuditStatus(i).text }}</div></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </template>
+      </div>
+      <div class="px-6 py-4 border-t border-border-light flex items-center justify-end gap-3 shrink-0">
+        <template v-if="replaceDialogPhase==='upload'">
+          <button @click="closeReplaceDialog" class="h-[36px] px-5 rounded-lg border border-border-default text-[13px] text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all">取消</button>
+          <button @click="startReplaceAuditingFromModal" :disabled="replacePendingFiles.length===0" class="h-[36px] px-5 rounded-lg text-[13px] font-semibold transition-all" :class="replacePendingFiles.length>0?'bg-primary hover:bg-primary-hover text-bg-base shadow-[0_0_12px_rgba(245,158,11,0.2)]':'bg-white/5 text-text-tertiary cursor-not-allowed'">开始审核</button>
+        </template>
+        <template v-else>
+          <button v-if="!auditIsComplete" @click="openTerminateConfirm('replace')" class="h-[36px] px-5 rounded-lg border border-border-default text-[13px] text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all">终止复审</button>
+          <button v-if="!auditIsComplete" @click="backgroundAuditProgress()" class="h-[36px] px-5 rounded-lg border border-border-default text-[13px] text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all">后台进行</button>
+          <button v-if="auditIsComplete" @click="viewAuditResults()" class="h-[36px] px-5 rounded-lg bg-primary hover:bg-primary-hover text-bg-base text-[13px] font-semibold transition-all">查看结果</button>
+        </template>
+      </div>
+    </div>
+  </div>
+
+  <div v-if="auditProgressModalOpen" class="fixed inset-0 z-[1000] flex items-center justify-center p-6">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="auditProgressPhase==='prepare' ? cancelReAuditModal() : backgroundAuditProgress()"></div>
+    <div class="relative bg-bg-elevated border border-border-default rounded-2xl w-[560px] max-h-[85vh] flex flex-col shadow-2xl shadow-black/50 overflow-hidden">
+      <div class="px-6 py-4 border-b border-border-light flex items-center justify-between shrink-0">
+        <div>
+          <h3 class="text-[15px] font-semibold text-text-primary">{{ auditProgressTitle }}</h3>
+          <p class="text-[12px] text-text-tertiary mt-0.5">{{ activeTaskName }}</p>
+        </div>
+        <button @click="auditProgressPhase==='prepare' ? cancelReAuditModal() : backgroundAuditProgress()" class="w-7 h-7 rounded-lg hover:bg-white/10 flex items-center justify-center text-text-secondary hover:text-text-primary transition-colors"><i class="ph ph-x"></i></button>
+      </div>
+      <div class="flex-1 overflow-y-auto p-6">
+        <template v-if="auditProgressPhase === 'prepare'">
+          <p class="text-[13px] text-text-secondary mb-4">将重新审核以下 {{ uploadedFiles.length }} 个素材，确认后开始。</p>
+          <div class="border border-border-default rounded-xl overflow-hidden max-h-[360px] overflow-y-auto">
+            <table class="w-full text-[13px]">
+              <tbody>
+                <tr v-for="(file,i) in uploadedFiles" :key="i" class="border-b border-border-light last:border-0">
+                  <td class="px-3 py-2.5 w-10"><div class="w-8 h-8 rounded-md bg-bg-elevated overflow-hidden"><img :src="file.thumb" class="w-full h-full object-cover"></div></td>
+                  <td class="px-2 py-2.5 font-medium text-text-primary text-[12px] truncate max-w-[240px]">{{ file.name }}</td>
+                  <td class="px-3 py-2.5 text-right"><div class="flex items-center justify-end gap-1.5 text-[12px] text-text-tertiary"><span class="status-dot status-dot-slate"></span>待审核</div></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </template>
+        <template v-else>
+          <div class="mb-4 flex items-center justify-between text-[13px]">
+            <span class="text-text-tertiary">已完成 {{ auditCompleted }} / {{ uploadedFiles.length }}</span>
+            <span v-if="auditIsComplete" class="text-green-400 font-medium">{{ reAuditMode ? '复审完成' : '全部审核完成' }}</span>
+          </div>
+          <div class="h-2 bg-white/5 rounded-full overflow-hidden mb-4"><div class="h-full bg-primary rounded-full transition-all duration-500" :style="{width:(uploadedFiles.length?auditCompleted/uploadedFiles.length*100:0)+'%'}"></div></div>
+          <div class="border border-border-default rounded-xl overflow-hidden max-h-[320px] overflow-y-auto">
+            <table class="w-full text-[13px]">
+              <tbody>
+                <tr v-for="(file,i) in uploadedFiles" :key="i" class="border-b border-border-light last:border-0" :class="i===auditCompleted && !auditIsComplete ? 'bg-primary/[0.02]' : ''">
+                  <td class="px-3 py-2.5 w-10"><div class="w-8 h-8 rounded-md bg-bg-elevated overflow-hidden"><img :src="file.thumb" class="w-full h-full object-cover"></div></td>
+                  <td class="px-2 py-2.5 font-medium text-text-primary text-[12px] truncate max-w-[240px]">{{ file.name }}</td>
+                  <td class="px-3 py-2.5 text-right"><div class="flex items-center justify-end gap-1.5 text-[12px]" :class="getFileAuditStatus(i).textClass"><span class="status-dot" :class="getFileAuditStatus(i).dotClass"></span>{{ getFileAuditStatus(i).text }}</div></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </template>
+      </div>
+      <div class="px-6 py-4 border-t border-border-light flex items-center justify-end gap-3 shrink-0">
+        <template v-if="auditProgressPhase === 'prepare'">
+          <button @click="cancelReAuditModal" class="h-[36px] px-5 rounded-lg border border-border-default text-[13px] text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all">取消</button>
+          <button @click="startReAuditFromModal" :disabled="uploadedFiles.length===0" class="h-[36px] px-5 rounded-lg text-[13px] font-semibold transition-all" :class="uploadedFiles.length>0?'bg-primary hover:bg-primary-hover text-bg-base shadow-[0_0_12px_rgba(245,158,11,0.2)]':'bg-white/5 text-text-tertiary cursor-not-allowed'">开始审核</button>
+        </template>
+        <template v-else>
+          <button v-if="!auditIsComplete" @click="openTerminateConfirm('progress')" class="h-[36px] px-5 rounded-lg border border-border-default text-[13px] text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all">{{ reAuditMode ? '终止复审' : '终止审核' }}</button>
+          <button v-if="!auditIsComplete" @click="backgroundAuditProgress()" class="h-[36px] px-5 rounded-lg border border-border-default text-[13px] text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all">后台进行</button>
+          <button v-if="auditIsComplete" @click="viewAuditResults()" class="h-[36px] px-5 rounded-lg bg-primary hover:bg-primary-hover text-bg-base text-[13px] font-semibold transition-all">查看结果</button>
+        </template>
+      </div>
+    </div>
+  </div>
+
+  <div v-if="createTaskModalOpen" class="fixed inset-0 z-[1000] flex items-center justify-center p-6">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="createTaskModalPhase==='form' ? cancelCreateTask() : backgroundAuditProgress()"></div>
+    <div class="relative bg-bg-elevated border border-border-default rounded-2xl w-[600px] max-h-[85vh] flex flex-col shadow-2xl shadow-black/50 overflow-hidden">
+      <div class="px-6 py-4 border-b border-border-light flex items-center justify-between shrink-0">
+        <div>
+          <h3 class="text-[15px] font-semibold text-text-primary">{{ createTaskModalPhase === 'auditing' ? '审核中' : '新建任务' }}</h3>
+          <p v-if="createTaskModalPhase === 'auditing'" class="text-[12px] text-text-tertiary mt-0.5">{{ formData.taskName }}<span v-if="selectedChannelLabel"> · {{ selectedChannelLabel }}</span></p>
+        </div>
+        <button @click="createTaskModalPhase==='form' ? cancelCreateTask() : backgroundAuditProgress()" class="w-7 h-7 rounded-lg hover:bg-white/10 flex items-center justify-center text-text-secondary hover:text-text-primary transition-colors"><i class="ph ph-x"></i></button>
+      </div>
+      <div class="flex-1 overflow-y-auto p-6">
+        <template v-if="createTaskModalPhase === 'form'">
+          <div class="mb-5">
+            <label class="block text-[13px] font-medium text-text-primary mb-1.5">任务名称 <span class="text-red-400">*</span></label>
+            <input v-model="formData.taskName" type="text" placeholder="建议格式：SKU + 产品名称 + 素材用途，如 H123456 落地灯 Stories 素材审核" class="w-full h-[36px] bg-black/20 border border-border-default rounded-lg px-3 text-[13px] outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all placeholder-text-tertiary">
+          </div>
+          <div class="mb-5">
+            <label class="block text-[13px] font-medium text-text-primary mb-1.5">渠道 <span class="text-text-tertiary font-normal">（选填）</span></label>
+            <select v-model="formData.channelPlacement" class="w-full h-[36px] bg-black/20 border border-border-default rounded-lg px-3 text-[13px] outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all" :class="formData.channelPlacement ? 'text-text-primary' : 'text-text-tertiary'">
+              <option value="">选择渠道，会额外开展对应的安全区审查</option>
+              <option v-for="ch in safeAreaChannelOptions" :key="ch.value" :value="ch.value">{{ ch.label }}</option>
+            </select>
+          </div>
+          <div>
+            <h3 class="text-[13px] font-semibold text-text-primary mb-3">上传素材</h3>
+            <div class="flex items-stretch gap-3 mb-3">
+              <div class="upload-dropzone flex-1 py-7 px-4 flex flex-col items-center justify-center text-center">
+                <i class="ph ph-cloud-arrow-up text-3xl text-text-tertiary mb-2"></i>
+                <p class="text-[14px] text-text-secondary mb-1">拖拽文件到此处，或点击上传</p>
+                <p class="text-[12px] text-text-tertiary mb-3">支持 JPG / PNG / WebP / MP4 / MOV / ZIP</p>
+                <div class="flex items-center gap-3 text-[12px]">
+                  <button @click="simulateFileUpload" class="text-primary hover:text-primary-hover transition-colors">模拟少量上传 (7)</button>
+                  <span class="text-text-tertiary">|</span>
+                  <button @click="simulateBulkFileUpload" class="text-primary hover:text-primary-hover transition-colors">模拟批量上传 (100)</button>
+                </div>
+              </div>
+              <button @click="openLibraryModal" class="shrink-0 w-[120px] rounded-lg border border-border-default text-[13px] text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all flex flex-col items-center justify-center gap-2">
+                <i class="ph ph-images text-xl"></i>
+                <span>从素材库选择</span>
+              </button>
+            </div>
+            <div v-if="uploadedFiles.length > 0">
+              <div class="flex items-center justify-between mb-2 gap-3">
+                <div class="flex items-center gap-3 min-w-0">
+                  <span class="text-[13px] font-medium text-text-primary shrink-0">已添加素材 ({{ uploadedFiles.length }})</span>
+                  <span class="text-[12px] text-text-tertiary shrink-0">图片 {{ uploadFileStats.image }} / 视频 {{ uploadFileStats.video }}</span>
+                  <span v-if="useCompactUploadList" class="text-[11px] px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 shrink-0">列表模式</span>
+                </div>
+                <button @click="clearUploadedFiles" class="text-[12px] text-text-tertiary hover:text-red-400 transition-colors shrink-0">清空全部</button>
+              </div>
+              <template v-if="useCompactUploadList">
+                <div class="flex items-center gap-2 mb-2">
+                  <div class="relative flex-1">
+                    <i class="ph ph-magnifying-glass absolute left-2.5 top-1/2 -translate-y-1/2 text-text-tertiary text-xs"></i>
+                    <input v-model="uploadFileSearch" type="text" placeholder="搜索文件名" class="w-full h-[30px] bg-black/20 border border-border-default rounded-lg pl-8 pr-3 text-[12px] outline-none focus:border-primary/50 transition-all placeholder-text-tertiary">
+                  </div>
+                  <select v-model="uploadMediaFilter" class="h-[30px] bg-black/20 border border-border-default rounded-lg px-2 text-[12px] outline-none focus:border-primary/50 transition-all text-text-secondary">
+                    <option value="">全部类型</option>
+                    <option value="image">图片</option>
+                    <option value="video">视频</option>
+                  </select>
+                </div>
+                <div class="border border-border-default rounded-xl overflow-hidden max-h-[280px] overflow-y-auto">
+                  <table class="w-full text-[12px]">
+                    <thead class="sticky top-0 bg-bg-elevated z-10">
+                      <tr class="border-b border-border-light text-text-tertiary">
+                        <th class="px-3 py-2 text-left font-medium w-10"></th>
+                        <th class="px-2 py-2 text-left font-medium">文件名</th>
+                        <th class="px-2 py-2 text-left font-medium w-16">大小</th>
+                        <th class="px-2 py-2 text-left font-medium w-12">类型</th>
+                        <th class="px-3 py-2 text-right font-medium w-10"></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="(file,i) in filteredUploadedFiles" :key="file.name + i" class="border-b border-border-light last:border-0 hover:bg-white/[0.02]">
+                        <td class="px-3 py-2">
+                          <div class="w-8 h-8 rounded-md bg-bg-elevated overflow-hidden relative">
+                            <img :src="file.thumb" class="w-full h-full object-cover" loading="lazy">
+                            <div v-if="file.mediaType==='video'" class="absolute inset-0 flex items-center justify-center bg-black/35 pointer-events-none"><i class="ph-fill ph-play text-white text-[10px]"></i></div>
+                          </div>
+                        </td>
+                        <td class="px-2 py-2 font-medium text-text-primary truncate max-w-[220px]" :title="file.name">{{ file.name }}</td>
+                        <td class="px-2 py-2 text-text-tertiary">{{ file.size }}</td>
+                        <td class="px-2 py-2 text-text-tertiary">{{ file.mediaType === 'video' ? '视频' : '图片' }}</td>
+                        <td class="px-3 py-2 text-right">
+                          <button @click="removeUploadedFile(file)" class="w-6 h-6 rounded hover:bg-red-500/10 flex items-center justify-center text-text-tertiary hover:text-red-400 transition-colors ml-auto"><i class="ph ph-x text-xs"></i></button>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <p v-if="filteredUploadedFiles.length === 0" class="text-[12px] text-text-tertiary text-center py-6">没有匹配的素材</p>
+              </template>
+              <template v-else>
+                <div class="flex flex-wrap gap-2">
+                  <div v-for="(file,i) in uploadedFiles" :key="i" class="relative group w-16 h-16 rounded-lg overflow-hidden border border-border-default bg-bg-elevated">
+                    <img :src="file.thumb" class="w-full h-full object-cover" :title="file.name">
+                    <div v-if="file.mediaType==='video'" class="absolute inset-0 flex items-center justify-center bg-black/35 pointer-events-none"><i class="ph-fill ph-play text-white text-xs"></i></div>
+                    <button @click="uploadedFiles.splice(i,1)" class="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-black/70 hover:bg-red-600/90 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"><i class="ph ph-x text-[10px]"></i></button>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+        </template>
+        <template v-else>
+          <div class="mb-4 flex items-center justify-between text-[13px]">
+            <span class="text-text-tertiary">已完成 {{ auditCompleted }} / {{ uploadedFiles.length }}</span>
+            <span v-if="auditIsComplete" class="text-green-400 font-medium">全部审核完成</span>
+          </div>
+          <div class="h-2 bg-white/5 rounded-full overflow-hidden mb-4"><div class="h-full bg-primary rounded-full transition-all duration-500" :style="{width:(uploadedFiles.length?auditCompleted/uploadedFiles.length*100:0)+'%'}"></div></div>
+          <div class="border border-border-default rounded-xl overflow-hidden max-h-[360px] overflow-y-auto">
+            <table class="w-full text-[13px]">
+              <tbody>
+                <tr v-for="(file,i) in uploadedFiles" :key="i" class="border-b border-border-light last:border-0" :class="i===auditCompleted && !auditIsComplete ? 'bg-primary/[0.02]' : ''">
+                  <td class="px-3 py-2.5 w-10"><div class="w-8 h-8 rounded-md bg-bg-elevated overflow-hidden"><img :src="file.thumb" class="w-full h-full object-cover"></div></td>
+                  <td class="px-2 py-2.5 font-medium text-text-primary text-[12px] truncate max-w-[240px]">{{ file.name }}</td>
+                  <td class="px-3 py-2.5 text-right"><div class="flex items-center justify-end gap-1.5 text-[12px]" :class="getFileAuditStatus(i).textClass"><span class="status-dot" :class="getFileAuditStatus(i).dotClass"></span>{{ getFileAuditStatus(i).text }}</div></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </template>
+      </div>
+      <div class="px-6 py-4 border-t border-border-light flex items-center justify-end gap-3 shrink-0">
+        <template v-if="createTaskModalPhase === 'form'">
+          <button @click="cancelCreateTask" class="h-[36px] px-5 rounded-lg border border-border-default text-[13px] text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all">取消</button>
+          <button @click="startAuditingFromModal" :disabled="!formData.taskName||uploadedFiles.length===0" class="h-[36px] px-5 rounded-lg text-[13px] font-semibold transition-all" :class="(formData.taskName&&uploadedFiles.length>0)?'bg-primary hover:bg-primary-hover text-bg-base shadow-[0_0_12px_rgba(245,158,11,0.2)]':'bg-white/5 text-text-tertiary cursor-not-allowed'">开始审核</button>
+        </template>
+        <template v-else>
+          <button v-if="!auditIsComplete" @click="openTerminateConfirm('create')" class="h-[36px] px-5 rounded-lg border border-border-default text-[13px] text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all">终止审核</button>
+          <button v-if="!auditIsComplete" @click="backgroundAuditProgress()" class="h-[36px] px-5 rounded-lg border border-border-default text-[13px] text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all">后台进行</button>
+          <button v-if="auditIsComplete" @click="viewAuditResults()" class="h-[36px] px-5 rounded-lg bg-primary hover:bg-primary-hover text-bg-base text-[13px] font-semibold transition-all">查看结果</button>
+        </template>
+      </div>
+    </div>
+  </div>
+
+  <div v-if="libraryModalOpen" class="fixed inset-0 z-[1100] flex items-center justify-center">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="libraryModalOpen=false"></div>
+    <div class="relative bg-bg-elevated border border-border-default rounded-2xl w-[720px] max-h-[80vh] flex flex-col shadow-2xl shadow-black/50 overflow-hidden">
+      <div class="px-6 py-4 border-b border-border-light flex items-center justify-between shrink-0">
+        <div><h3 class="text-[15px] font-semibold text-text-primary">从素材库选择</h3></div>
+        <button @click="libraryModalOpen=false" class="w-7 h-7 rounded-lg hover:bg-white/10 flex items-center justify-center text-text-secondary hover:text-text-primary transition-colors"><i class="ph ph-x"></i></button>
+      </div>
+      <div class="px-6 py-3 border-b border-border-light flex items-center gap-3 shrink-0">
+        <div class="relative flex-1 max-w-[240px]">
+          <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary text-sm"></i>
+          <input type="text" v-model="librarySearch" placeholder="搜索素材名称 / SKU" class="w-full h-[32px] bg-black/20 border border-border-default rounded-lg pl-9 pr-3 text-[13px] outline-none focus:border-primary/50 transition-all placeholder-text-tertiary">
+        </div>
+        <select v-model="libraryTypeFilter" class="h-[32px] px-3 bg-black/20 border border-border-default rounded-lg text-[13px] text-text-secondary outline-none focus:border-primary/50 transition-all cursor-pointer">
+          <option value="">全部类型</option><option value="主图">主图</option><option value="Banner">Banner</option><option value="短视频">短视频</option><option value="品牌视频">品牌视频</option>
+        </select>
+      </div>
+      <div class="flex-1 overflow-y-auto p-6">
+        <div class="grid grid-cols-4 gap-3">
+          <div v-for="asset in filteredLibraryAssets" :key="asset.id" @click="toggleLibrarySelect(asset)" class="relative border rounded-xl p-2 cursor-pointer transition-all" :class="isLibrarySelected(asset) ? 'border-primary bg-primary/10' : 'border-border-default hover:border-primary/30 bg-black/20'">
+            <div class="w-full aspect-square rounded-lg overflow-hidden bg-bg-elevated mb-2 relative"><img :src="asset.thumb" class="w-full h-full object-cover"><div v-if="asset.mediaType==='video'" class="absolute inset-0 flex items-center justify-center bg-black/35"><i class="ph-fill ph-play text-white text-sm"></i></div><div v-if="isLibrarySelected(asset)" class="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-primary flex items-center justify-center text-bg-base"><i class="ph-bold ph-check text-[10px]"></i></div></div>
+            <div class="text-[12px] font-medium text-text-primary truncate">{{ asset.name }}</div>
+            <div class="text-[10px] text-text-tertiary mt-0.5 truncate">{{ asset.sku }} · {{ asset.type }}</div>
+          </div>
+        </div>
+      </div>
+      <div class="px-6 py-4 border-t border-border-light flex items-center justify-between shrink-0">
+        <span class="text-[13px] text-text-secondary">{{ libraryModalMode === 'replace' ? (selectedLibraryAssets.length ? '已选择 1 个素材' : '请选择 1 个素材') : `已选择 ${selectedLibraryAssets.length} 个素材` }}</span>
+        <div class="flex gap-3">
+          <button @click="libraryModalOpen=false" class="h-[36px] px-5 rounded-lg border border-border-default text-[13px] text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all">取消</button>
+          <button @click="confirmLibrarySelection" :disabled="selectedLibraryAssets.length===0" class="h-[36px] px-5 rounded-lg text-[13px] font-semibold transition-all" :class="selectedLibraryAssets.length>0?'bg-primary hover:bg-primary-hover text-bg-base':'bg-white/5 text-text-tertiary cursor-not-allowed'">确认添加</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div v-if="auditHistoryModalOpen" class="fixed inset-0 z-[1000] flex items-center justify-center">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="auditHistoryModalOpen=false"></div>
+    <div class="relative bg-bg-elevated border border-border-default rounded-2xl w-[560px] max-h-[80vh] flex flex-col shadow-2xl shadow-black/50 overflow-hidden">
+      <div class="px-6 py-4 border-b border-border-light flex items-center justify-between shrink-0">
+        <div>
+          <h3 class="text-[15px] font-semibold text-text-primary">审核记录</h3>
+          <p v-if="auditHistoryTarget" class="text-[12px] text-text-tertiary mt-0.5">{{ auditHistoryTarget.name }} · 共 {{ materialTimeline.length }} 个版本</p>
+        </div>
+        <button @click="auditHistoryModalOpen=false" class="w-7 h-7 rounded-lg hover:bg-white/10 flex items-center justify-center text-text-secondary hover:text-text-primary transition-colors"><i class="ph ph-x"></i></button>
+      </div>
+      <div class="flex-1 overflow-y-auto p-4 space-y-2">
+        <div v-for="(ver, vi) in materialTimeline" :key="vi" class="history-version-row rounded-xl border border-border-default px-4 py-3 flex items-start gap-3" :class="ver.isCurrent ? 'is-current' : ''">
+          <div class="w-10 h-10 rounded-lg overflow-hidden bg-bg-elevated shrink-0 relative">
+            <img :src="ver.thumb" class="w-full h-full object-cover">
+            <div v-if="ver.mediaType==='video'" class="absolute inset-0 flex items-center justify-center bg-black/35"><i class="ph-fill ph-play text-white text-[10px]"></i></div>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="text-[13px] font-medium text-text-primary truncate">{{ ver.name }}</span>
+              <span v-if="ver.isCurrent" class="text-[10px] text-blue-400 px-1.5 py-0.5 rounded bg-blue-500/10 border border-blue-500/20 shrink-0">当前版本</span>
+              <span v-else class="text-[10px] text-text-tertiary px-1.5 py-0.5 rounded bg-white/5 border border-border-light shrink-0">{{ historyVersionLabel(ver) }}</span>
+            </div>
+            <div class="flex items-center gap-2 mt-1.5 flex-wrap">
+              <span :class="auditResultBadgeClass(ver.auditStatus)">{{ auditResultLabel(ver.auditStatus) }}</span>
+              <span class="text-[11px] text-text-tertiary">{{ historyHitSummary(ver) }}</span>
+            </div>
+            <div class="text-[11px] text-text-tertiary mt-1">{{ ver.auditTime }}</div>
+          </div>
+          <button @click="viewHistoryDetail(ver)" class="shrink-0 text-[12px] text-primary hover:text-primary-hover font-medium mt-1">查看详情</button>
+        </div>
+      </div>
+      <div class="px-6 py-4 border-t border-border-light flex justify-end shrink-0">
+        <button @click="auditHistoryModalOpen=false" class="h-[36px] px-5 rounded-lg border border-border-default text-[13px] text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <div v-if="terminateConfirmDialogOpen" class="fixed inset-0 z-[1200] flex items-center justify-center p-6">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="closeTerminateConfirm"></div>
+    <div class="relative bg-bg-elevated border border-border-default rounded-2xl w-[440px] shadow-2xl shadow-black/50 overflow-hidden">
+      <div class="px-6 py-4 border-b border-border-light">
+        <h3 class="text-[15px] font-semibold text-text-primary">{{ terminateConfirmTitle }}</h3>
+      </div>
+      <div class="p-6">
+        <p class="text-[13px] text-text-secondary leading-relaxed mb-1">{{ terminateConfirmMessage }}</p>
+        <p v-if="terminateConfirmHint" class="text-[13px] text-text-tertiary leading-relaxed">{{ terminateConfirmHint }}</p>
+        <div class="flex gap-3 justify-end mt-6">
+          <button @click="closeTerminateConfirm" class="h-[36px] px-5 rounded-lg border border-border-default text-[13px] text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all">{{ terminateConfirmCancelLabel }}</button>
+          <button @click="confirmTerminateAudit" class="h-[36px] px-5 rounded-lg bg-red-600/90 hover:bg-red-500 text-white text-[13px] font-semibold transition-all">{{ terminateConfirmOkLabel }}</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div v-if="deleteConfirmDialogOpen" class="fixed inset-0 z-[1200] flex items-center justify-center p-6">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="closeDeleteConfirm"></div>
+    <div class="relative bg-bg-elevated border border-border-default rounded-2xl w-[440px] shadow-2xl shadow-black/50 overflow-hidden">
+      <div class="px-6 py-4 border-b border-border-light">
+        <h3 class="text-[15px] font-semibold text-text-primary">确定删除该任务？</h3>
+      </div>
+      <div class="p-6" v-if="deleteTargetTask">
+        <p class="text-[13px] text-text-secondary leading-relaxed mb-3">删除后不可恢复，任务及相关审核记录将一并清除。</p>
+        <div class="bg-black/20 border border-border-light rounded-xl px-4 py-3 mb-1">
+          <p class="text-[13px] font-medium text-text-primary truncate">{{ deleteTargetTask.name }}</p>
+          <p class="text-[12px] text-text-tertiary mt-1">{{ deleteTargetTask.totalCount }} 个素材 · {{ auditProgressLabel(deleteTargetTask) }}</p>
+        </div>
+        <div class="flex gap-3 justify-end mt-6">
+          <button @click="closeDeleteConfirm" class="h-[36px] px-5 rounded-lg border border-border-default text-[13px] text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all">取消</button>
+          <button @click="confirmDeleteTask" class="h-[36px] px-5 rounded-lg bg-red-600/90 hover:bg-red-500 text-white text-[13px] font-semibold transition-all">确定删除</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div v-if="showMisreportDialog" class="fixed inset-0 z-[1000] flex items-center justify-center">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="showMisreportDialog=false"></div>
+    <div class="relative bg-bg-elevated border border-border-default rounded-2xl w-[460px] shadow-2xl shadow-black/50 overflow-hidden">
+      <div class="px-6 py-4 border-b border-border-light flex items-center justify-between"><h3 class="text-[15px] font-semibold text-text-primary">反馈误判</h3><button @click="showMisreportDialog=false" class="w-7 h-7 rounded-lg hover:bg-white/10 flex items-center justify-center text-text-secondary hover:text-text-primary transition-colors"><i class="ph ph-x"></i></button></div>
+      <div class="p-6" v-if="selectedMisreportRisk">
+        <div class="bg-black/20 border border-border-light rounded-xl p-4 mb-5">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="text-[12px] font-mono font-semibold text-primary">{{ selectedMisreportRisk.pointCode }}</span>
+            <span :class="riskBadgeClass(selectedMisreportRisk.level)">{{ riskLevelLabel(selectedMisreportRisk.level) }}</span>
+          </div>
+          <p class="text-[12px] text-text-primary leading-relaxed mb-2"><span class="text-text-tertiary">审核点：</span>{{ selectedMisreportRisk.pointName }}</p>
+          <p class="text-[12px] text-text-secondary leading-relaxed"><span class="text-text-tertiary">发现问题：</span>{{ selectedMisreportRisk.problem }}</p>
+        </div>
+        <label class="block text-[13px] font-medium text-text-primary mb-2">误判说明 <span class="text-red-400">*</span></label>
+        <textarea v-model="misreportForm.notes" placeholder="请填写误判说明" class="w-full h-[84px] bg-black/20 border border-border-default rounded-lg px-3 py-2 text-[13px] outline-none focus:border-primary/50 transition-all resize-none placeholder-text-tertiary mb-5"></textarea>
+        <div class="flex gap-3 justify-end"><button @click="showMisreportDialog=false" class="h-[36px] px-5 rounded-lg border border-border-default text-[13px] text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all">取消</button><button @click="confirmMisreport" :disabled="!misreportForm.notes" class="h-[36px] px-5 rounded-lg text-[13px] font-semibold transition-all" :class="misreportForm.notes?'bg-amber-600 hover:bg-amber-500 text-white':'bg-white/5 text-text-tertiary cursor-not-allowed'">提交反馈</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+if (typeof Vue === 'undefined') {
+  const app = document.getElementById('app');
+  if (app) {
+    app.removeAttribute('v-cloak');
+    app.innerHTML = '<div style="padding:24px;color:rgba(255,255,255,.9);font-family:sans-serif;line-height:1.6">页面脚本未能加载。请确认与本 HTML 同目录下的 <code style="color:#fbbf24">assets/vendor/vue.global.prod.js</code> 存在；或检查网络能否访问 unpkg CDN。请用 Chrome / Edge 直接打开本文件，并保持 <code style="color:#fbbf24">03-原型设计</code> 目录结构完整。</div>';
+  }
+} else {
+const { createApp, ref, computed, watch } = Vue;
+createApp({
+  setup() {
+    const HOME_TAB_ID = 'audit-home';
+    const navTabs = ref([
+      { id: HOME_TAB_ID, title: '素材审核', icon: 'ph ph-shield-check', closable: false, view: 'taskList' }
+    ]);
+    const activeTabId = ref(HOME_TAB_ID);
+    const activeTab = computed(() => navTabs.value.find(t => t.id === activeTabId.value) || navTabs.value[0]);
+    const isHomeTab = computed(() => activeTabId.value === HOME_TAB_ID);
+    const currentPage = computed({
+      get: () => activeTab.value.view,
+      set: (v) => { activeTab.value.view = v; }
+    });
+    const formData = ref({ taskName: '', channelPlacement: '' });
+    const uploadFileSearch = ref('');
+    const uploadMediaFilter = ref('');
+    const UPLOAD_COMPACT_THRESHOLD = 20;
+    const safeAreaChannelOptions = [
+      { value:'instagram', label:'Instagram' },
+      { value:'facebook', label:'Facebook' },
+      { value:'tiktok', label:'TikTok' },
+      { value:'youtube', label:'YouTube' },
+      { value:'pinterest', label:'Pinterest' },
+      { value:'prime-video', label:'Prime Video' }
+    ];
+    const activeTaskName = ref('');
+    const activeTaskStatus = ref('');
+    const activeTaskId = ref(null);
+    const activeTaskAuditTime = ref('');
+    const activeFailureReason = ref('');
+    const failedMaterials = ref([]);
+    const terminatedMaterials = ref([]);
+    const activeTerminateNote = ref('');
+    const terminateConfirmDialogOpen = ref(false);
+    const terminateConfirmSource = ref(null);
+    const reAuditSnapshot = ref(null);
+    const replaceMaterialSnapshot = ref(null);
+    const deleteConfirmDialogOpen = ref(false);
+    const deleteTargetTask = ref(null);
+    const activeAuditResult = ref('');
+    const activeTreatmentStatus = ref('');
+    const uploadedFiles = ref([]);
+    const taskSearch = ref('');
+    const taskStatusFilter = ref('');
+    const taskResultFilter = ref('');
+    const taskPage = ref(1);
+    const taskPageSize = ref(10);
+    const taskGotoPage = ref('');
+    const auditCompleted = ref(0);
+    const auditRound = ref(2);
+    let auditTimer = null;
+    const createTaskModalPhase = ref('form');
+    const replaceDialogPhase = ref('upload');
+    const auditProgressModalOpen = ref(false);
+    const auditProgressPhase = ref('prepare');
+    const auditIsComplete = computed(() => auditCompleted.value >= uploadedFiles.value.length && uploadedFiles.value.length > 0);
+    const useCompactUploadList = computed(() => uploadedFiles.value.length > UPLOAD_COMPACT_THRESHOLD);
+    const uploadFileStats = computed(() => {
+      const image = uploadedFiles.value.filter(f => f.mediaType !== 'video').length;
+      return { image, video: uploadedFiles.value.length - image, total: uploadedFiles.value.length };
+    });
+    const filteredUploadedFiles = computed(() => {
+      const q = uploadFileSearch.value.trim().toLowerCase();
+      return uploadedFiles.value.filter(f => {
+        if (uploadMediaFilter.value && f.mediaType !== uploadMediaFilter.value) return false;
+        if (q && !f.name.toLowerCase().includes(q)) return false;
+        return true;
+      });
+    });
+    const selectedChannelLabel = computed(() => {
+      const hit = safeAreaChannelOptions.find(ch => ch.value === formData.value.channelPlacement);
+      return hit ? hit.label : '';
+    });
+    const auditProgressTitle = computed(() => {
+      if (auditProgressPhase.value === 'prepare') {
+        if (reAuditMode.value === 'retry') return '重试审核';
+        if (reAuditMode.value === 'all') return '重新审核全部';
+        return '开始审核';
+      }
+      if (activeTaskStatus.value === 'reAuditing') return '复审中';
+      if (reAuditMode.value === 'retry') return '重试审核';
+      return '审核中';
+    });
+    const isRecheckTerminate = computed(() => {
+      const source = terminateConfirmSource.value;
+      const mode = reAuditMode.value;
+      return source === 'replace' || mode === 'single' || mode === 'all' || mode === 'retry';
+    });
+    const terminateConfirmTitle = computed(() => {
+      const mode = reAuditMode.value;
+      const source = terminateConfirmSource.value;
+      if (source === 'replace' || mode === 'single') return '确定终止本次替换复审？';
+      if (mode === 'all') return '确定终止本次重新审核？';
+      if (mode === 'retry') return '确定终止本次重试审核？';
+      return '确定终止本次审核？';
+    });
+    const terminateConfirmMessage = computed(() => {
+      const mode = reAuditMode.value;
+      const source = terminateConfirmSource.value;
+      if (source === 'replace' || mode === 'single') return '该素材将恢复为替换前的审核结果，本次上传的新素材不会生效。';
+      if (mode === 'all') return `将保留上一轮审核结果，本轮进度（已完成 ${auditCompleted.value} / ${uploadedFiles.value.length}）不会保存。`;
+      if (mode === 'retry') return `将保留当前失败状态，本轮重试进度（已完成 ${auditCompleted.value} / ${uploadedFiles.value.length}）不会保存。`;
+      return `已完成 ${auditCompleted.value} / ${uploadedFiles.value.length} 个素材的审核结果将保留，未完成部分将不再继续审核。`;
+    });
+    const terminateConfirmHint = computed(() => {
+      const mode = reAuditMode.value;
+      const source = terminateConfirmSource.value;
+      if (isRecheckTerminate.value) return '';
+      return '终止后可重新上传素材并发起新审核。';
+    });
+    const terminateConfirmCancelLabel = computed(() => isRecheckTerminate.value ? '继续复审' : '继续审核');
+    const terminateConfirmOkLabel = computed(() => isRecheckTerminate.value ? '确定终止' : '确定终止');
+    const detailIdx = ref(0);
+    const activeRiskIndex = ref(null);
+    const expandedRules = ref({});
+    const materialFilter = ref('');
+    const currentTime = '2026-07-07 12:10';
+
+    const showMisreportDialog = ref(false);
+    const misreportTarget = ref(null);
+    const misreportTargetIdx = ref(null);
+    const misreportForm = ref({ notes:'' });
+    const selectedMisreportRisk = computed(() => misreportTarget.value);
+    const reAuditMode = ref(null);
+    const replaceDialogOpen = ref(false);
+    const replaceTarget = ref(null);
+    const replacePendingFiles = ref([]);
+    const createTaskModalOpen = ref(false);
+    const libraryModalOpen = ref(false);
+    const libraryModalMode = ref('create');
+    const librarySearch = ref('');
+    const libraryTypeFilter = ref('');
+    const selectedLibraryAssets = ref([]);
+    const auditHistoryModalOpen = ref(false);
+    const auditHistoryTarget = ref(null);
+    const historyViewSnapshot = ref(null);
+
+    const ASSET_BASE = 'assets/compliance-audit/';
+    const placeholderThumbs = [
+      ASSET_BASE + 'main_01.jpg',      // 主图 · 落地灯产品
+      ASSET_BASE + 'sdc_03.jpg',       // SDC · 场景图
+      ASSET_BASE + 'ad_banner_02.jpg', // Banner · 促销横幅
+      ASSET_BASE + 'detail_05.jpg',    // 详情图
+      ASSET_BASE + 'social_01.jpg',    // 社媒竖图
+      ASSET_BASE + 'pp_07.jpg'         // 包装/细节图
+    ];
+
+    const mockTasks = ref([
+      { id:1, name:'H123456 落地灯 Q2 广告素材审核', sku:'H123456', totalCount:7, taskStatus:'needFix', auditResult:'high', treatmentStatus:'needFix', creator:'张三', auditTime:'2026-07-07 09:30' },
+      { id:2, name:'H234567 夏季促销 Banner 素材审核', sku:'H234567', totalCount:20, taskStatus:'needFix', auditResult:'high', treatmentStatus:'needFix', creator:'李四', auditTime:'2026-07-06 14:15' },
+      { id:3, name:'H789012 智能台灯 品牌主图预检', sku:'H789012', totalCount:8, taskStatus:'needReview', auditResult:'low', treatmentStatus:'', creator:'王五', auditTime:'2026-07-06 10:00' },
+      { id:4, name:'H345678 TikTok 短视频广告审核', sku:'H345678', totalCount:15, taskStatus:'needReview', auditResult:'medium', treatmentStatus:'', creator:'赵六', auditTime:'2026-07-05 16:45' },
+      { id:5, name:'H456789 落地灯 Meta 广告素材审核', sku:'H456789', totalCount:18, taskStatus:'auditing', auditResult:'', treatmentStatus:'', creator:'李四', auditTime:'' },
+      { id:6, name:'H555111 落地灯 Prime Day 素材复检', sku:'H555111', totalCount:8, taskStatus:'needReview', auditResult:'pass', treatmentStatus:'', creator:'王五', auditTime:'2026-07-07 11:30' },
+      { id:7, name:'H999333 独立站 Banner 促销素材审核', sku:'H999333', totalCount:4, taskStatus:'failed', auditResult:'', treatmentStatus:'abnormal', failureReason:'2 个素材解析失败，任务中断', creator:'李四', auditTime:'2026-07-04 15:00' },
+      { id:8, name:'H888222 Prime Day 主图批量审核', sku:'H888222', totalCount:18, taskStatus:'terminated', auditResult:'', treatmentStatus:'', creator:'张三', auditTime:'2026-07-07 16:20', terminatedCompleted:11, terminateNote:'用户于审核进行中终止，已完成 11/18 个素材的审核结果将保留，未完成部分不再继续。' }
+    ]);
+
+    const filteredTasks = computed(() => mockTasks.value.filter(t => {
+      if (taskSearch.value && !t.name.includes(taskSearch.value) && !t.sku.includes(taskSearch.value)) return false;
+      if (taskStatusFilter.value && auditProgressValue(t) !== taskStatusFilter.value) return false;
+      if (taskResultFilter.value && getTaskDisplayAuditResult(t) !== taskResultFilter.value) return false;
+      return true;
+    }).sort((a,b) => statusPriority(a.taskStatus) - statusPriority(b.taskStatus)));
+
+    const taskTotalPages = computed(() => Math.max(1, Math.ceil(filteredTasks.value.length / taskPageSize.value)));
+    const paginatedTasks = computed(() => {
+      const page = Math.min(taskPage.value, taskTotalPages.value);
+      const start = (page - 1) * taskPageSize.value;
+      return filteredTasks.value.slice(start, start + taskPageSize.value);
+    });
+    watch(filteredTasks, () => {
+      if (taskPage.value > taskTotalPages.value) taskPage.value = taskTotalPages.value;
+    });
+    function taskRowIndex(index) { return (taskPage.value - 1) * taskPageSize.value + index + 1; }
+    function goTaskPage(page) { taskPage.value = Math.min(Math.max(1, page), taskTotalPages.value); }
+    function onTaskPageSizeChange() { taskPage.value = 1; }
+    function submitTaskQuery() { taskPage.value = 1; }
+    function resetTaskFilters() {
+      taskSearch.value = '';
+      taskStatusFilter.value = '';
+      taskResultFilter.value = '';
+      taskPage.value = 1;
+    }
+    function gotoTaskPage() {
+      const p = parseInt(taskGotoPage.value, 10);
+      if (!isNaN(p)) goTaskPage(p);
+      taskGotoPage.value = '';
+    }
+
+    const auditMaterials = ref([
+      { id:'mat-1', mediaType:'image', name:'main_01_v2.png', originalName:'main_01.png', replaced:true, replaceRound:2, replacedAt:'2026-07-07 11:45', auditTime:'2026-07-07 11:46', rechecking:false, thumb:placeholderThumbs[0], auditStatus:'high', processStatus:'needFix', highCount:1, mediumCount:2, lowCount:0, primaryHit:'高风险 · 图库水印 · OCR 识别到 Getty Images，置信度 96%',
+        versionHistory:[
+          { versionLabel:'初始审核', round:1, name:'main_01.png', thumb:placeholderThumbs[0], mediaType:'image', auditStatus:'high', auditTime:'2026-07-07 12:10', highCount:2, mediumCount:0, lowCount:0, primaryHit:'高风险 · 图库水印 · OCR 识别到 Getty Images，置信度 96%',
+            risks:[
+              { level:'high', ruleCategory:'内容安全类', pointCode:'AIGC-02', pointName:'残留图库 / 生成工具水印', ruleText:'判定素材中是否残留第三方图库水印、AI 生成工具水印或其他可识别的版权来源标识。', problem:'右下角残留 Getty Images 水印文字', hitLocation:'图片右下角', hitBasis:'OCR 识别到图库水印文字，置信度 96%', suggestion:'替换为无水印素材或重新生成背景后复检。', bbox:{x:70,y:80,w:22,h:12}, confirmed:false, misreported:false, misreportReason:'' },
+              { level:'high', ruleCategory:'内容安全类', pointCode:'LAW-01', pointName:'成人内容 / 过度暴露 / 性暗示', ruleText:'判定素材是否含有成人内容、过度暴露、性暗示等违法违规元素。', problem:'背景人物着装暴露', hitLocation:'图片左侧背景', hitBasis:'内容安全模型检测到成人内容特征，置信度 89%', suggestion:'替换背景人物素材后复检。', bbox:{x:5,y:40,w:25,h:35}, confirmed:false, misreported:false, misreportReason:'' }
+            ]}
+        ],
+        risks:[
+          { level:'high', ruleCategory:'内容安全类', pointCode:'AIGC-02', pointName:'残留图库 / 生成工具水印', ruleText:'判定素材中是否残留第三方图库水印、AI 生成工具水印或其他可识别的版权来源标识。', problem:'右下角残留 Getty Images 水印文字', hitLocation:'图片右下角', hitBasis:'OCR 识别到图库水印文字，置信度 96%', suggestion:'替换为无水印素材或重新生成背景后复检。', bbox:{x:70,y:80,w:22,h:12}, confirmed:false, misreported:false, misreportReason:'' },
+          { level:'medium', ruleCategory:'内容安全类', pointCode:'IP-04', pointName:'第三方品牌 Logo / 品牌名 / 商标元素', ruleText:'判定素材中是否出现非本品牌 Logo、品牌名、商标元素；如 AI 生成疑似品牌变体、假 Logo、近似品牌文字，也属于疑似风险。', problem:'背景左下区域出现疑似 Apple 字样', hitLocation:'图片左下区域', hitBasis:'OCR 识别到品牌关键词，相似度 76%', suggestion:'人工确认是否真实出现品牌标识；如无授权建议替换背景元素。', bbox:{x:10,y:65,w:18,h:10}, confirmed:false, misreported:false, misreportReason:'' },
+          { level:'medium', ruleCategory:'内容安全类', pointCode:'AIGC-04', pointName:'AI 乱码 / 伪英文', ruleText:'判定 AI 生成素材中的文字是否清晰可辨，是否出现无意义乱码、伪英文或其他不可识别文字。', problem:'背景招牌文字不可识别，呈现乱码状态', hitLocation:'图片中上部', hitBasis:'多模态模型检测到异常文字区域', suggestion:'建议修复或替换背景文字。', bbox:{x:40,y:15,w:25,h:10}, confirmed:false, misreported:false, misreportReason:'' }
+        ]},
+      { id:'mat-2', mediaType:'video', name:'tiktok_ad_15s.mp4', duration:'00:15', replaced:false, rechecking:false, thumb:placeholderThumbs[4], auditStatus:'medium', processStatus:'needConfirm', highCount:0, mediumCount:2, lowCount:0, primaryHit:'中风险 · 安全区识别 · 标题超出 TikTok 安全区（00:03–00:05）',
+        risks:[
+          { level:'medium', ruleCategory:'格式规范类', pointCode:'FORMAT-01', pointName:'平台安全区识别', ruleText:'判定素材中的标题、卖点、CTA 等关键文案是否超出目标投放平台的安全展示区域。', problem:'主标题超出 TikTok 竖版视频顶部安全区', hitLocation:'视频顶部标题区域', hitBasis:'安全区模型检测到文案越界，置信度 88%', suggestion:'将标题下移或缩小字号，确保在安全区内展示。', timeRange:'00:03 – 00:05', timePercent:20, bbox:{x:15,y:5,w:70,h:18}, confirmed:false, misreported:false, misreportReason:'' },
+          { level:'medium', ruleCategory:'内容安全类', pointCode:'IP-04', pointName:'第三方品牌 Logo / 品牌名 / 商标元素', ruleText:'判定素材中是否出现非本品牌 Logo、品牌名、商标元素。', problem:'画面背景出现疑似 Nike Swoosh 图形', hitLocation:'视频中部背景', hitBasis:'视觉识别到品牌图形，相似度 72%', suggestion:'确认是否有品牌授权；如无授权建议替换背景元素。', timeRange:'00:08 – 00:10', timePercent:53, bbox:{x:55,y:40,w:20,h:15}, confirmed:false, misreported:false, misreportReason:'' }
+        ]},
+      { id:'mat-3', mediaType:'image', name:'meta_summer_sale.png', replaced:false, rechecking:false, thumb:placeholderThumbs[2], auditStatus:'medium', processStatus:'needConfirm', highCount:0, mediumCount:1, lowCount:0, primaryHit:'中风险 · 错别字 · 「促消」应为「促销」',
+        risks:[
+          { level:'medium', ruleCategory:'基础错误类', pointCode:'BASIC-01', pointName:'错别字 / 拼写错误', ruleText:'判定素材中的中文、英文文案是否存在错别字、拼写错误或明显语法问题。', problem:'文案「限时促消」存在错别字，应为「限时促销」', hitLocation:'Banner 主标题区域', hitBasis:'OCR + 词典校验命中错别字，置信度 91%', suggestion:'修正文案后替换素材复检。', bbox:{x:25,y:30,w:50,h:12}, confirmed:false, misreported:false, misreportReason:'' }
+        ]},
+      { id:'mat-4', mediaType:'image', name:'ad_banner_02.png', replaced:false, rechecking:false, thumb:placeholderThumbs[2], auditStatus:'high', processStatus:'needFix', highCount:1, mediumCount:0, lowCount:0, primaryHit:'高风险 · 成人内容 · 内容安全模型置信度 94%',
+        risks:[
+          { level:'high', ruleCategory:'内容安全类', pointCode:'LAW-01', pointName:'成人内容 / 过度暴露 / 性暗示', ruleText:'判定素材是否含有成人内容、过度暴露、性暗示、暴力血腥、赌博毒品等违法违规或违反平台内容政策的元素。', problem:'人物着装暴露且姿势存在性暗示', hitLocation:'图片中央人物区域', hitBasis:'内容安全模型检测到成人内容特征，置信度 94%', suggestion:'修改素材内容，确保符合平台内容政策后复检。', bbox:{x:25,y:15,w:45,h:55}, confirmed:false, misreported:false, misreportReason:'' }
+        ]},
+      { id:'mat-5', mediaType:'image', name:'social_01.png', replaced:false, rechecking:false, thumb:placeholderThumbs[4], auditStatus:'low', processStatus:'readyConfirm', highCount:0, mediumCount:0, lowCount:1, primaryHit:'低风险 · AI 生成标识 · 未检测到 AI 标识',
+        risks:[
+          { level:'low', ruleCategory:'内容安全类', pointCode:'AIGC-01', pointName:'AI 生成标识要求', ruleText:'判定 AI 生成内容是否按发布平台要求添加明确的 AI 生成标识、声明或必要提示信息。', problem:'素材为 AI 生成，但未添加 AI 标识', hitLocation:'全图', hitBasis:'素材来源标记为 AI 生成', suggestion:'根据发布平台要求添加 AI 标识或声明。', bbox:{x:0,y:0,w:100,h:100}, confirmed:false, misreported:false, misreportReason:'' }
+        ]},
+      { id:'mat-6', mediaType:'image', name:'detail_05.png', replaced:false, rechecking:false, thumb:placeholderThumbs[3], auditStatus:'pass', processStatus:'readyConfirm', highCount:0, mediumCount:0, lowCount:0, primaryHit:'未命中当前规则范围内的高、中、低风险项。', risks:[] },
+      { id:'mat-7', mediaType:'video', name:'brand_intro_30s.mp4', duration:'00:30', replaced:false, rechecking:false, thumb:placeholderThumbs[1], auditStatus:'pass', processStatus:'readyConfirm', highCount:0, mediumCount:0, lowCount:0, primaryHit:'未命中当前规则范围内的高、中、低风险项。', risks:[] }
+    ]);
+
+    function cloneMaterials(materials) {
+      return JSON.parse(JSON.stringify(materials));
+    }
+    const fullMaterialsSnapshot = cloneMaterials(auditMaterials.value);
+    const lowRiskTaskMaterials = cloneMaterials(auditMaterials.value.filter(m => ['mat-5','mat-6','mat-7'].includes(m.id)));
+    const purePassMaterials = cloneMaterials(auditMaterials.value.filter(m => ['mat-6','mat-7'].includes(m.id)));
+    const mediumOnlyMaterials = cloneMaterials(auditMaterials.value.filter(m => ['mat-2','mat-3'].includes(m.id)));
+    const failedMaterialsSnapshot = [
+      { name:'banner_promo_01.png', mediaType:'image', thumb:placeholderThumbs[2], fileStatus:'failed', failReason:'文件格式不支持', auditStatus:'', detail:'不支持的文件格式，请上传 JPG / PNG / WebP / MP4 / MOV' },
+      { name:'banner_promo_02.png', mediaType:'image', thumb:placeholderThumbs[2], fileStatus:'failed', failReason:'审核超时', auditStatus:'', detail:'审核服务超时，请稍后重试' },
+      { name:'banner_promo_03.png', mediaType:'image', thumb:placeholderThumbs[3], fileStatus:'pending', failReason:'', auditStatus:'', detail:'任务中断，尚未开始审核' },
+      { name:'banner_promo_04.png', mediaType:'image', thumb:placeholderThumbs[2], fileStatus:'done', failReason:'', auditStatus:'pass', detail:'未发现明显风险' }
+    ];
+    const terminatedMaterialsSnapshot = [
+      { name:'main_01.png', mediaType:'image', thumb:placeholderThumbs[0], fileStatus:'done', auditStatus:'pass', detail:'未发现明显风险' },
+      { name:'main_02.png', mediaType:'image', thumb:placeholderThumbs[0], fileStatus:'done', auditStatus:'pass', detail:'未发现明显风险' },
+      { name:'sdc_03.jpg', mediaType:'image', thumb:placeholderThumbs[1], fileStatus:'done', auditStatus:'medium', detail:'存在中风险' },
+      { name:'ad_banner_01.jpg', mediaType:'image', thumb:placeholderThumbs[2], fileStatus:'done', auditStatus:'high', detail:'存在高风险' },
+      { name:'ad_banner_02.jpg', mediaType:'image', thumb:placeholderThumbs[2], fileStatus:'done', auditStatus:'pass', detail:'未发现明显风险' },
+      { name:'detail_01.png', mediaType:'image', thumb:placeholderThumbs[3], fileStatus:'done', auditStatus:'low', detail:'存在低风险' },
+      { name:'detail_02.png', mediaType:'image', thumb:placeholderThumbs[3], fileStatus:'done', auditStatus:'pass', detail:'未发现明显风险' },
+      { name:'social_01.png', mediaType:'image', thumb:placeholderThumbs[4], fileStatus:'done', auditStatus:'pass', detail:'未发现明显风险' },
+      { name:'social_02.png', mediaType:'image', thumb:placeholderThumbs[4], fileStatus:'done', auditStatus:'medium', detail:'存在中风险' },
+      { name:'pp_01.jpg', mediaType:'image', thumb:placeholderThumbs[5], fileStatus:'done', auditStatus:'pass', detail:'未发现明显风险' },
+      { name:'pp_02.jpg', mediaType:'image', thumb:placeholderThumbs[5], fileStatus:'done', auditStatus:'pass', detail:'未发现明显风险' },
+      { name:'main_03.png', mediaType:'image', thumb:placeholderThumbs[0], fileStatus:'pending', auditStatus:'', detail:'审核已终止，尚未完成' },
+      { name:'main_04.png', mediaType:'image', thumb:placeholderThumbs[0], fileStatus:'pending', auditStatus:'', detail:'审核已终止，尚未完成' },
+      { name:'sdc_04.jpg', mediaType:'image', thumb:placeholderThumbs[1], fileStatus:'pending', auditStatus:'', detail:'审核已终止，尚未完成' },
+      { name:'ad_banner_03.jpg', mediaType:'image', thumb:placeholderThumbs[2], fileStatus:'pending', auditStatus:'', detail:'审核已终止，尚未完成' },
+      { name:'detail_03.png', mediaType:'image', thumb:placeholderThumbs[3], fileStatus:'pending', auditStatus:'', detail:'审核已终止，尚未完成' },
+      { name:'social_03.png', mediaType:'image', thumb:placeholderThumbs[4], fileStatus:'pending', auditStatus:'', detail:'审核已终止，尚未完成' },
+      { name:'pp_03.jpg', mediaType:'image', thumb:placeholderThumbs[5], fileStatus:'pending', auditStatus:'', detail:'审核已终止，尚未完成' }
+    ];
+
+    function getTaskMaterialSnapshot(taskId) {
+      if (taskId === 3) return cloneMaterials(lowRiskTaskMaterials);
+      if (taskId === 6) return cloneMaterials(purePassMaterials);
+      if (taskId === 4) return cloneMaterials(mediumOnlyMaterials);
+      return cloneMaterials(fullMaterialsSnapshot);
+    }
+    function aggregateAuditResult(materials) {
+      if (!materials?.length) return '';
+      if (materials.some(m => m.auditStatus === 'high')) return 'high';
+      if (materials.some(m => m.auditStatus === 'medium')) return 'medium';
+      if (materials.some(m => m.auditStatus === 'low')) return 'low';
+      return 'pass';
+    }
+    function getTaskDisplayAuditResult(task) {
+      if (!shouldShowAuditResult(task)) return '';
+      return aggregateAuditResult(getTaskMaterialSnapshot(task.id));
+    }
+    function getTerminatedSnapshot(taskId) {
+      if (taskId === 8) return JSON.parse(JSON.stringify(terminatedMaterialsSnapshot));
+      return [];
+    }
+    function loadTaskContext(task) {
+      activeTaskId.value = task.id;
+      activeTaskName.value = task.name;
+      activeTaskStatus.value = task.taskStatus;
+      activeTaskAuditTime.value = task.auditTime || '';
+      activeTreatmentStatus.value = task.treatmentStatus || '';
+      activeFailureReason.value = task.failureReason || '';
+      activeTerminateNote.value = '';
+      terminatedMaterials.value = [];
+      if (task.taskStatus === 'failed') {
+        failedMaterials.value = cloneMaterials(failedMaterialsSnapshot);
+      } else if (task.taskStatus === 'terminated') {
+        terminatedMaterials.value = getTerminatedSnapshot(task.id);
+        activeTerminateNote.value = task.terminateNote || `用户于审核进行中终止，已完成 ${task.terminatedCompleted || 0}/${task.totalCount} 个素材的审核结果将保留，未完成部分不再继续。`;
+        failedMaterials.value = [];
+      } else {
+        auditMaterials.value = getTaskMaterialSnapshot(task.id);
+        failedMaterials.value = [];
+      }
+      activeAuditResult.value = getTaskDisplayAuditResult(task) || '';
+      materialFilter.value = '';
+    }
+    function failedFileStatusLabel(status) {
+      return { failed:'审核失败', pending:'未审核', done:'已完成', running:'审核中' }[status] || status;
+    }
+    function failedFileStatusClass(status) {
+      return { failed:'text-red-400', pending:'text-text-tertiary', done:'text-green-400', running:'text-blue-400' }[status] || 'text-text-secondary';
+    }
+    function failedFileStatusDot(status) {
+      return { failed:'status-dot-red', pending:'status-dot-slate', done:'status-dot-green', running:'status-dot-blue' }[status] || 'status-dot-slate';
+    }
+    function failedFileDetail(file) {
+      if (file.fileStatus === 'failed') return file.failReason || file.detail || '--';
+      if (file.fileStatus === 'done') return file.detail || auditResultLabel(file.auditStatus);
+      return file.detail || '--';
+    }
+    function terminatedFileStatusLabel(status) {
+      return { done:'已完成', pending:'未审核' }[status] || status;
+    }
+    function terminatedFileStatusClass(status) {
+      return { done:'text-green-400', pending:'text-text-tertiary' }[status] || 'text-text-secondary';
+    }
+    function terminatedFileStatusDot(status) {
+      return { done:'status-dot-green', pending:'status-dot-slate' }[status] || 'status-dot-slate';
+    }
+    function terminatedFileDetail(file) {
+      if (file.fileStatus === 'done') return file.detail || auditResultLabel(file.auditStatus);
+      return file.detail || '审核已终止，尚未完成';
+    }
+    const terminatedProgressLabel = computed(() => {
+      const done = terminatedMaterials.value.filter(f => f.fileStatus === 'done').length;
+      const total = terminatedMaterials.value.length;
+      return total ? `${done}/${total}` : '--';
+    });
+
+    const mockLibraryAssets = [
+      { id:1, name:'LMP-001_Main_White.jpg', sku:'H123456', type:'主图', mediaType:'image', size:'2.4 MB', thumb:placeholderThumbs[0] },
+      { id:2, name:'TikTok_Ad_15s.mp4', sku:'H345678', type:'短视频', mediaType:'video', size:'8.6 MB', thumb:placeholderThumbs[4] },
+      { id:3, name:'Banner_Summer_Sale.jpg', sku:'', type:'Banner', mediaType:'image', size:'3.1 MB', thumb:placeholderThumbs[2] },
+      { id:4, name:'Brand_Intro_30s.mov', sku:'H789012', type:'品牌视频', mediaType:'video', size:'12.4 MB', thumb:placeholderThumbs[1] }
+    ];
+
+    const filteredLibraryAssets = computed(() => mockLibraryAssets.filter(asset => {
+      if (librarySearch.value && !asset.name.includes(librarySearch.value) && !asset.sku.includes(librarySearch.value)) return false;
+      if (libraryTypeFilter.value && asset.type !== libraryTypeFilter.value) return false;
+      return true;
+    }));
+
+    const materialStats = computed(() => {
+      const ms = auditMaterials.value;
+      return {
+        total: ms.length,
+        high: ms.filter(m => m.auditStatus === 'high').length,
+        medium: ms.filter(m => m.auditStatus === 'medium').length,
+        low: ms.filter(m => m.auditStatus === 'low').length,
+        pass: ms.filter(m => m.auditStatus === 'pass').length,
+        image: ms.filter(m => m.mediaType !== 'video').length,
+        video: ms.filter(m => m.mediaType === 'video').length
+      };
+    });
+
+    const materialComposeLabel = computed(() => {
+      const s = materialStats.value;
+      return `${s.total} 个（图片 ${s.image} / 视频 ${s.video}）`;
+    });
+
+    const taskAuditResult = computed(() => aggregateAuditResult(auditMaterials.value));
+    const activeTaskProgressKey = computed(() => {
+      if (activeTaskStatus.value === 'terminated') return 'terminated';
+      if (activeTaskStatus.value === 'failed') return 'failed';
+      if (['auditing','reAuditing'].includes(activeTaskStatus.value)) return 'running';
+      if (['needReview','needFix','recheckConfirm','done'].includes(activeTaskStatus.value)) return 'finished';
+      return '';
+    });
+    const activeTaskProgressLabel = computed(() => {
+      if (activeTaskProgressKey.value === 'running') return activeTaskStatus.value === 'reAuditing' ? '复审中' : '审核中';
+      return { finished:'审核完成', failed:'审核失败', terminated:'已终止' }[activeTaskProgressKey.value] || '--';
+    });
+    const activeTaskProgressDotClass = computed(() => activeTaskProgressKey.value ? ({ running:'status-dot-blue', finished:'status-dot-green', failed:'status-dot-red', terminated:'status-dot-slate' }[activeTaskProgressKey.value] || 'status-dot-slate') : 'status-dot-slate');
+    const activeTaskProgressTextClass = computed(() => activeTaskProgressKey.value ? ({ running:'text-blue-400', finished:'text-green-400', failed:'text-red-400', terminated:'text-text-secondary' }[activeTaskProgressKey.value] || 'text-text-tertiary') : 'text-text-tertiary');
+    const shouldShowActiveTaskAuditResult = computed(() => ['needReview','needFix','recheckConfirm','done'].includes(activeTaskStatus.value));
+
+    const filteredSortedMaterials = computed(() => {
+      let list = auditMaterials.value;
+      if (materialFilter.value) {
+        list = list.filter(m => m.auditStatus === materialFilter.value);
+      }
+      return [...list].sort((a,b) => riskPriority(a.auditStatus) - riskPriority(b.auditStatus));
+    });
+
+    const currentMaterial = computed(() => auditMaterials.value[detailIdx.value] || auditMaterials.value[0]);
+    const isHistoryDetailView = computed(() => !!historyViewSnapshot.value);
+    const displayMaterial = computed(() => historyViewSnapshot.value || currentMaterial.value);
+    const activeVideoRisk = computed(() => {
+      const idx = activeRiskIndex.value;
+      if (idx === null || !displayMaterial.value?.risks?.[idx]) return null;
+      return displayMaterial.value.risks[idx];
+    });
+    const currentMaterialRiskCounts = computed(() => {
+      const risks = currentMaterial.value.risks || [];
+      return {
+        high: risks.filter(r => r.level === 'high').length,
+        medium: risks.filter(r => r.level === 'medium').length,
+        low: risks.filter(r => r.level === 'low').length
+      };
+    });
+    const displayMaterialRiskCounts = computed(() => {
+      const risks = displayMaterial.value.risks || [];
+      return {
+        high: risks.filter(r => r.level === 'high').length,
+        medium: risks.filter(r => r.level === 'medium').length,
+        low: risks.filter(r => r.level === 'low').length
+      };
+    });
+    const materialTimeline = computed(() => {
+      if (!auditHistoryTarget.value) return [];
+      return buildMaterialTimeline(auditHistoryTarget.value);
+    });
+    const firstRiskMaterial = computed(() => auditMaterials.value.find(m => ['high','medium','low'].includes(m.auditStatus)) || auditMaterials.value[0]);
+
+    const operationRecords = ref([
+      { type:'audit_complete', round:2, time:'2026-07-07 11:46:00', action:'第 2 次复审完成', detail:'main_01_v2.png 复审完毕，仍存在高风险', operator:'系统' },
+      { type:'replace_recheck', round:2, time:'2026-07-07 11:45:10', action:'替换复审', detail:'main_01.png → main_01_v2.png，上传新素材并发起第 2 轮复审', operator:'张三' },
+      { type:'audit_complete', round:1, time:'2026-07-07 12:10:25', action:'第 1 次审核完成', detail:'7 个素材审核完毕，发现 2 个高风险、2 个中风险、1 个低风险、2 个未发现明显风险（含 2 个视频）', operator:'系统' },
+      { type:'create', round:1, time:'2026-07-07 12:08:00', action:'创建审核任务', detail:'任务已创建，上传 7 个素材（图片 5 / 视频 2）', operator:'张三' }
+    ]);
+
+    const AUDIT_JOURNEY_TYPES = ['create','audit_complete','replace_recheck','reaudit_all','retry','terminate'];
+    const auditHistoryRecords = computed(() => operationRecords.value.filter(r => AUDIT_JOURNEY_TYPES.includes(r.type)));
+
+    function nowStr() {
+      const d = new Date();
+      return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')+':'+String(d.getSeconds()).padStart(2,'0');
+    }
+    function addAuditRecord({ type, action, detail, operator, round }) {
+      operationRecords.value.unshift({ type, action, detail, operator, round: round || null, time: nowStr() });
+    }
+    function buildAuditCompleteDetail() {
+      const s = materialStats.value;
+      const parts = [];
+      if (s.high > 0) parts.push(s.high + ' 个高风险');
+      if (s.medium > 0) parts.push(s.medium + ' 个中风险');
+      if (s.low > 0) parts.push(s.low + ' 个低风险');
+      if (s.pass > 0) parts.push(s.pass + ' 个未发现明显风险');
+      return parts.join('、') || '全部素材未发现明显风险';
+    }
+    function mediaTypeLabel(type) { return type === 'video' ? '视频' : '图片'; }
+    function auditRecordIcon(type) {
+      return { create:'ph ph-plus', audit_complete:'ph ph-check-circle', replace_recheck:'ph ph-arrows-clockwise', reaudit_all:'ph ph-arrows-counter-clockwise', retry:'ph ph-arrow-clockwise', terminate:'ph ph-stop', confirm:'ph ph-seal-check' }[type] || 'ph ph-clock';
+    }
+    function auditRecordIconClass(type) {
+      return { create:'bg-white/5 text-text-tertiary', audit_complete:'bg-green-500/10 text-green-400', replace_recheck:'bg-blue-500/10 text-blue-400', reaudit_all:'bg-primary/10 text-primary', retry:'bg-amber-500/10 text-amber-400', terminate:'bg-slate-500/10 text-text-secondary', confirm:'bg-green-500/10 text-green-400' }[type] || 'bg-white/5 text-text-tertiary';
+    }
+
+    function getFileAuditStatus(i) {
+      if (i < auditCompleted.value) return { text:'已完成', textClass:'text-green-400', dotClass:'status-dot-green' };
+      if (i === auditCompleted.value && !auditIsComplete.value) return { text:'审核中', textClass:'text-primary', dotClass:'status-dot-amber' };
+      return { text:'排队中', textClass:'text-text-tertiary', dotClass:'status-dot-slate' };
+    }
+    function startAuditTimer() {
+      auditCompleted.value = 0;
+      if (auditTimer) clearInterval(auditTimer);
+      auditTimer = setInterval(() => {
+        if (auditCompleted.value < uploadedFiles.value.length) auditCompleted.value++;
+        if (auditCompleted.value >= uploadedFiles.value.length) clearInterval(auditTimer);
+      }, 500);
+    }
+    function stopAuditTimer() {
+      if (auditTimer) clearInterval(auditTimer);
+    }
+    function closeAuditProgressUI() {
+      createTaskModalOpen.value = false;
+      createTaskModalPhase.value = 'form';
+      replaceDialogOpen.value = false;
+      replaceDialogPhase.value = 'upload';
+      replacePendingFiles.value = [];
+      auditProgressModalOpen.value = false;
+      auditProgressPhase.value = 'prepare';
+    }
+    function cancelReAuditModal() {
+      stopAuditTimer();
+      auditProgressModalOpen.value = false;
+      auditProgressPhase.value = 'prepare';
+      auditCompleted.value = 0;
+      reAuditMode.value = null;
+      reAuditSnapshot.value = null;
+      replaceMaterialSnapshot.value = null;
+    }
+    function cancelReplaceProgress() {
+      stopAuditTimer();
+      if (replaceTarget.value) replaceTarget.value.rechecking = false;
+      closeReplaceDialog();
+    }
+    function startReAuditFromModal() {
+      if (uploadedFiles.value.length === 0) return;
+      const type = reAuditMode.value;
+      auditRound.value += 1;
+      activeTaskStatus.value = type === 'retry' ? 'auditing' : 'reAuditing';
+      activeTreatmentStatus.value = type === 'retry' ? 'auditing' : 'rechecking';
+      addAuditRecord({
+        type: type === 'retry' ? 'retry' : 'reaudit_all',
+        round: auditRound.value,
+        action: type === 'retry' ? '重试审核' : '重新审核全部',
+        detail: type === 'retry' ? '重试审核异常素材' : `发起第 ${auditRound.value} 轮复审，重新审核全部 ${uploadedFiles.value.length} 个素材`,
+        operator:'张三'
+      });
+      auditProgressPhase.value = 'running';
+      startAuditing();
+    }
+    function backgroundAuditProgress() {
+      if (createTaskModalPhase.value === 'auditing') createTaskModalOpen.value = false;
+      if (replaceDialogPhase.value === 'progress') replaceDialogOpen.value = false;
+      auditProgressModalOpen.value = false;
+    }
+    function buildTerminatedMaterialsFromCurrent() {
+      const completed = auditCompleted.value;
+      const sampleStatuses = ['pass', 'medium', 'high', 'low', 'pass'];
+      return uploadedFiles.value.map((file, i) => {
+        if (i < completed) {
+          const mat = auditMaterials.value[i];
+          const auditStatus = mat?.auditStatus || sampleStatuses[i % sampleStatuses.length];
+          return {
+            name: file.name,
+            mediaType: file.mediaType || 'image',
+            thumb: file.thumb,
+            fileStatus: 'done',
+            auditStatus,
+            detail: auditResultLabel(auditStatus)
+          };
+        }
+        return {
+          name: file.name,
+          mediaType: file.mediaType || 'image',
+          thumb: file.thumb,
+          fileStatus: 'pending',
+          auditStatus: '',
+          detail: '审核已终止，尚未完成'
+        };
+      });
+    }
+    function openTerminateConfirm(source) {
+      terminateConfirmSource.value = source;
+      terminateConfirmDialogOpen.value = true;
+    }
+    function closeTerminateConfirm() {
+      terminateConfirmDialogOpen.value = false;
+      terminateConfirmSource.value = null;
+    }
+    function saveReAuditSnapshot() {
+      reAuditSnapshot.value = {
+        taskStatus: activeTaskStatus.value,
+        auditResult: activeAuditResult.value,
+        treatmentStatus: activeTreatmentStatus.value,
+        auditTime: activeTaskAuditTime.value,
+        auditRound: auditRound.value,
+        materials: cloneMaterials(auditMaterials.value),
+        failedMaterials: cloneMaterials(failedMaterials.value),
+        failureReason: activeFailureReason.value
+      };
+    }
+    function applyTaskSnapshotToMock(snap) {
+      const task = activeTaskId.value ? mockTasks.value.find(t => t.id === activeTaskId.value) : null;
+      if (task && snap) {
+        task.taskStatus = snap.taskStatus;
+        task.auditResult = snap.auditResult;
+        task.treatmentStatus = snap.treatmentStatus;
+        task.auditTime = snap.auditTime;
+      }
+    }
+    function restoreReAuditSnapshot() {
+      const snap = reAuditSnapshot.value;
+      if (!snap) return;
+      auditMaterials.value = cloneMaterials(snap.materials);
+      activeTaskStatus.value = snap.taskStatus;
+      activeAuditResult.value = snap.auditResult;
+      activeTreatmentStatus.value = snap.treatmentStatus;
+      activeTaskAuditTime.value = snap.auditTime;
+      auditRound.value = snap.auditRound;
+      failedMaterials.value = cloneMaterials(snap.failedMaterials || []);
+      activeFailureReason.value = snap.failureReason || '';
+      applyTaskSnapshotToMock(snap);
+      reAuditSnapshot.value = null;
+      replaceMaterialSnapshot.value = null;
+      reAuditMode.value = null;
+      replaceTarget.value = null;
+    }
+    function ensureResultOverviewTab() {
+      const tabId = activeTaskId.value ? 'task-' + activeTaskId.value : 'task-draft';
+      let tab = navTabs.value.find(t => t.id === tabId);
+      if (!tab) {
+        tab = { id: tabId, title: activeTaskName.value, icon: 'ph ph-file-text', closable: true, view: 'resultOverview', taskId: activeTaskId.value };
+        navTabs.value.push(tab);
+      } else {
+        tab.title = activeTaskName.value;
+        tab.view = 'resultOverview';
+        tab.taskId = activeTaskId.value;
+      }
+      activeTabId.value = tabId;
+      currentPage.value = 'resultOverview';
+    }
+    function ensureFailedOverviewTab() {
+      const tabId = activeTaskId.value ? 'task-' + activeTaskId.value : 'task-draft';
+      let tab = navTabs.value.find(t => t.id === tabId);
+      if (!tab) {
+        tab = { id: tabId, title: activeTaskName.value, icon: 'ph ph-file-text', closable: true, view: 'failedOverview', taskId: activeTaskId.value };
+        navTabs.value.push(tab);
+      } else {
+        tab.title = activeTaskName.value;
+        tab.view = 'failedOverview';
+        tab.taskId = activeTaskId.value;
+      }
+      activeTabId.value = tabId;
+      currentPage.value = 'failedOverview';
+    }
+    function ensureTerminatedTaskTab() {
+      const tabId = activeTaskId.value ? 'task-' + activeTaskId.value : 'task-draft';
+      let tab = navTabs.value.find(t => t.id === tabId);
+      if (!tab) {
+        tab = { id: tabId, title: activeTaskName.value, icon: 'ph ph-file-text', closable: true, view: 'terminatedOverview', taskId: activeTaskId.value };
+        navTabs.value.push(tab);
+      } else {
+        tab.title = activeTaskName.value;
+        tab.view = 'terminatedOverview';
+        tab.taskId = activeTaskId.value;
+      }
+      activeTabId.value = tabId;
+      currentPage.value = 'terminatedOverview';
+    }
+    function confirmTerminateFirstAudit() {
+      const completed = auditCompleted.value;
+      const total = uploadedFiles.value.length;
+      const time = nowStr().slice(0, 16);
+      terminatedMaterials.value = buildTerminatedMaterialsFromCurrent();
+      activeTerminateNote.value = `用户于审核进行中终止，已完成 ${completed}/${total} 个素材的审核结果将保留，未完成部分不再继续。`;
+      activeTaskStatus.value = 'terminated';
+      activeTaskAuditTime.value = time;
+      activeAuditResult.value = '';
+      activeTreatmentStatus.value = '';
+      let task = activeTaskId.value ? mockTasks.value.find(t => t.id === activeTaskId.value) : null;
+      if (!task && terminateConfirmSource.value === 'create') {
+        const newId = Math.max(...mockTasks.value.map(t => t.id)) + 1;
+        task = {
+          id: newId,
+          name: formData.value.taskName || activeTaskName.value,
+          sku: '',
+          totalCount: total,
+          taskStatus: 'terminated',
+          auditResult: '',
+          treatmentStatus: '',
+          creator: '张三',
+          auditTime: time,
+          terminatedCompleted: completed,
+          terminateNote: activeTerminateNote.value
+        };
+        mockTasks.value.unshift(task);
+        activeTaskId.value = newId;
+        activeTaskName.value = task.name;
+      } else if (task) {
+        task.taskStatus = 'terminated';
+        task.auditResult = '';
+        task.treatmentStatus = '';
+        task.auditTime = time;
+        task.terminatedCompleted = completed;
+        task.terminateNote = activeTerminateNote.value;
+        task.totalCount = total || task.totalCount;
+      }
+      addAuditRecord({
+        type: 'terminate',
+        action: '终止审核',
+        detail: `审核进行中终止，已完成 ${completed}/${total} 个素材`,
+        operator: '张三'
+      });
+      reAuditSnapshot.value = null;
+      replaceMaterialSnapshot.value = null;
+      ensureTerminatedTaskTab();
+    }
+    function confirmTerminateReplaceReAudit() {
+      const snap = replaceMaterialSnapshot.value;
+      if (snap) {
+        const idx = auditMaterials.value.findIndex(m => m.id === snap.matId);
+        if (idx >= 0) auditMaterials.value[idx] = cloneMaterials([snap.material])[0];
+      }
+      restoreReAuditSnapshot();
+      addAuditRecord({
+        type: 'terminate',
+        action: '终止替换复审',
+        detail: '替换复审已终止，素材恢复为替换前状态',
+        operator: '张三'
+      });
+      ensureResultOverviewTab();
+    }
+    function confirmTerminateReAuditAll() {
+      restoreReAuditSnapshot();
+      addAuditRecord({
+        type: 'terminate',
+        action: '终止重新审核',
+        detail: '重新审核全部已终止，保留上一轮审核结果',
+        operator: '张三'
+      });
+      ensureResultOverviewTab();
+    }
+    function confirmTerminateRetry() {
+      restoreReAuditSnapshot();
+      addAuditRecord({
+        type: 'terminate',
+        action: '终止重试审核',
+        detail: '重试审核已终止，保留当前失败状态',
+        operator: '张三'
+      });
+      ensureFailedOverviewTab();
+    }
+    function confirmTerminateAudit() {
+      stopAuditTimer();
+      const source = terminateConfirmSource.value;
+      const mode = reAuditMode.value;
+      if (source === 'replace' || mode === 'single') {
+        confirmTerminateReplaceReAudit();
+      } else if (mode === 'all') {
+        confirmTerminateReAuditAll();
+      } else if (mode === 'retry') {
+        confirmTerminateRetry();
+      } else {
+        confirmTerminateFirstAudit();
+      }
+      closeTerminateConfirm();
+      closeAuditProgressUI();
+    }
+    function ensureTaskResultTab() {
+      if (!isHomeTab.value) {
+        activeTab.value.view = 'resultOverview';
+        return;
+      }
+      const tabId = 'task-draft';
+      let tab = navTabs.value.find(t => t.id === tabId);
+      if (!tab) {
+        tab = { id: tabId, title: activeTaskName.value, icon: 'ph ph-file-text', closable: true, view: 'resultOverview', taskId: null };
+        navTabs.value.push(tab);
+      } else {
+        tab.title = activeTaskName.value;
+        tab.view = 'resultOverview';
+      }
+      activeTabId.value = tabId;
+    }
+    function viewAuditResults() {
+      stopAuditTimer();
+      goToResults();
+      ensureTaskResultTab();
+      closeAuditProgressUI();
+    }
+
+    function statusPriority(s) { return { needReview:1, needFix:2, recheckConfirm:3, failed:4, terminated:4.5, auditing:5, reAuditing:6, queued:7, pending:8, draft:9, done:10, cancelled:11 }[s] || 99; }
+    function riskPriority(s) { return { high:1, medium:2, low:3, pass:4 }[s] || 9; }
+    function taskStatusLabel(s) { return { draft:'待提交', queued:'排队中', pending:'待审核', auditing:'审核中', needReview:'待人工确认', needFix:'待整改', reAuditing:'复审中', recheckConfirm:'待复审确认', done:'已完成', failed:'审核失败', terminated:'已终止', cancelled:'已取消' }[s] || s; }
+    function taskStatusDotClass(s) { return { draft:'status-dot-slate', queued:'status-dot-slate', pending:'status-dot-slate', auditing:'status-dot-blue', needReview:'status-dot-amber', needFix:'status-dot-red', reAuditing:'status-dot-blue', recheckConfirm:'status-dot-amber', done:'status-dot-green', failed:'status-dot-red', terminated:'status-dot-slate', cancelled:'status-dot-slate' }[s] || ''; }
+    function taskStatusTextClass(s) { return { draft:'text-text-tertiary', queued:'text-text-tertiary', pending:'text-text-tertiary', auditing:'text-blue-400', needReview:'text-amber-400', needFix:'text-red-400', reAuditing:'text-blue-400', recheckConfirm:'text-amber-400', done:'text-green-400', failed:'text-red-400', terminated:'text-text-secondary', cancelled:'text-text-tertiary' }[s] || ''; }
+    function auditProgressValue(task) {
+      if (task.taskStatus === 'terminated') return 'terminated';
+      if (task.taskStatus === 'failed') return 'failed';
+      if (['auditing','reAuditing'].includes(task.taskStatus)) return 'running';
+      if (['needReview','needFix','recheckConfirm','done'].includes(task.taskStatus)) return 'finished';
+      return '';
+    }
+    function auditProgressLabel(task) {
+      const v = auditProgressValue(task);
+      if (!v) return '--';
+      if (v === 'running' && task.taskStatus === 'reAuditing') return '复审中';
+      return { running:'审核中', finished:'审核完成', failed:'审核失败', terminated:'已终止' }[v];
+    }
+    function auditProgressDotClass(task) {
+      const v = auditProgressValue(task);
+      if (!v) return 'status-dot-slate';
+      return { running:'status-dot-blue', finished:'status-dot-green', failed:'status-dot-red', terminated:'status-dot-slate' }[v];
+    }
+    function auditProgressTextClass(task) {
+      const v = auditProgressValue(task);
+      if (!v) return 'text-text-tertiary';
+      return { running:'text-blue-400', finished:'text-green-400', failed:'text-red-400', terminated:'text-text-secondary' }[v];
+    }
+    function auditResultLabel(s) { return { pass:'未发现明显风险', low:'存在低风险', medium:'存在中风险', high:'存在高风险' }[s] || s; }
+    function auditResultBadgeClass(s) { return { pass:'risk-badge-green', low:'risk-badge-blue', medium:'risk-badge-amber', high:'risk-badge-red' }[s] || 'risk-badge-slate'; }
+    function shouldShowAuditResult(task) { return ['needReview','needFix','reAuditing','recheckConfirm','done'].includes(task.taskStatus); }
+    function treatmentStatusLabel(s) {
+      return {
+        pending:'待处理',
+        needConfirm:'待确认',
+        needFix:'待整改',
+        rechecking:'已替换复审中',
+        recheckConfirm:'待复审确认',
+        recheckPassed:'复审通过',
+        recheckRisk:'复审仍有风险',
+        readyConfirm:'待确认完成',
+        ignored:'已忽略待确认',
+        auditing:'审核中',
+        abnormal:'审核异常',
+        done:'已完成'
+      }[s] || s || '--';
+    }
+    function treatmentStatusClass(s) {
+      const m = {
+        needFix:'border-red-500/30 bg-red-500/[0.08] text-red-400',
+        recheckRisk:'border-red-500/30 bg-red-500/[0.08] text-red-400',
+        needConfirm:'border-amber-500/30 bg-amber-500/[0.08] text-amber-400',
+        recheckConfirm:'border-amber-500/30 bg-amber-500/[0.08] text-amber-400',
+        ignored:'border-amber-500/30 bg-amber-500/[0.08] text-amber-400',
+        rechecking:'border-blue-500/30 bg-blue-500/[0.08] text-blue-400',
+        auditing:'border-blue-500/30 bg-blue-500/[0.08] text-blue-400',
+        recheckPassed:'border-green-500/30 bg-green-500/[0.08] text-green-400',
+        readyConfirm:'border-green-500/30 bg-green-500/[0.08] text-green-400',
+        done:'border-green-500/30 bg-green-500/[0.08] text-green-400',
+        abnormal:'border-red-500/30 bg-red-500/[0.08] text-red-400'
+      };
+      return m[s] || 'border-border-default bg-white/[0.04] text-text-secondary';
+    }
+    function treatmentStatusTextClass(s) {
+      if (['needFix','recheckRisk','abnormal'].includes(s)) return 'text-red-400';
+      if (['needConfirm','recheckConfirm','ignored'].includes(s)) return 'text-amber-400';
+      if (['rechecking','auditing'].includes(s)) return 'text-blue-400';
+      if (['recheckPassed','readyConfirm','done'].includes(s)) return 'text-green-400';
+      return 'text-text-tertiary';
+    }
+    function hasAuditHistory(mat) {
+      return !!(mat && (mat.replaced || (mat.versionHistory && mat.versionHistory.length > 0)));
+    }
+    function snapshotMaterial(mat) {
+      return {
+        versionLabel: mat.replaced ? `第 ${mat.replaceRound || 1} 轮替换前` : '初始审核',
+        round: mat.replaceRound || 1,
+        name: mat.name,
+        thumb: mat.thumb,
+        mediaType: mat.mediaType,
+        duration: mat.duration,
+        auditStatus: mat.auditStatus,
+        auditTime: mat.auditTime || mat.replacedAt || currentTime,
+        highCount: mat.highCount,
+        mediumCount: mat.mediumCount,
+        lowCount: mat.lowCount,
+        primaryHit: mat.primaryHit,
+        risks: JSON.parse(JSON.stringify(mat.risks || []))
+      };
+    }
+    function buildMaterialTimeline(mat) {
+      const items = [...(mat.versionHistory || [])];
+      items.push({
+        isCurrent: true,
+        versionLabel: mat.replaced ? `第 ${mat.replaceRound} 轮替换` : '初始审核',
+        round: mat.replaceRound || 1,
+        name: mat.name,
+        thumb: mat.thumb,
+        mediaType: mat.mediaType,
+        duration: mat.duration,
+        auditStatus: mat.auditStatus,
+        auditTime: mat.auditTime || mat.replacedAt || currentTime,
+        highCount: mat.highCount,
+        mediumCount: mat.mediumCount,
+        lowCount: mat.lowCount,
+        primaryHit: mat.primaryHit,
+        risks: mat.risks || []
+      });
+      return items;
+    }
+    function historyVersionLabel(ver) {
+      if (ver.isCurrent) return ver.replaced ? `第 ${ver.round} 轮替换` : '当前版本';
+      return ver.versionLabel || (ver.round === 1 ? '初始审核' : `第 ${ver.round - 1} 次替换前`);
+    }
+    function historyHitSummary(ver) {
+      const total = (ver.highCount || 0) + (ver.mediumCount || 0) + (ver.lowCount || 0);
+      if (total === 0) return '命中 0 项';
+      const parts = [];
+      if (ver.highCount > 0) parts.push(`高风险 ${ver.highCount}`);
+      if (ver.mediumCount > 0) parts.push(`中风险 ${ver.mediumCount}`);
+      if (ver.lowCount > 0) parts.push(`低风险 ${ver.lowCount}`);
+      return '命中 ' + parts.join('、');
+    }
+    function openAuditHistoryModal(mat) {
+      auditHistoryTarget.value = mat;
+      auditHistoryModalOpen.value = true;
+    }
+    function viewHistoryDetail(ver) {
+      auditHistoryModalOpen.value = false;
+      const idx = auditMaterials.value.findIndex(m => m.id === auditHistoryTarget.value?.id);
+      detailIdx.value = idx >= 0 ? idx : 0;
+      activeRiskIndex.value = null;
+      expandedRules.value = {};
+      historyViewSnapshot.value = ver.isCurrent ? null : { ...ver, risks: JSON.parse(JSON.stringify(ver.risks || [])) };
+      currentPage.value = 'detail';
+    }
+    function exitHistoryDetailView() {
+      historyViewSnapshot.value = null;
+      activeRiskIndex.value = null;
+      expandedRules.value = {};
+      auditHistoryModalOpen.value = true;
+    }
+    function backFromDetail() {
+      if (isHistoryDetailView.value) {
+        exitHistoryDetailView();
+        return;
+      }
+      historyViewSnapshot.value = null;
+      currentPage.value = 'resultOverview';
+    }
+    function materialActionText(mat) {
+      if (mat.auditStatus === 'high') return '替换素材后复审';
+      if (mat.auditStatus === 'medium') return '人工确认或替换复审';
+      if (mat.auditStatus === 'low') return '查看低风险提醒';
+      return '查看详情';
+    }
+    function riskLevelLabel(level) { return level === 'high' ? '高风险' : level === 'medium' ? '中风险' : '低风险'; }
+    function riskBadgeClass(level) { return level === 'high' ? 'risk-badge-red' : level === 'medium' ? 'risk-badge-amber' : 'risk-badge-slate'; }
+    function riskCardClass(risk,i) {
+      if (risk.confirmed) return 'border-green-500/30 bg-green-500/[0.03] opacity-90';
+      if (risk.misreported) return 'border-slate-500/30 bg-slate-500/[0.03] opacity-80';
+      if (activeRiskIndex.value === i) return risk.level === 'high' ? 'border-red-500/40 bg-red-500/[0.05]' : risk.level === 'medium' ? 'border-amber-500/40 bg-amber-500/[0.05]' : 'border-slate-500/40 bg-slate-500/[0.03]';
+      return 'border-border-default hover:bg-white/[0.02]';
+    }
+    function isRuleLong(text) { return (text || '').length > 72; }
+    function toggleRuleExpand(i) { expandedRules.value[i] = !expandedRules.value[i]; }
+
+    function canDeleteTask(task) {
+      return task && ['failed', 'terminated'].includes(task.taskStatus);
+    }
+    function openDeleteConfirm(task) {
+      if (!canDeleteTask(task)) return;
+      deleteTargetTask.value = task;
+      deleteConfirmDialogOpen.value = true;
+    }
+    function closeDeleteConfirm() {
+      deleteConfirmDialogOpen.value = false;
+      deleteTargetTask.value = null;
+    }
+    function confirmDeleteTask() {
+      const task = deleteTargetTask.value;
+      if (!canDeleteTask(task)) {
+        closeDeleteConfirm();
+        return;
+      }
+      const idx = mockTasks.value.findIndex(t => t.id === task.id);
+      if (idx > -1) mockTasks.value.splice(idx, 1);
+      const tabId = 'task-' + task.id;
+      const wasOnDeletedTab = activeTabId.value === tabId;
+      navTabs.value = navTabs.value.filter(t => t.id !== tabId);
+      if (wasOnDeletedTab) activeTabId.value = HOME_TAB_ID;
+      closeDeleteConfirm();
+    }
+    function getTaskDetailView(task) {
+      if (task.taskStatus === 'failed') return 'failedOverview';
+      if (task.taskStatus === 'terminated') return 'terminatedOverview';
+      return 'resultOverview';
+    }
+    function switchTab(id) {
+      activeTabId.value = id;
+      const tab = navTabs.value.find(t => t.id === id);
+      if (tab?.taskId) {
+        const task = mockTasks.value.find(t => t.id === tab.taskId);
+        if (task) {
+          syncTaskContext(task);
+          currentPage.value = tab.view || getTaskDetailView(task);
+        }
+      }
+    }
+    function closeTab(id) {
+      if (id === HOME_TAB_ID) return;
+      navTabs.value = navTabs.value.filter(t => t.id !== id);
+      if (activeTabId.value === id) activeTabId.value = HOME_TAB_ID;
+    }
+    function closeCurrentTaskTab() {
+      if (activeTabId.value !== HOME_TAB_ID) closeTab(activeTabId.value);
+    }
+    function syncTaskContext(task) {
+      loadTaskContext(task);
+    }
+
+    function startCreateTask() {
+      activeTabId.value = HOME_TAB_ID;
+      currentPage.value = 'taskList';
+      formData.value = { taskName:'', channelPlacement:'' };
+      uploadFileSearch.value = '';
+      uploadMediaFilter.value = '';
+      uploadedFiles.value = [];
+      createTaskModalPhase.value = 'form';
+      createTaskModalOpen.value = true;
+    }
+    function cancelCreateTask() {
+      stopAuditTimer();
+      createTaskModalOpen.value = false;
+      createTaskModalPhase.value = 'form';
+      formData.value = { taskName:'', channelPlacement:'' };
+      uploadFileSearch.value = '';
+      uploadMediaFilter.value = '';
+      uploadedFiles.value = [];
+    }
+    function startAuditingFromModal() {
+      activeTaskName.value = formData.value.taskName;
+      activeTaskStatus.value = 'auditing';
+      activeTreatmentStatus.value = 'auditing';
+      auditRound.value = 1;
+      reAuditMode.value = null;
+      createTaskModalPhase.value = 'auditing';
+      startAuditTimer();
+    }
+    function simulateFileUpload() {
+      const files = [
+        { name:'main_01.png', size:'2.4 MB', mediaType:'image', thumb:placeholderThumbs[0] },
+        { name:'tiktok_ad_15s.mp4', size:'8.6 MB', mediaType:'video', thumb:placeholderThumbs[4] },
+        { name:'meta_summer_sale.png', size:'3.1 MB', mediaType:'image', thumb:placeholderThumbs[2] },
+        { name:'ad_banner_02.png', size:'3.1 MB', mediaType:'image', thumb:placeholderThumbs[2] },
+        { name:'social_01.png', size:'2.9 MB', mediaType:'image', thumb:placeholderThumbs[4] },
+        { name:'detail_05.png', size:'1.2 MB', mediaType:'image', thumb:placeholderThumbs[3] },
+        { name:'brand_intro_30s.mp4', size:'12.4 MB', mediaType:'video', thumb:placeholderThumbs[1] }
+      ];
+      files.forEach(f => { if (!uploadedFiles.value.find(x => x.name === f.name)) uploadedFiles.value.push(f); });
+    }
+    function simulateBulkFileUpload() {
+      const files = [];
+      for (let i = 1; i <= 100; i++) {
+        const isVideo = i % 15 === 0;
+        files.push({
+          name:`batch_${String(i).padStart(3,'0')}.${isVideo ? 'mp4' : 'png'}`,
+          size:`${(1 + (i % 5) * 0.8).toFixed(1)} MB`,
+          mediaType: isVideo ? 'video' : 'image',
+          thumb: placeholderThumbs[i % placeholderThumbs.length]
+        });
+      }
+      uploadedFiles.value = files;
+      uploadFileSearch.value = '';
+      uploadMediaFilter.value = '';
+    }
+    function clearUploadedFiles() {
+      uploadedFiles.value = [];
+      uploadFileSearch.value = '';
+      uploadMediaFilter.value = '';
+    }
+    function removeUploadedFile(file) {
+      const idx = uploadedFiles.value.indexOf(file);
+      if (idx >= 0) uploadedFiles.value.splice(idx, 1);
+    }
+    function startAuditing() {
+      activeTaskStatus.value = activeTaskStatus.value === 'reAuditing' ? 'reAuditing' : 'auditing';
+      activeTreatmentStatus.value = activeTaskStatus.value === 'reAuditing' ? 'rechecking' : 'auditing';
+      startAuditTimer();
+    }
+    function goToResults() {
+      const wasReAuditing = activeTaskStatus.value === 'reAuditing';
+      const singleTarget = wasReAuditing && replaceTarget.value && reAuditMode.value === 'single' ? replaceTarget.value : null;
+      const pendingNewName = singleTarget && uploadedFiles.value[0] ? uploadedFiles.value[0].name : null;
+      if (singleTarget) {
+        singleTarget.originalName = singleTarget.originalName || singleTarget.name;
+        if (pendingNewName) singleTarget.name = pendingNewName;
+        singleTarget.replaced = true;
+        singleTarget.rechecking = false;
+        singleTarget.replaceRound = auditRound.value;
+        singleTarget.replacedAt = nowStr().slice(0, 16);
+        singleTarget.auditStatus = 'pass';
+        singleTarget.processStatus = 'recheckPassed';
+        singleTarget.highCount = 0;
+        singleTarget.mediumCount = 0;
+        singleTarget.lowCount = 0;
+        singleTarget.primaryHit = '替换复审后未命中当前规则范围内的高、中、低风险项。';
+        singleTarget.risks = [];
+        singleTarget.auditTime = nowStr().slice(0, 16);
+      }
+      if (materialStats.value.high > 0) activeAuditResult.value = 'high';
+      else if (materialStats.value.medium > 0) activeAuditResult.value = 'medium';
+      else if (materialStats.value.low > 0) activeAuditResult.value = 'low';
+      else activeAuditResult.value = 'pass';
+      const task = mockTasks.value.find(t => t.id === activeTaskId.value);
+      if (task) {
+        task.auditResult = activeAuditResult.value;
+        task.auditTime = nowStr().slice(0, 16);
+        task.taskStatus = materialStats.value.high > 0 ? 'needFix' : 'needReview';
+        activeTaskAuditTime.value = task.auditTime;
+      }
+      const round = auditRound.value;
+      const completeAction = round === 1 ? '第 1 次审核完成' : `第 ${round} 次复审完成`;
+      const scopeDetail = singleTarget
+        ? `${singleTarget.name} 复审完毕，审核结果：${auditResultLabel(singleTarget.auditStatus)}`
+        : `${auditMaterials.value.length} 个素材审核完毕，${buildAuditCompleteDetail()}`;
+      addAuditRecord({ type:'audit_complete', round, action:completeAction, detail:scopeDetail, operator:'系统' });
+      activeTaskStatus.value = materialStats.value.high > 0 ? 'needFix' : 'needReview';
+      if (!wasReAuditing) {
+        addAuditRecord({ type:'create', round:1, action:'创建审核任务', detail:`任务已创建，上传 ${auditMaterials.value.length} 个素材（图片 ${materialStats.value.image} / 视频 ${materialStats.value.video}）${selectedChannelLabel.value ? `，渠道：${selectedChannelLabel.value}` : ''}`, operator:'张三' });
+      } else {
+        reAuditMode.value = null;
+      }
+      reAuditSnapshot.value = null;
+      replaceMaterialSnapshot.value = null;
+      currentPage.value = 'resultOverview';
+    }
+    function openAuditingTask(task) {
+      loadTaskContext(task);
+      const total = task.totalCount || 7;
+      const sampleFiles = [
+        { name:'main_01.png', mediaType:'image' },
+        { name:'tiktok_ad_15s.mp4', mediaType:'video' },
+        { name:'meta_summer_sale.png', mediaType:'image' },
+        { name:'ad_banner_02.png', mediaType:'image' },
+        { name:'social_01.png', mediaType:'image' },
+        { name:'detail_05.png', mediaType:'image' },
+        { name:'brand_intro_30s.mp4', mediaType:'video' }
+      ];
+      uploadedFiles.value = Array.from({ length: total }, (_, i) => {
+        const f = sampleFiles[i % sampleFiles.length];
+        return { name: i < sampleFiles.length ? f.name : `file_${String(i + 1).padStart(2, '0')}.png`, size:'--', mediaType:f.mediaType, thumb:placeholderThumbs[i % placeholderThumbs.length] };
+      });
+      auditCompleted.value = Math.min(3, total);
+      reAuditMode.value = null;
+      auditProgressPhase.value = 'running';
+      auditProgressModalOpen.value = true;
+      if (auditTimer) clearInterval(auditTimer);
+      auditTimer = setInterval(() => {
+        if (auditCompleted.value < uploadedFiles.value.length) auditCompleted.value++;
+        if (auditCompleted.value >= uploadedFiles.value.length) clearInterval(auditTimer);
+      }, 500);
+    }
+    function openTaskDetail(task) {
+      if (['auditing','reAuditing'].includes(task.taskStatus)) {
+        openAuditingTask(task);
+        return;
+      }
+      const tabId = 'task-' + task.id;
+      const view = getTaskDetailView(task);
+      let tab = navTabs.value.find(t => t.id === tabId);
+      if (!tab) {
+        tab = { id: tabId, title: task.name, icon: 'ph ph-file-text', closable: true, view, taskId: task.id };
+        navTabs.value.push(tab);
+        activeTabId.value = tabId;
+        loadTaskContext(task);
+        currentPage.value = view;
+      } else {
+        activeTabId.value = tabId;
+        tab.view = view;
+        loadTaskContext(task);
+        currentPage.value = view;
+      }
+    }
+    function viewTaskResult(task) {
+      loadTaskContext(task);
+      currentPage.value = getTaskDetailView(task);
+    }
+    function goBackToTaskList() { closeCurrentTaskTab(); }
+    function viewDetail(mat) {
+      historyViewSnapshot.value = null;
+      const idx = auditMaterials.value.findIndex(m => m.id === mat.id);
+      detailIdx.value = idx >= 0 ? idx : 0;
+      activeRiskIndex.value = null;
+      expandedRules.value = {};
+      currentPage.value = 'detail';
+    }
+    function prevMaterial() { if (detailIdx.value > 0) { detailIdx.value--; historyViewSnapshot.value = null; activeRiskIndex.value = null; expandedRules.value = {}; } }
+    function nextMaterial() { if (detailIdx.value < auditMaterials.value.length - 1) { detailIdx.value++; historyViewSnapshot.value = null; activeRiskIndex.value = null; expandedRules.value = {}; } }
+
+    function confirmReAudit(type) {
+      saveReAuditSnapshot();
+      reAuditMode.value = type;
+      replaceTarget.value = null;
+      uploadedFiles.value = auditMaterials.value.map((m,i) => ({ name:m.name, size:'--', mediaType:m.mediaType || 'image', thumb:m.thumb || placeholderThumbs[i % placeholderThumbs.length] }));
+      auditCompleted.value = 0;
+      auditProgressPhase.value = 'prepare';
+      auditProgressModalOpen.value = true;
+    }
+    function openReplaceDialog(mat) {
+      replaceTarget.value = mat;
+      replacePendingFiles.value = [];
+      replaceDialogPhase.value = 'upload';
+      replaceDialogOpen.value = true;
+    }
+    function closeReplaceDialog() {
+      replaceDialogOpen.value = false;
+      replacePendingFiles.value = [];
+      replaceDialogPhase.value = 'upload';
+    }
+    function simulateReplaceFileUpload() {
+      if (!replaceTarget.value) return;
+      const mat = replaceTarget.value;
+      const newName = mat.name.replace(/(\.\w+)$/, '_v2$1');
+      replacePendingFiles.value = [{
+        name: newName,
+        size: '2.1 MB',
+        thumb: mat.thumb,
+        mediaType: mat.mediaType || 'image'
+      }];
+    }
+    function startReplaceAuditingFromModal() {
+      if (replacePendingFiles.value.length === 0) return;
+      startReplaceRecheck(replacePendingFiles.value[0]);
+    }
+    function startReplaceRecheck(file) {
+      if (!replaceTarget.value || !file) return;
+      const mat = replaceTarget.value;
+      const newName = file.name;
+      if (!reAuditSnapshot.value) saveReAuditSnapshot();
+      replaceMaterialSnapshot.value = { matId: mat.id, material: cloneMaterials([mat])[0] };
+      if (!mat.versionHistory) mat.versionHistory = [];
+      mat.versionHistory.push(snapshotMaterial(mat));
+      mat.originalName = mat.originalName || mat.name;
+      mat.rechecking = true;
+      reAuditMode.value = 'single';
+      auditRound.value += 1;
+      addAuditRecord({
+        type:'replace_recheck',
+        round: auditRound.value,
+        action:'替换复审',
+        detail:`${mat.originalName} → ${newName}，上传新素材并发起第 ${auditRound.value} 轮复审`,
+        operator:'张三'
+      });
+      mat.processStatus = 'rechecking';
+      uploadedFiles.value = [{ name: newName, size: file.size || '--', thumb: file.thumb, mediaType: file.mediaType || 'image' }];
+      activeTaskStatus.value = 'reAuditing';
+      activeTreatmentStatus.value = 'rechecking';
+      replaceDialogPhase.value = 'progress';
+      startAuditing();
+    }
+
+    function confirmRiskHit(riskIdx) {
+      const risk = currentMaterial.value.risks[riskIdx];
+      risk.confirmed = true;
+      operationRecords.value.unshift({ time:'2026-07-07 12:24:00', action:'确认风险', detail:'确认 '+risk.pointCode+' '+risk.pointName+'，等级：'+riskLevelLabel(risk.level), operator:'张三' });
+    }
+    function openMisreportDialog(riskIdx) {
+      misreportTargetIdx.value = riskIdx;
+      misreportTarget.value = currentMaterial.value.risks[riskIdx];
+      misreportForm.value = { notes:'' };
+      showMisreportDialog.value = true;
+    }
+    function confirmMisreport() {
+      const risk = currentMaterial.value.risks[misreportTargetIdx.value];
+      risk.misreported = true;
+      risk.misreportReason = misreportForm.value.notes;
+      operationRecords.value.unshift({ time:'2026-07-07 12:25:00', action:'反馈误判', detail:'反馈误判 '+risk.pointCode+' '+risk.pointName+'，原等级：'+riskLevelLabel(risk.level)+'，说明：'+risk.misreportReason, operator:'张三' });
+      showMisreportDialog.value = false;
+      misreportTarget.value = null;
+      misreportTargetIdx.value = null;
+    }
+
+    function openLibraryModal(mode = 'create') {
+      libraryModalMode.value = mode;
+      librarySearch.value = '';
+      libraryTypeFilter.value = '';
+      selectedLibraryAssets.value = [];
+      libraryModalOpen.value = true;
+    }
+    function isLibrarySelected(asset) { return selectedLibraryAssets.value.some(item => item.id === asset.id); }
+    function toggleLibrarySelect(asset) {
+      if (libraryModalMode.value === 'replace') {
+        selectedLibraryAssets.value = isLibrarySelected(asset) ? [] : [asset];
+        return;
+      }
+      const idx = selectedLibraryAssets.value.findIndex(item => item.id === asset.id);
+      if (idx > -1) selectedLibraryAssets.value.splice(idx, 1);
+      else selectedLibraryAssets.value.push(asset);
+    }
+    function confirmLibrarySelection() {
+      if (libraryModalMode.value === 'replace') {
+        const asset = selectedLibraryAssets.value[0];
+        if (asset) replacePendingFiles.value = [{ name: asset.name, size: asset.size, mediaType: asset.mediaType || 'image', thumb: asset.thumb }];
+        libraryModalOpen.value = false;
+        return;
+      }
+      selectedLibraryAssets.value.forEach(asset => {
+        if (!uploadedFiles.value.find(f => f.name === asset.name)) uploadedFiles.value.push({ name:asset.name, size:asset.size, mediaType:asset.mediaType || 'image', thumb:asset.thumb });
+      });
+      libraryModalOpen.value = false;
+    }
+
+    return {
+      currentPage, navTabs, activeTabId, isHomeTab, switchTab, closeTab, closeCurrentTaskTab,
+      formData, uploadedFiles, safeAreaChannelOptions, selectedChannelLabel,
+      uploadFileSearch, uploadMediaFilter, useCompactUploadList, uploadFileStats, filteredUploadedFiles,
+      clearUploadedFiles, removeUploadedFile, simulateBulkFileUpload,
+      taskSearch, taskStatusFilter, taskResultFilter, filteredTasks, paginatedTasks,
+      taskPage, taskPageSize, taskTotalPages, taskGotoPage, taskRowIndex,
+      goTaskPage, onTaskPageSizeChange, submitTaskQuery, resetTaskFilters, gotoTaskPage,
+      activeTaskName, activeTaskStatus, activeTaskId, activeTaskAuditTime, activeFailureReason, failedMaterials, activeAuditResult,
+      terminatedMaterials, activeTerminateNote, terminatedProgressLabel,
+      terminateConfirmDialogOpen, openTerminateConfirm, closeTerminateConfirm, confirmTerminateAudit,
+      terminateConfirmTitle, terminateConfirmMessage, terminateConfirmHint, terminateConfirmCancelLabel, terminateConfirmOkLabel,
+      deleteConfirmDialogOpen, deleteTargetTask, canDeleteTask, openDeleteConfirm, closeDeleteConfirm, confirmDeleteTask,
+      terminatedFileStatusLabel, terminatedFileStatusClass, terminatedFileStatusDot, terminatedFileDetail,
+      auditCompleted, auditRound, auditIsComplete, auditProgressTitle,
+      createTaskModalPhase, replaceDialogPhase, auditProgressModalOpen, auditProgressPhase,
+      getFileAuditStatus, backgroundAuditProgress, viewAuditResults, cancelReAuditModal, startReAuditFromModal, cancelReplaceProgress,
+      auditMaterials, materialFilter, filteredSortedMaterials, materialStats,
+      detailIdx, currentMaterial, currentMaterialRiskCounts, activeRiskIndex, activeVideoRisk,
+      firstRiskMaterial, taskAuditResult, activeTaskProgressLabel, activeTaskProgressDotClass, activeTaskProgressTextClass, shouldShowActiveTaskAuditResult, materialComposeLabel, mediaTypeLabel,
+      currentTime,
+      showMisreportDialog, misreportTarget, selectedMisreportRisk, misreportForm,
+      replaceDialogOpen, replaceTarget, replacePendingFiles, reAuditMode,
+      createTaskModalOpen, cancelCreateTask, startAuditingFromModal,
+      simulateReplaceFileUpload, startReplaceAuditingFromModal, closeReplaceDialog,
+      libraryModalOpen, libraryModalMode, librarySearch, libraryTypeFilter, filteredLibraryAssets, selectedLibraryAssets,
+      auditHistoryModalOpen, auditHistoryTarget, materialTimeline, historyViewSnapshot, isHistoryDetailView, displayMaterial, displayMaterialRiskCounts,
+      hasAuditHistory, openAuditHistoryModal, viewHistoryDetail, exitHistoryDetailView, backFromDetail, historyVersionLabel, historyHitSummary,
+      operationRecords, auditHistoryRecords, auditRecordIcon, auditRecordIconClass,
+      taskStatusLabel, taskStatusDotClass, taskStatusTextClass, auditResultLabel, auditResultBadgeClass,
+      auditProgressLabel, auditProgressDotClass, auditProgressTextClass,
+      shouldShowAuditResult, getTaskDisplayAuditResult, aggregateAuditResult,
+      failedFileStatusLabel, failedFileStatusClass, failedFileStatusDot, failedFileDetail,
+      riskLevelLabel, riskBadgeClass, riskCardClass, isRuleLong, toggleRuleExpand, expandedRules,
+      startCreateTask, simulateFileUpload, startAuditing, goToResults, openAuditingTask,
+      openTaskDetail, viewTaskResult, goBackToTaskList, viewDetail, prevMaterial, nextMaterial,
+      openReplaceDialog, startReplaceAuditingFromModal, closeReplaceDialog, confirmReAudit,
+      confirmRiskHit, openMisreportDialog, confirmMisreport,
+      openLibraryModal, isLibrarySelected, toggleLibrarySelect, confirmLibrarySelection
+    };
+  }
+}).mount('#app');
+}
+</script>
+</body>
+</html>
