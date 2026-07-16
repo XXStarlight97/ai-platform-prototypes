@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>智岩 AI · 图像生成会话分组原型</title>
+<script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
+<style>
+:root {
+  --bg: #070707;
+  --panel: #0a0a0b;
+  --lift: #171719;
+  --border: #222226;
+  --text: #eeeeee;
+  --muted: #8a8a91;
+  --dim: #6e6e76;
+  --orange: #f6a000;
+  --orange-deep: #3a270b;
+  --orange-soft: #1c1407;
+  --red: #ff464b;
+  --green: #28d469;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  background: #030303;
+  color: var(--text);
+  height: 100vh;
+  overflow: hidden;
+}
+button, input { font: inherit; }
+button { cursor: pointer; border: none; background: none; color: inherit; }
+.app {
+  height: 100vh;
+  display: grid;
+  grid-template-columns: 292px minmax(0, 1fr) 320px;
+  grid-template-rows: 56px 1fr;
+  background: var(--bg);
+}
+.topbar {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid #171719;
+  background: #09090a;
+}
+.brand {
+  width: 292px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 16px;
+  border-right: 1px solid #151518;
+  height: 100%;
+}
+.brand-mark {
+  width: 30px; height: 30px; border-radius: 7px;
+  background: var(--orange); color: #171000;
+  display: grid; place-items: center; font-weight: 800; font-size: 14px;
+}
+.brand-name { font-weight: 700; font-size: 15px; }
+.tabs { display: flex; align-items: center; gap: 6px; padding: 0 12px; flex: 1; height: 100%; }
+.tab {
+  height: 40px; padding: 0 14px; border-radius: 8px;
+  display: flex; align-items: center; gap: 8px;
+  color: var(--muted); font-size: 13px; font-weight: 600;
+}
+.tab.active { color: var(--orange); background: #21180c; }
+.top-right {
+  display: flex; align-items: center; gap: 14px;
+  padding: 0 16px; color: var(--muted); border-left: 1px solid #1b1b1d; height: 100%;
+}
+.avatar {
+  width: 30px; height: 30px; border-radius: 999px;
+  background: #7466ff; color: #120e35;
+  display: grid; place-items: center; font-size: 12px; font-weight: 800;
+}
+
+.sidebar {
+  display: flex; flex-direction: column; gap: 12px;
+  padding: 14px 14px 16px;
+  border-right: 1px solid #202024;
+  background: var(--panel);
+  overflow: hidden;
+}
+.btn-stack { display: grid; gap: 8px; }
+.btn-main, .btn-ghost {
+  height: 42px; border-radius: 8px; font-size: 14px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.btn-main { background: var(--orange); color: #120d00; }
+.btn-main:hover { filter: brightness(1.05); }
+.btn-ghost {
+  color: var(--orange);
+  background: var(--orange-soft);
+  border: 1px solid #4e3507;
+}
+.btn-ghost:hover { background: #241807; }
+.btn-main:disabled, .btn-ghost:disabled { opacity: 0.35; cursor: not-allowed; filter: none; }
+
+.segment {
+  height: 36px; display: grid; grid-template-columns: 1fr 1fr;
+  padding: 3px; border-radius: 8px; background: var(--lift);
+}
+.segment button {
+  border-radius: 6px; color: var(--muted); font-weight: 700; font-size: 13px;
+}
+.segment button.active { color: #1b1300; background: var(--orange); }
+
+.search { position: relative; }
+.search .ico {
+  position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+  color: #65656c; font-size: 13px; pointer-events: none;
+}
+.search input {
+  width: 100%; height: 36px;
+  padding: 0 12px 0 34px;
+  border: 1px solid #242428; border-radius: 8px;
+  outline: 0; background: #151517; color: var(--text);
+}
+.search input::placeholder { color: #707078; }
+.search input:focus { border-color: rgba(246,160,0,0.45); }
+
+.nav-scroll { flex: 1; min-height: 0; overflow-y: auto; padding-right: 2px; }
+.nav-scroll::-webkit-scrollbar { width: 4px; }
+.nav-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+.section-title {
+  margin: 14px 0 8px 6px;
+  color: var(--dim);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.section-title:first-child { margin-top: 4px; }
+/* 个人视图：分组 / 会话 分区可折叠（GPT 式） */
+.section-toggle {
+  width: 100%;
+  display: flex; align-items: center; justify-content: space-between;
+  margin: 10px 0 6px;
+  padding: 6px 8px;
+  border-radius: 7px;
+  color: rgba(255,255,255,0.62);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+}
+.section-toggle:first-child { margin-top: 2px; }
+.section-toggle:hover { background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.85); }
+.section-toggle .chevron {
+  color: #8a8a91;
+  font-size: 12px;
+  transition: transform 0.15s ease;
+  transform: rotate(90deg); /* 展开：› 朝下感 */
+}
+.section-toggle.collapsed .chevron { transform: rotate(0deg); }
+
+.group-block { margin-bottom: 4px; }
+.row {
+  height: 36px;
+  display: flex; align-items: center; gap: 8px;
+  padding: 0 8px;
+  border-radius: 7px;
+  color: #a5a5ab;
+  font-size: 13px;
+  position: relative;
+}
+.row:hover { background: rgba(255,255,255,0.04); }
+.row.active { background: var(--orange-deep); color: #eee; }
+.row .name {
+  flex: 1; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.folder-ico {
+  width: 16px; height: 16px; flex: 0 0 auto;
+  color: var(--orange);
+}
+.group-row .name { font-weight: 600; color: rgba(255,255,255,0.78); }
+.group-row.expanded .name { color: rgba(255,255,255,0.92); }
+.menu-backdrop {
+  position: fixed; inset: 0; z-index: 49;
+  background: transparent;
+}
+
+.dot {
+  width: 8px; height: 8px; border-radius: 999px; flex: 0 0 auto;
+}
+.dot.green { background: var(--green); }
+.dot.red { background: var(--red); }
+.dot.orange { background: var(--orange); }
+
+.more-btn {
+  width: 26px; height: 26px; border-radius: 6px;
+  display: grid; place-items: center;
+  color: #8a8a91; opacity: 0; flex: 0 0 auto;
+  font-size: 16px; line-height: 1;
+}
+.row:hover .more-btn, .row.menu-open .more-btn { opacity: 1; }
+.more-btn:hover { background: #2b2b30; color: #f0f0f2; }
+
+.session-list { display: grid; gap: 2px; padding: 2px 0 6px 22px; }
+.empty-hint {
+  padding: 6px 10px 10px 30px;
+  color: var(--dim); font-size: 12px;
+}
+.all-list { display: grid; gap: 2px; }
+
+.main {
+  display: grid;
+  grid-template-rows: 52px 1fr 200px;
+  min-width: 0;
+  background: #080809;
+  border-right: 1px solid #222226;
+}
+.chat-title {
+  display: flex; align-items: center; gap: 10px;
+  padding: 0 24px; border-bottom: 1px solid #1e1e22;
+}
+.chat-title strong { font-size: 16px; }
+.badge {
+  padding: 4px 8px; border-radius: 5px;
+  background: #0c2545; color: #4e9cff;
+  font-size: 12px; font-weight: 700;
+}
+.canvas { display: grid; place-items: center; min-height: 0; }
+.empty-state { text-align: center; transform: translateY(-12px); }
+.empty-state .icon { font-size: 40px; margin-bottom: 14px; }
+.empty-state h1 { font-size: 16px; margin-bottom: 10px; }
+.empty-state p { color: #777780; font-size: 13px; line-height: 1.7; }
+.composer-wrap {
+  padding: 12px 24px 24px;
+  background: linear-gradient(180deg, rgba(8,8,9,0), #09090a 22%);
+}
+.composer {
+  position: relative;
+  min-height: 140px;
+  padding: 16px;
+  border: 1px solid #313136;
+  border-radius: 12px;
+  background: #1d1d20;
+}
+.upload {
+  width: 56px; height: 56px;
+  display: grid; place-items: center;
+  border: 1px dashed #5b5b62; border-radius: 8px;
+  color: #7f7f87; font-size: 11px; line-height: 1.3; text-align: center;
+}
+.composer .ph { margin-top: 8px; color: #707078; font-size: 13px; }
+.pills {
+  position: absolute; left: 16px; bottom: 12px;
+  display: flex; gap: 8px; flex-wrap: wrap;
+}
+.pill {
+  height: 30px; padding: 0 10px;
+  display: flex; align-items: center; gap: 6px;
+  border: 1px solid #38383e; border-radius: 8px;
+  background: #242428; color: #bebec4; font-size: 12px;
+}
+.send {
+  position: absolute; right: 14px; bottom: 12px;
+  width: 40px; height: 40px; border-radius: 10px;
+  background: #a06d1b; color: #0e0900; font-size: 20px;
+  display: grid; place-items: center;
+}
+
+.right-panel { padding: 20px 16px; background: var(--panel); }
+.fav-head {
+  display: flex; align-items: center; justify-content: space-between;
+  font-weight: 700; font-size: 14px; margin-bottom: 12px;
+}
+.count {
+  padding: 3px 10px; border-radius: 999px;
+  color: var(--orange); background: #241707; font-size: 12px;
+}
+.fav-tabs {
+  display: flex; gap: 22px; border-bottom: 1px solid #222226; height: 36px;
+}
+.fav-tabs span { color: #777780; font-size: 13px; padding-bottom: 8px; }
+.fav-tabs .on { color: var(--orange); border-bottom: 2px solid var(--orange); }
+.fav-empty {
+  margin-top: 40px; text-align: center; color: var(--dim); font-size: 13px;
+}
+
+/* menus & modals */
+.menu {
+  position: fixed; z-index: 50; min-width: 168px;
+  padding: 6px; border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: #1c1c21;
+  box-shadow: 0 14px 36px rgba(0,0,0,0.55);
+}
+.menu-item {
+  width: 100%;
+  display: flex; align-items: center; gap: 10px;
+  text-align: left;
+  padding: 9px 12px; border-radius: 8px;
+  font-size: 13px; color: rgba(255,255,255,0.88);
+  position: relative;
+}
+.menu-item:hover, .menu-item.open { background: rgba(255,255,255,0.08); }
+.menu-item .mi-ico {
+  width: 16px; text-align: center; flex: 0 0 auto;
+  opacity: 0.75; font-size: 13px;
+}
+.menu-item .mi-label { flex: 1; min-width: 0; }
+.menu-item .mi-chevron { color: #8a8a91; font-size: 12px; }
+.menu-item.danger { color: #ff7a7e; }
+.menu-item.danger:hover { background: rgba(255,70,75,0.12); }
+.menu-item.danger .mi-ico { opacity: 1; }
+
+.submenu {
+  position: absolute;
+  left: calc(100% - 2px);
+  top: -6px;
+  min-width: 180px;
+  max-height: 280px;
+  overflow-y: auto;
+  padding: 6px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: #1c1c21;
+  box-shadow: 0 14px 36px rgba(0,0,0,0.55);
+}
+.submenu.flip-left { left: auto; right: calc(100% - 2px); }
+.submenu-item {
+  width: 100%;
+  display: flex; align-items: center; gap: 10px;
+  text-align: left;
+  padding: 9px 12px; border-radius: 8px;
+  font-size: 13px; color: rgba(255,255,255,0.88);
+}
+.submenu-item:hover { background: rgba(255,255,255,0.08); }
+.submenu-item.active { color: var(--orange); }
+.submenu-item .folder {
+  width: 14px; height: 14px; flex: 0 0 auto; color: var(--orange);
+}
+.submenu-item .plus { color: var(--orange); font-weight: 700; width: 14px; text-align: center; }
+.submenu-divider {
+  height: 1px; margin: 4px 8px;
+  background: rgba(255,255,255,0.08);
+}
+
+.overlay {
+  position: fixed; inset: 0; z-index: 60;
+  background: rgba(0,0,0,0.55);
+  display: grid; place-items: center;
+}
+.dialog {
+  width: 420px; max-width: calc(100vw - 32px);
+  background: #1c1c21;
+  border: 1px solid #2a2a30;
+  border-radius: 14px;
+  padding: 20px 20px 16px;
+  box-shadow: 0 20px 48px rgba(0,0,0,0.5);
+}
+.dialog-head {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 16px;
+}
+.info-ico, .warn-ico {
+  width: 26px; height: 26px; border-radius: 999px;
+  background: var(--orange); color: #fff;
+  display: grid; place-items: center; font-weight: 700; font-size: 13px;
+  flex: 0 0 auto; font-style: italic; font-family: Georgia, serif;
+}
+.warn-ico { font-style: normal; font-family: inherit; color: #1a1200; font-weight: 800; }
+.dialog-head h3 { flex: 1; font-size: 16px; font-weight: 700; }
+.close-x {
+  width: 28px; height: 28px; border-radius: 6px;
+  color: var(--muted); font-size: 18px;
+}
+.close-x:hover { background: rgba(255,255,255,0.06); color: #fff; }
+.dialog p {
+  color: #a8a8b0; font-size: 14px; line-height: 1.6;
+  margin-bottom: 18px; white-space: pre-line;
+}
+.dialog-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 4px; }
+.btn-cancel {
+  height: 36px; padding: 0 16px; border-radius: 8px;
+  background: #2a2a30; color: #ddd; font-weight: 600;
+  border: 1px solid #3a3a42;
+}
+.btn-cancel:hover { background: #33333a; }
+.btn-ok {
+  height: 36px; padding: 0 16px; border-radius: 8px;
+  background: var(--orange); color: #120d00; font-weight: 700;
+}
+.btn-ok:disabled { opacity: 0.4; cursor: not-allowed; }
+.field { margin-bottom: 18px; }
+.field label {
+  display: block; margin-bottom: 8px;
+  font-size: 13px; color: var(--muted);
+}
+.input-wrap {
+  display: flex; align-items: center; gap: 8px;
+  height: 42px; padding: 0 12px;
+  border-radius: 8px;
+  border: 1px solid #3a3a42;
+  background: #121214;
+}
+.input-wrap:focus-within { border-color: var(--orange); }
+.input-wrap input {
+  flex: 1; min-width: 0; height: 100%;
+  border: 0; outline: 0; background: transparent; color: var(--text);
+}
+.input-wrap input::placeholder { color: #707078; }
+.input-clear {
+  width: 18px; height: 18px; border-radius: 999px;
+  background: #3a3a42; color: #bbb;
+  display: grid; place-items: center; font-size: 12px; line-height: 1;
+  flex: 0 0 auto;
+}
+.input-clear:hover { background: #4a4a54; color: #fff; }
+.char-count {
+  flex: 0 0 auto;
+  color: #707078; font-size: 12px; white-space: nowrap;
+}
+.toast {
+  position: fixed; top: 72px; left: 50%; transform: translateX(-50%);
+  z-index: 80; padding: 10px 16px; border-radius: 10px;
+  background: #1e1e24; border: 1px solid #333; color: #eee;
+  font-size: 13px; box-shadow: 0 10px 28px rgba(0,0,0,0.4);
+}
+.note {
+  margin-top: 10px; padding: 8px 10px; border-radius: 8px;
+  background: rgba(246,160,0,0.08); border: 1px solid rgba(246,160,0,0.2);
+  color: #c9a46a; font-size: 11px; line-height: 1.5;
+}
+@media (max-width: 1100px) {
+  .app { grid-template-columns: 292px minmax(0, 1fr); }
+  .right-panel { display: none; }
+}
+</style>
+</head>
+<body>
+<div id="app" class="app" @click="closeMenu">
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark">智</div>
+      <div class="brand-name">智岩 AI</div>
+    </div>
+    <nav class="tabs">
+      <div class="tab active"><span>🎨</span>图像生成</div>
+      <div class="tab"><span>🎥</span>镜头生成</div>
+      <div class="tab"><span>⚙</span>ComfyUI</div>
+    </nav>
+    <div class="top-right">
+      <span>指引</span>
+      <div class="avatar">魏</div>
+    </div>
+  </header>
+
+  <aside class="sidebar">
+    <div class="btn-stack">
+      <button class="btn-ghost" :disabled="scope === 'all'" :title="scope === 'all' ? '切换到「个人」后可新建' : ''" @click="openCreateGroup">＋ 新建分组</button>
+      <button class="btn-main" :disabled="scope === 'all'" :title="scope === 'all' ? '切换到「个人」后可新建' : ''" @click="createSession">＋ 新建会话</button>
+    </div>
+
+    <div class="segment">
+      <button :class="{ active: scope === 'mine' }" @click="scope = 'mine'">个人</button>
+      <button :class="{ active: scope === 'all' }" @click="scope = 'all'">全部</button>
+    </div>
+
+    <div class="search">
+      <span class="ico">⌕</span>
+      <input v-model.trim="search" :placeholder="scope === 'mine' ? '搜索会话 / 分组...' : '搜索会话...'" />
+    </div>
+
+    <div class="nav-scroll">
+      <!-- 个人：分组 + 会话（分区可折叠，默认展开） -->
+      <template v-if="scope === 'mine'">
+        <button
+          class="section-toggle"
+          :class="{ collapsed: !sectionOpen.groups }"
+          @click="sectionOpen.groups = !sectionOpen.groups"
+        >
+          <span>分组</span>
+          <span class="chevron">›</span>
+        </button>
+        <div v-show="sectionOpen.groups">
+          <div v-if="filteredGroups.length === 0" class="empty-hint" style="padding-left:10px">
+            {{ search ? '无匹配分组' : '暂无分组，点击上方新建' }}
+          </div>
+          <div v-for="g in filteredGroups" :key="g.id" class="group-block">
+            <div
+              class="row group-row"
+              :class="{ expanded: g.expanded, 'menu-open': menu && menu.kind === 'group' && menu.id === g.id }"
+              @click="toggleGroup(g)"
+            >
+              <!-- 展开：打开的文件夹图标；收起：关闭的文件夹图标（不以颜色区分） -->
+              <svg v-if="g.expanded" class="folder-ico" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path d="M2 6a2 2 0 012-2h4l2 2h6a2 2 0 012 2v.5H4.5A1.5 1.5 0 003 9.5l-1 5.5A2 2 0 004 17h12a2 2 0 001.96-1.6L19 9H4a2 2 0 01-2-2V6z"/>
+              </svg>
+              <svg v-else class="folder-ico" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"/>
+              </svg>
+              <div class="name">{{ g.name }}</div>
+              <button class="more-btn" title="更多" @click.stop="openMenu($event, 'group', g.id)">⋯</button>
+            </div>
+            <div v-show="g.expanded" class="session-list">
+              <div
+                v-for="s in sessionsOf(g.id)"
+                :key="s.id"
+                class="row"
+                :class="{ active: currentId === s.id, 'menu-open': menu && menu.kind === 'session' && menu.id === s.id }"
+                @click="selectSession(s.id)"
+              >
+                <span class="dot" :class="s.dot"></span>
+                <div class="name">{{ s.name }}</div>
+                <button class="more-btn" title="更多" @click.stop="openMenu($event, 'session', s.id)">⋯</button>
+              </div>
+              <div v-if="sessionsOf(g.id).length === 0" class="empty-hint">暂无会话</div>
+            </div>
+          </div>
+        </div>
+
+        <button
+          class="section-toggle"
+          :class="{ collapsed: !sectionOpen.sessions }"
+          @click="sectionOpen.sessions = !sectionOpen.sessions"
+        >
+          <span>会话</span>
+          <span class="chevron">›</span>
+        </button>
+        <div v-show="sectionOpen.sessions">
+          <template v-for="bucket in ungroupedTimeBuckets" :key="bucket.key">
+            <div v-if="bucket.list.length" class="nav-section">
+              <div class="section-title">{{ bucket.label }}</div>
+              <div class="all-list">
+                <div
+                  v-for="s in bucket.list"
+                  :key="s.id"
+                  class="row"
+                  :class="{ active: currentId === s.id, 'menu-open': menu && menu.kind === 'session' && menu.id === s.id }"
+                  @click="selectSession(s.id)"
+                >
+                  <span class="dot" :class="s.dot"></span>
+                  <div class="name">{{ s.name }}</div>
+                  <button class="more-btn" title="更多" @click.stop="openMenu($event, 'session', s.id)">⋯</button>
+                </div>
+              </div>
+            </div>
+          </template>
+          <div v-if="ungroupedSessions.length === 0" class="empty-hint" style="padding-left:10px">
+            {{ search ? '无匹配会话' : '暂无会话' }}
+          </div>
+        </div>
+      </template>
+
+      <!-- 全部：今天 / 昨天 / 更早；自己的会话可三点编辑 -->
+      <template v-else>
+        <template v-for="bucket in allTimeBuckets" :key="bucket.key">
+          <div v-if="bucket.list.length" class="nav-section" :style="bucket.key === 'today' ? 'margin-top:4px' : ''">
+            <div class="section-title">{{ bucket.label }}</div>
+            <div class="all-list">
+              <div
+                v-for="s in bucket.list"
+                :key="s.id"
+                class="row"
+                :class="{ active: currentId === s.id, 'menu-open': menu && menu.kind === 'session' && menu.id === s.id }"
+                @click="selectSession(s.id)"
+              >
+                <span class="dot" :class="s.dot"></span>
+                <div class="name">{{ s.name }}</div>
+                <button
+                  v-if="s.owner === 'me'"
+                  class="more-btn"
+                  title="更多"
+                  @click.stop="openMenu($event, 'session', s.id)"
+                >⋯</button>
+              </div>
+            </div>
+          </div>
+        </template>
+        <div v-if="allViewSessions.length === 0" class="empty-hint" style="padding-left:10px">
+          {{ search ? '无匹配会话' : '暂无会话' }}
+        </div>
+      </template>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="chat-title">
+      <span class="dot" :class="currentSession?.dot || 'green'"></span>
+      <strong>{{ currentSession?.name || '未选择会话' }}</strong>
+      <span class="badge">图像生成</span>
+    </div>
+    <section class="canvas">
+      <div class="empty-state">
+        <div class="icon">🎨</div>
+        <h1>输入提示词开始生成图像</h1>
+        <p>选择模型与参数（由当前模型配置决定），输入描述<br />文字即可生成</p>
+      </div>
+    </section>
+    <section class="composer-wrap">
+      <div class="composer">
+        <div class="upload">＋<br />图片</div>
+        <div class="ph">描述你想生成的图像...</div>
+        <div class="pills">
+          <div class="pill"><strong>模型</strong> Gemini 3 Pro Image</div>
+          <div class="pill">1:1 正方形</div>
+          <div class="pill">High (2K)</div>
+          <div class="pill">1 张</div>
+        </div>
+        <button class="send">↑</button>
+      </div>
+    </section>
+  </main>
+
+  <aside class="right-panel">
+    <div class="fav-head">
+      <span>📌 会话收藏</span>
+      <span class="count">0 张</span>
+    </div>
+    <div class="fav-tabs">
+      <span class="on">图片收藏</span>
+      <span>提示词库</span>
+    </div>
+    <div class="fav-empty">原型焦点在左侧分组，右侧仅占位</div>
+  </aside>
+
+  <!-- 点击外部关闭菜单 / 移到分组子菜单 -->
+  <div v-if="menu" class="menu-backdrop" @click="closeMenu"></div>
+
+  <!-- 三点菜单 + 移到分组右侧子菜单 -->
+  <div
+    v-if="menu"
+    class="menu"
+    :style="{ left: menu.x + 'px', top: menu.y + 'px' }"
+    @click.stop
+  >
+    <template v-if="menu.kind === 'session'">
+      <button class="menu-item" @mouseenter="closeMoveMenu" @click="startRename('session')">
+        <span class="mi-ico">✎</span><span class="mi-label">重命名</span>
+      </button>
+      <div
+        class="menu-item"
+        :class="{ open: moveOpen }"
+        @mouseenter="openMoveMenu"
+        @mouseleave="scheduleCloseMoveMenu"
+        @click="openMoveMenu"
+      >
+        <span class="mi-ico">📁</span>
+        <span class="mi-label">移到分组</span>
+        <span class="mi-chevron">›</span>
+        <div
+          v-if="moveOpen"
+          class="submenu"
+          :class="{ 'flip-left': menu.flipSub }"
+          @mouseenter="openMoveMenu"
+          @mouseleave="scheduleCloseMoveMenu"
+          @click.stop
+        >
+          <button class="submenu-item" @click="openCreateGroupFromMove">
+            <span class="plus">+</span>
+            <span>新建分组</span>
+          </button>
+          <div class="submenu-divider"></div>
+          <button
+            v-for="g in moveTargetGroups"
+            :key="g.id"
+            class="submenu-item"
+            :class="{ active: currentMenuSession?.groupId === g.id }"
+            @click="moveSessionTo(g.id)"
+          >
+            <svg class="folder" viewBox="0 0 20 20" fill="currentColor"><path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"/></svg>
+            <span>{{ g.name }}</span>
+          </button>
+          <div v-if="moveTargetGroups.length === 0" class="empty-hint" style="padding:8px 12px">暂无分组</div>
+        </div>
+      </div>
+      <button
+        v-if="currentMenuSession?.groupId"
+        class="menu-item"
+        @mouseenter="closeMoveMenu"
+        @click="moveSessionTo(null)"
+      >
+        <span class="mi-ico">↖</span><span class="mi-label">移出分组</span>
+      </button>
+      <button class="menu-item danger" @mouseenter="closeMoveMenu" @click="startDelete('session')">
+        <span class="mi-ico">🗑</span><span class="mi-label">删除</span>
+      </button>
+    </template>
+    <template v-else>
+      <button class="menu-item" @click="startRename('group')">
+        <span class="mi-ico">✎</span><span class="mi-label">重命名</span>
+      </button>
+      <button class="menu-item danger" @click="startDelete('group')">
+        <span class="mi-ico">🗑</span><span class="mi-label">删除</span>
+      </button>
+    </template>
+  </div>
+
+  <!-- 新建会话 / 新建分组 / 重命名 -->
+  <div v-if="isNameModal" class="overlay" @click.self="modal = null">
+    <div class="dialog" @click.stop>
+      <div class="dialog-head">
+        <div class="info-ico">i</div>
+        <h3>{{ modalTitle }}</h3>
+        <button class="close-x" @click="modal = null">×</button>
+      </div>
+      <div class="field">
+        <label>名称</label>
+        <div class="input-wrap">
+          <input
+            ref="nameInput"
+            v-model="modal.input"
+            maxlength="60"
+            :placeholder="namePlaceholder"
+            @keyup.enter="confirmModal"
+          />
+          <button v-if="modal.input" class="input-clear" title="清空" @click="modal.input = ''">×</button>
+          <span class="char-count">{{ (modal.input || '').length }} / 60</span>
+        </div>
+      </div>
+      <div class="dialog-actions">
+        <button class="btn-cancel" @click="modal = null">取消</button>
+        <button class="btn-ok" :disabled="!(modal.input || '').trim()" @click="confirmModal">{{ primaryBtnText }}</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 删除确认 -->
+  <div v-if="modal?.type === 'delete'" class="overlay" @click.self="modal = null">
+    <div class="dialog" @click.stop>
+      <div class="dialog-head">
+        <div class="warn-ico">!</div>
+        <h3>确认删除</h3>
+        <button class="close-x" @click="modal = null">×</button>
+      </div>
+      <p>{{ deleteBody }}</p>
+      <div class="dialog-actions">
+        <button class="btn-cancel" @click="modal = null">取消</button>
+        <button class="btn-ok" @click="confirmModal">删除</button>
+      </div>
+    </div>
+  </div>
+
+  <div v-if="toast" class="toast">{{ toast }}</div>
+</div>
+
+<script>
+const { createApp, computed, ref, nextTick, watch } = Vue;
+
+createApp({
+  setup() {
+    const scope = ref('mine');
+    const search = ref('');
+    const currentId = ref('s1');
+    const menu = ref(null);
+    const moveOpen = ref(false);
+    const modal = ref(null);
+    const toast = ref('');
+    const nameInput = ref(null);
+    // 分区折叠：默认都展开
+    const sectionOpen = ref({ groups: true, sessions: true });
+    let toastTimer = null;
+    let seq = 100;
+    let pendingMoveSessionId = null;
+
+    const groups = ref([
+      { id: 'g1', name: 'H8131-风扇主图', expanded: true },
+      { id: 'g2', name: 'XXX-详情页', expanded: true },
+    ]);
+
+    const sessions = ref([
+      { id: 's1', name: 'sss', groupId: null, dot: 'green', updatedAt: 60, owner: 'me', day: 'today' },
+      { id: 's2', name: '会话A-主视觉探索', groupId: 'g1', dot: 'green', updatedAt: 50, owner: 'me', day: 'today' },
+      { id: 's3', name: '会话B-白底套图', groupId: 'g1', dot: 'red', updatedAt: 40, owner: 'me', day: 'earlier' },
+      { id: 's4', name: '详情页头图', groupId: 'g2', dot: 'orange', updatedAt: 30, owner: 'me', day: 'earlier' },
+      { id: 's5', name: '图像生成4', groupId: null, dot: 'red', updatedAt: 20, owner: 'me', day: 'yesterday' },
+      { id: 's6', name: '图像生成3', groupId: null, dot: 'green', updatedAt: 10, owner: 'me', day: 'earlier' },
+      { id: 's7', name: '同事的出图会话', groupId: null, dot: 'orange', updatedAt: 55, owner: 'linhua', day: 'today' },
+      { id: 's8', name: 'XXX', groupId: null, dot: 'red', updatedAt: 25, owner: 'me', day: 'yesterday' },
+      { id: 's9', name: 'H8131', groupId: null, dot: 'green', updatedAt: 24, owner: 'me', day: 'earlier' },
+    ]);
+
+    const TIME_BUCKETS = [
+      { key: 'today', label: '今天' },
+      { key: 'yesterday', label: '昨天' },
+      { key: 'earlier', label: '更早' },
+    ];
+
+    const normalizeDay = (day) => {
+      if (day === 'today' || day === 'yesterday') return day;
+      return 'earlier';
+    };
+
+    const bucketSessions = (list) =>
+      TIME_BUCKETS.map(({ key, label }) => ({
+        key,
+        label,
+        list: sortByTime(list.filter(s => normalizeDay(s.day) === key)),
+      }));
+
+    const match = (text) => {
+      const q = search.value.toLowerCase();
+      if (!q) return true;
+      return text.toLowerCase().includes(q);
+    };
+
+    const sortByTime = (list) => [...list].sort((a, b) => b.updatedAt - a.updatedAt);
+
+    const mySessions = computed(() => sessions.value.filter(s => s.owner === 'me'));
+
+    const filteredGroups = computed(() => {
+      return groups.value.filter(g => {
+        if (!search.value) return true;
+        if (match(g.name)) return true;
+        return mySessions.value.some(s => s.groupId === g.id && match(s.name));
+      });
+    });
+
+    const sessionsOf = (groupId) => {
+      let list = mySessions.value.filter(s => s.groupId === groupId);
+      if (search.value) {
+        const g = groups.value.find(x => x.id === groupId);
+        if (!(g && match(g.name))) list = list.filter(s => match(s.name));
+      }
+      return sortByTime(list);
+    };
+
+    const ungroupedSessions = computed(() => {
+      let list = mySessions.value.filter(s => !s.groupId);
+      if (search.value) list = list.filter(s => match(s.name));
+      return sortByTime(list);
+    });
+
+    const ungroupedTimeBuckets = computed(() => bucketSessions(ungroupedSessions.value));
+
+    const allViewSessions = computed(() => {
+      let list = sessions.value;
+      if (search.value) list = list.filter(s => match(s.name));
+      return sortByTime(list);
+    });
+
+    const allTimeBuckets = computed(() => bucketSessions(allViewSessions.value));
+
+    const currentSession = computed(() => sessions.value.find(s => s.id === currentId.value));
+    const currentMenuSession = computed(() => {
+      if (!menu.value || menu.value.kind !== 'session') return null;
+      return sessions.value.find(s => s.id === menu.value.id);
+    });
+
+    // 移到分组子菜单：只列真实分组，不含「未分组」伪项
+    const moveTargetGroups = computed(() => groups.value);
+
+    const isNameModal = computed(() =>
+      ['createSession', 'createGroup', 'rename'].includes(modal.value?.type)
+    );
+
+    const modalTitle = computed(() => {
+      if (!modal.value) return '';
+      if (modal.value.type === 'createSession') return '新建会话';
+      if (modal.value.type === 'createGroup') return '新建分组';
+      if (modal.value.type === 'rename') {
+        return modal.value.target === 'group' ? '重命名分组' : '重命名会话';
+      }
+      return '';
+    });
+
+    const namePlaceholder = computed(() => {
+      if (modal.value?.type === 'createSession' || modal.value?.target === 'session') return '请输入会话名称';
+      return '请输入分组名称';
+    });
+
+    const primaryBtnText = computed(() => {
+      if (modal.value?.type === 'rename') return '保存';
+      return '创建';
+    });
+
+    const deleteBody = computed(() => {
+      if (!modal.value || modal.value.type !== 'delete') return '';
+      if (modal.value.target === 'session') {
+        return '删除后会话内容将无法恢复，确定要删除吗？';
+      }
+      const g = groups.value.find(x => x.id === modal.value.id);
+      const n = mySessions.value.filter(s => s.groupId === modal.value.id).length;
+      if (n === 0) return `确定删除分组「${g?.name || ''}」？`;
+      return `确定删除分组「${g?.name || ''}」？\n组内 ${n} 个会话不会被删除，将移到「会话」。`;
+    });
+
+    const showToast = (msg) => {
+      toast.value = msg;
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => { toast.value = ''; }, 1800);
+    };
+
+    const focusNameInput = async () => {
+      await nextTick();
+      nameInput.value?.focus();
+      nameInput.value?.select?.();
+    };
+
+    watch(isNameModal, (v) => { if (v) focusNameInput(); });
+
+    // 搜索命中时自动展开相关分区与分组文件夹
+    watch(search, (q) => {
+      if (!q) return;
+      sectionOpen.value.groups = true;
+      sectionOpen.value.sessions = true;
+      groups.value.forEach(g => {
+        if (match(g.name) || mySessions.value.some(s => s.groupId === g.id && match(s.name))) {
+          g.expanded = true;
+        }
+      });
+    });
+
+    let moveCloseTimer = null;
+    const openMoveMenu = () => {
+      clearTimeout(moveCloseTimer);
+      moveOpen.value = true;
+    };
+    const closeMoveMenu = () => {
+      clearTimeout(moveCloseTimer);
+      moveOpen.value = false;
+    };
+    const scheduleCloseMoveMenu = () => {
+      clearTimeout(moveCloseTimer);
+      moveCloseTimer = setTimeout(() => { moveOpen.value = false; }, 100);
+    };
+
+    const closeMenu = () => {
+      clearTimeout(moveCloseTimer);
+      menu.value = null;
+      moveOpen.value = false;
+    };
+
+    const openMenu = (e, kind, id) => {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const menuW = 180;
+      const subW = 200;
+      const x = Math.min(rect.right - 8, window.innerWidth - menuW - 12);
+      const flipSub = x + menuW + subW > window.innerWidth - 8;
+      menu.value = {
+        kind, id,
+        x,
+        y: Math.min(rect.bottom + 4, window.innerHeight - 160),
+        flipSub,
+      };
+      moveOpen.value = false;
+    };
+
+    const toggleGroup = (g) => { g.expanded = !g.expanded; };
+    const selectSession = (id) => { currentId.value = id; };
+
+    const openCreateGroup = () => {
+      closeMenu();
+      pendingMoveSessionId = null;
+      sectionOpen.value.groups = true;
+      modal.value = { type: 'createGroup', input: '' };
+    };
+
+    const openCreateGroupFromMove = () => {
+      pendingMoveSessionId = menu.value?.id || null;
+      closeMenu();
+      sectionOpen.value.groups = true;
+      modal.value = { type: 'createGroup', input: '' };
+    };
+
+    const createSession = () => {
+      closeMenu();
+      sectionOpen.value.sessions = true;
+      modal.value = { type: 'createSession', input: '' };
+    };
+
+    const startRename = (target) => {
+      const id = menu.value.id;
+      closeMenu();
+      const item = target === 'group'
+        ? groups.value.find(g => g.id === id)
+        : sessions.value.find(s => s.id === id);
+      modal.value = { type: 'rename', target, id, input: item?.name || '' };
+    };
+
+    const moveSessionTo = (groupId) => {
+      const id = menu.value?.id;
+      const s = sessions.value.find(x => x.id === id);
+      if (!s) return;
+      if ((s.groupId || null) === (groupId || null)) {
+        closeMenu();
+        return;
+      }
+      s.groupId = groupId;
+      s.updatedAt = Date.now();
+      if (groupId) {
+        sectionOpen.value.groups = true;
+        const g = groups.value.find(x => x.id === groupId);
+        if (g) g.expanded = true;
+      } else {
+        sectionOpen.value.sessions = true;
+      }
+      closeMenu();
+      showToast(groupId ? '已移到分组' : '已移出分组');
+    };
+
+    const startDelete = (target) => {
+      const id = menu.value.id;
+      closeMenu();
+      modal.value = { type: 'delete', target, id };
+    };
+
+    const confirmModal = () => {
+      const m = modal.value;
+      if (!m) return;
+
+      if (m.type === 'createSession') {
+        const name = (m.input || '').trim();
+        if (!name) return showToast('请输入会话名称');
+        const id = 's' + (++seq);
+        sessions.value.unshift({
+          id, name, groupId: null, dot: 'green',
+          updatedAt: Date.now(), owner: 'me', day: 'today',
+        });
+        currentId.value = id;
+        sectionOpen.value.sessions = true;
+        modal.value = null;
+        showToast('已新建会话');
+        return;
+      }
+
+      if (m.type === 'createGroup') {
+        const name = (m.input || '').trim();
+        if (!name) return showToast('请输入分组名称');
+        const gid = 'g' + (++seq);
+        groups.value.unshift({ id: gid, name, expanded: true });
+        sectionOpen.value.groups = true;
+        if (pendingMoveSessionId) {
+          const s = sessions.value.find(x => x.id === pendingMoveSessionId);
+          if (s) {
+            s.groupId = gid;
+            s.updatedAt = Date.now();
+          }
+          pendingMoveSessionId = null;
+          modal.value = null;
+          showToast('已创建分组并移入会话');
+          return;
+        }
+        modal.value = null;
+        showToast('已创建分组');
+        return;
+      }
+
+      if (m.type === 'rename') {
+        const name = (m.input || '').trim();
+        if (!name) return showToast('名称不能为空');
+        if (m.target === 'group') {
+          const g = groups.value.find(x => x.id === m.id);
+          if (g) g.name = name;
+        } else {
+          const s = sessions.value.find(x => x.id === m.id);
+          if (s) s.name = name;
+        }
+        modal.value = null;
+        showToast('已保存');
+        return;
+      }
+
+      if (m.type === 'delete') {
+        if (m.target === 'session') {
+          sessions.value = sessions.value.filter(s => s.id !== m.id);
+          if (currentId.value === m.id) {
+            const next = sortByTime(mySessions.value)[0];
+            currentId.value = next?.id || null;
+          }
+          modal.value = null;
+          showToast('会话已删除');
+        } else {
+          sessions.value.forEach(s => {
+            if (s.groupId === m.id) s.groupId = null;
+          });
+          groups.value = groups.value.filter(g => g.id !== m.id);
+          sectionOpen.value.sessions = true;
+          modal.value = null;
+          showToast('分组已删除，会话已移到未分组');
+        }
+      }
+    };
+
+    return {
+      scope, search, currentId, menu, moveOpen, modal, toast, nameInput, groups, sectionOpen,
+      filteredGroups, ungroupedSessions, ungroupedTimeBuckets, allViewSessions, allTimeBuckets,
+      currentSession, currentMenuSession,
+      moveTargetGroups, isNameModal, modalTitle, namePlaceholder, primaryBtnText, deleteBody,
+      sessionsOf, closeMenu, openMenu, toggleGroup, selectSession,
+      openMoveMenu, closeMoveMenu, scheduleCloseMoveMenu,
+      openCreateGroup, openCreateGroupFromMove, createSession,
+      startRename, moveSessionTo, startDelete, confirmModal,
+    };
+  },
+}).mount('#app');
+</script>
+</body>
+</html>
