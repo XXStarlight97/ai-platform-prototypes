@@ -1,0 +1,2093 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>智岩 AI · 图像生成会话分组原型 v2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
+<script src="https://unpkg.com/@phosphor-icons/web"></script>
+<style>
+:root {
+  --bg: #0a0a0c;
+  --bg-elevated: #16161e;
+  --panel: rgba(22,22,30,0.72);
+  --lift: rgba(255,255,255,0.06);
+  --border: rgba(255,255,255,0.10);
+  --border-light: rgba(255,255,255,0.05);
+  --text: rgba(255,255,255,0.92);
+  --muted: rgba(255,255,255,0.64);
+  --dim: rgba(255,255,255,0.42);
+  --amber: #f59e0b;
+  --amber-hover: #fbbf24;
+  --amber-dim: rgba(245,158,11,0.15);
+  --orange: #f59e0b;
+  --orange-deep: rgba(245,158,11,0.18);
+  --orange-soft: rgba(245,158,11,0.06);
+  --red: #ef4444;
+  --green: #10b981;
+  --radius-md: 8px;
+  --radius-lg: 14px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  height: 100vh;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+button, input, textarea { font: inherit; }
+button { cursor: pointer; border: none; background: none; color: inherit; }
+
+.ambient-bg {
+  position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden;
+}
+.ambient-bg .blob {
+  position: absolute; border-radius: 50%; filter: blur(120px); mix-blend-mode: screen;
+}
+.ambient-bg .blob-1 {
+  top: -10%; left: -10%; width: 50vw; height: 50vw;
+  background: rgba(79, 70, 229, 0.08);
+}
+.ambient-bg .blob-2 {
+  top: 30%; right: -10%; width: 40vw; height: 40vw;
+  background: rgba(217, 119, 6, 0.08);
+}
+.ambient-bg .blob-3 {
+  bottom: -20%; left: 20%; width: 60vw; height: 60vw;
+  background: rgba(147, 51, 234, 0.05); filter: blur(150px);
+}
+
+.app {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  z-index: 1;
+}
+.app-chrome {
+  flex: 1; display: flex; overflow: hidden; min-height: 0;
+  padding: 10px 12px 12px; position: relative; z-index: 10;
+}
+.app-glass {
+  flex: 1; display: grid;
+  grid-template-columns: 280px minmax(0, 1fr) 300px;
+  overflow: hidden; min-height: 0;
+  background: rgba(255,255,255,0.06);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.50), 0 0 0 1px rgba(255,255,255,0.05);
+}
+
+.topbar {
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  background: rgba(10,10,12,0.40);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  position: relative;
+  z-index: 50;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-right: 16px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--border);
+  height: auto;
+  width: auto;
+}
+.brand-mark {
+  width: 28px; height: 28px; border-radius: 6px;
+  background: var(--amber); color: #0a0a0c;
+  display: grid; place-items: center; font-weight: 700; font-size: 14px;
+}
+.brand-name { font-weight: 700; font-size: 15px; letter-spacing: 0.02em; }
+.brand-sep { color: rgba(255,255,255,0.15); margin: 0 2px; display: none; }
+.brand-sub { display: none; }
+
+.page-tabs {
+  flex: 1;
+  display: flex; align-items: center; gap: 4px;
+  padding: 0 16px; min-width: 0; overflow-x: auto; height: auto;
+}
+.page-tab {
+  height: 30px; max-width: 220px;
+  padding: 0 12px; border-radius: 6px;
+  display: inline-flex; align-items: center; gap: 8px;
+  color: var(--muted); font-size: 13px; font-weight: 500;
+  transition: all 0.2s; flex-shrink: 0; cursor: default;
+  border: 1px solid transparent;
+}
+.page-tab.active {
+  color: var(--text);
+  background: rgba(245,158,11,0.10);
+  border-color: rgba(245,158,11,0.25);
+}
+.page-tab:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+}
+.page-tab .x { margin-left: 4px; color: rgba(255,255,255,0.28); font-size: 14px; }
+.page-tab .x:hover { color: var(--red); }
+
+.top-right {
+  display: flex; align-items: center; gap: 12px;
+  padding: 0; color: var(--muted); border-left: none; height: auto; flex-shrink: 0;
+}
+.top-right span, .top-right button {
+  width: 32px; height: 32px; border-radius: 9999px;
+  display: grid; place-items: center;
+  cursor: pointer; transition: background 0.2s, color 0.2s;
+  color: var(--muted); font-size: 16px;
+}
+.top-right span:hover, .top-right button:hover {
+  background: rgba(255,255,255,0.10); color: var(--text);
+}
+.avatar {
+  width: 28px; height: 28px; border-radius: 999px;
+  background: linear-gradient(135deg, #6366f1, #9333ea); color: #fff;
+  display: grid; place-items: center; font-size: 12px; font-weight: 600;
+  border: 1px solid rgba(255,255,255,0.20);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.15);
+}
+
+.sidebar {
+  display: flex; flex-direction: column; gap: 10px;
+  padding: 14px 12px 16px;
+  border-right: 1px solid var(--border);
+  background: rgba(22,22,30,0.55);
+  overflow: hidden;
+  min-width: 0;
+}
+.btn-stack { display: grid; gap: 8px; }
+.btn-main, .btn-ghost {
+  height: 36px; border-radius: 8px; font-size: 13px; font-weight: 600;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  transition: all 0.2s;
+}
+.btn-main {
+  background: var(--amber); color: #0a0a0c;
+  box-shadow: 0 0 12px rgba(245,158,11,0.2);
+}
+.btn-main:hover {
+  background: var(--amber-hover); transform: translateY(-1px);
+  box-shadow: 0 0 16px rgba(245,158,11,0.4);
+}
+.btn-ghost {
+  color: var(--amber);
+  background: rgba(245,158,11,0.06);
+  border: 1px solid rgba(245,158,11,0.30);
+}
+.btn-ghost:hover { background: rgba(245,158,11,0.12); }
+.btn-main:disabled, .btn-ghost:disabled {
+  opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; filter: none;
+}
+
+.segment {
+  height: 34px; display: grid; grid-template-columns: 1fr 1fr;
+  padding: 3px; border-radius: 8px;
+  background: rgba(0,0,0,0.25);
+  border: 1px solid var(--border-light);
+}
+.segment button {
+  border-radius: 6px; color: var(--muted); font-weight: 600; font-size: 13px;
+  transition: all 0.15s;
+}
+.segment button.active {
+  color: #0a0a0c; background: var(--amber);
+}
+
+.search { position: relative; }
+.search .ico {
+  position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+  color: var(--dim); font-size: 13px; pointer-events: none;
+}
+.search input {
+  width: 100%; height: 36px;
+  padding: 0 12px 0 34px;
+  border: 1px solid var(--border); border-radius: 8px;
+  outline: 0; background: rgba(0,0,0,0.25); color: var(--text);
+  transition: border 0.2s;
+}
+.search input::placeholder { color: var(--dim); }
+.search input:focus { border-color: rgba(245,158,11,0.55); }
+
+.nav-scroll { flex: 1; min-height: 0; overflow-y: auto; padding-right: 2px; }
+.nav-scroll::-webkit-scrollbar { width: 4px; }
+.nav-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+.section-title {
+  margin: 14px 0 8px;
+  padding-left: 8px;
+  color: var(--dim);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.section-title:first-child { margin-top: 4px; }
+/* 个人视图：分组 / 会话 分区可折叠（GPT 式） */
+.section-toggle {
+  width: 100%;
+  display: flex; align-items: center; justify-content: space-between;
+  margin: 10px 0 6px;
+  padding: 6px 8px;
+  border-radius: 7px;
+  color: rgba(255,255,255,0.62);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+}
+.section-toggle:first-child { margin-top: 2px; }
+.section-toggle:hover { background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.85); }
+.section-toggle .chevron {
+  color: #8a8a91;
+  font-size: 12px;
+  transition: transform 0.15s ease;
+  transform: rotate(90deg); /* 展开：› 朝下感 */
+}
+.section-toggle.collapsed .chevron { transform: rotate(0deg); }
+
+.group-block { margin-bottom: 4px; }
+.row {
+  height: 36px;
+  display: flex; align-items: center; gap: 8px;
+  padding: 0 8px;
+  border-radius: 7px;
+  color: #a5a5ab;
+  font-size: 13px;
+  position: relative;
+}
+.row-prefix {
+  width: 22px;
+  flex: 0 0 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.row-prefix .dot { margin: 0; }
+.row:hover { background: rgba(255,255,255,0.04); }
+.row.active { background: rgba(245,158,11,0.12); color: var(--text); border: 1px solid rgba(245,158,11,0.35); }
+.row .name {
+  flex: 1; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.folder-ico {
+  width: 16px; height: 16px; flex: 0 0 auto;
+  color: var(--orange);
+}
+.group-row .name { font-weight: 600; color: rgba(255,255,255,0.78); }
+.group-row.expanded .name { color: rgba(255,255,255,0.92); }
+.menu-backdrop {
+  position: fixed; inset: 0; z-index: 49;
+  background: transparent;
+}
+
+.dot {
+  width: 8px; height: 8px; border-radius: 999px; flex: 0 0 auto;
+}
+.dot.green { background: var(--green); }
+.dot.red { background: var(--red); }
+.dot.orange { background: var(--orange); }
+
+.more-btn {
+  width: 26px; height: 26px; border-radius: 6px;
+  display: grid; place-items: center;
+  color: #8a8a91; opacity: 0; flex: 0 0 auto;
+  font-size: 16px; line-height: 1;
+}
+.row:hover .more-btn, .row.menu-open .more-btn { opacity: 1; }
+.more-btn:hover { background: rgba(255,255,255,0.08); color: var(--text); }
+
+.session-list { display: grid; gap: 2px; padding: 2px 0 6px 14px; }
+.empty-hint {
+  padding: 6px 10px 10px 30px;
+  color: var(--dim); font-size: 12px;
+}
+.all-list { display: grid; gap: 2px; }
+
+/* 全部视图：轻量小 Tab（分组 / 会话）— 中性胶囊，无橙色 */
+.mini-tabs {
+  display: flex;
+  gap: 6px;
+  margin: -2px 0 8px;
+  padding: 0 2px;
+}
+.mini-tabs button {
+  height: 30px;
+  padding: 0 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.55);
+  background: transparent;
+  border: 1px solid transparent;
+}
+.mini-tabs button:hover {
+  color: rgba(255, 255, 255, 0.82);
+  background: rgba(255, 255, 255, 0.04);
+}
+.mini-tabs button.active {
+  color: var(--amber);
+  background: var(--amber-dim);
+  border-color: rgba(245,158,11,0.35);
+}
+
+.user-avatar {
+  width: 22px; height: 22px; border-radius: 999px; flex: 0 0 auto;
+  display: grid; place-items: center;
+  font-size: 10px; font-weight: 700;
+  background: #3a3a42;
+  color: #d8d8de;
+}
+
+/* 拖拽移组 */
+.row.draggable { cursor: grab; }
+.row.draggable:active { cursor: grabbing; }
+.row.dragging { opacity: 0.45; }
+.app-dragging .row * { pointer-events: none; }
+.group-row.drop-over,
+.drop-zone-ungroup.drop-over {
+  background: rgba(245,158,11,0.12);
+  outline: 1px dashed rgba(245,158,11,0.55);
+  outline-offset: -1px;
+}
+.drop-zone-ungroup {
+  border-radius: 8px;
+  min-height: 4px;
+}
+
+.main {
+  display: grid;
+  grid-template-rows: 48px 1fr auto;
+  min-width: 0;
+  height: 100%;
+  min-height: 0;
+  background: rgba(0,0,0,0.18);
+  border-right: 1px solid var(--border);
+}
+.chat-title {
+  display: flex; align-items: center; gap: 10px;
+  padding: 0 24px; border-bottom: 1px solid var(--border);
+  background: rgba(255,255,255,0.02);
+}
+.chat-title strong { font-size: 15px; font-weight: 600; }
+.badge {
+  padding: 3px 8px; border-radius: 5px;
+  background: rgba(59,130,246,0.18); color: #60a5fa;
+  font-size: 12px; font-weight: 600;
+}
+
+/* Chat Stream */
+.stream {
+  min-height: 0; overflow-y: auto;
+  padding: 24px 32px;
+}
+.stream::-webkit-scrollbar { width: 4px; }
+.stream::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+.round { max-width: 800px; margin: 0 0 36px 0; }
+.msg-user {
+  display: flex; gap: 16px; align-items: flex-start;
+}
+.msg-av {
+  width: 32px; height: 32px; border-radius: 999px; flex: 0 0 auto;
+  background: var(--orange); color: transparent;
+  display: grid; place-items: center; font-weight: 800; font-size: 13px;
+}
+.msg-body { flex: 1; min-width: 0; }
+.msg-text {
+  font-size: 14.5px; line-height: 1.65;
+  color: var(--text); white-space: pre-wrap;
+}
+
+/* Metadata Row */
+.model-meta-row {
+  display: flex; align-items: center; gap: 10px;
+  margin: 12px 0 16px;
+}
+.model-tag {
+  padding: 2px 8px; border-radius: 4px;
+  border: 1px solid rgba(246, 160, 0, 0.4);
+  background: transparent;
+  color: var(--orange); font-size: 12px; font-weight: 600;
+}
+.model-params {
+  color: var(--dim); font-size: 12px;
+}
+
+/* Cancellation Hint */
+.hint-cancelled-box {
+  display: flex; align-items: center; gap: 8px;
+  padding: 12px 16px; border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border);
+  color: var(--muted); font-size: 13px;
+  max-width: 480px;
+  margin-top: 12px;
+}
+.hint-cancelled-box span.icon { font-size: 16px; color: var(--orange); }
+
+/* Result Card */
+.result-card {
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: transparent;
+  overflow: hidden;
+  max-width: 420px;
+  padding: 12px;
+  margin-top: 12px;
+}
+.result-img-container {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background: #0d0d11;
+  position: relative;
+  overflow: hidden;
+  border-radius: 8px;
+}
+.result-img {
+  width: 100%; height: 100%; object-fit: cover;
+}
+.result-actions {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  padding: 12px 0 0 0;
+}
+.act {
+  height: 28px; padding: 0 12px; border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: transparent;
+  color: var(--muted); font-size: 12px;
+  display: inline-flex; align-items: center; gap: 6px;
+  transition: all 0.2s;
+}
+.act:hover { background: rgba(255,255,255,0.08); color: var(--text); border-color: rgba(255,255,255,0.15); }
+
+
+/* Generating Skeleton */
+.loading-box {
+  max-width: 420px;
+  border-radius: 8px;
+  background: transparent;
+  overflow: hidden;
+}
+.skel-container {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background: #0d0d11;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  border-radius: 8px;
+}
+.skel-shimmer {
+  position: absolute; inset: 0;
+  background: linear-gradient(90deg, #0d0d11 0%, #17171f 50%, #0d0d11 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  z-index: 1;
+}
+@keyframes shimmer {
+  0% { background-position: 150% 0; }
+  100% { background-position: -50% 0; }
+}
+.skel-content {
+  position: relative; z-index: 2;
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
+}
+.spinner {
+  width: 28px; height: 28px;
+  border: 3px solid rgba(255,255,255,0.1);
+  border-top-color: var(--orange);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.loading-foot {
+  padding-top: 12px;
+  display: flex; justify-content: space-between; align-items: center;
+  color: var(--muted); font-size: 13px;
+}
+.loading-progress-bar {
+  height: 4px; background: rgba(255,255,255,0.05);
+  position: relative; overflow: hidden;
+  border-radius: 2px;
+  margin-top: 12px;
+}
+.loading-progress-fill {
+  height: 100%; background: var(--orange);
+  transition: width 0.1s linear;
+}
+
+/* Empty State Canvas */
+.canvas { display: grid; place-items: center; min-height: 0; }
+.empty-state { text-align: center; transform: translateY(-12px); }
+.empty-state .icon { font-size: 40px; margin-bottom: 14px; }
+.empty-state h1 { font-size: 16px; margin-bottom: 10px; }
+.empty-state p { color: var(--dim); font-size: 13px; line-height: 1.7; }
+
+/* Composer */
+.composer-wrap {
+  padding: 16px 32px 24px;
+  background: linear-gradient(180deg, transparent, rgba(10,10,12,0.45) 40%);
+}
+.composer {
+  position: relative;
+  min-height: 144px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: rgba(0,0,0,0.28);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.composer:focus-within {
+  border-color: rgba(245,158,11,0.55);
+  box-shadow: 0 0 0 1px rgba(245,158,11,0.18);
+}
+.composer.locked {
+  background: rgba(0,0,0,0.35);
+  border-color: var(--border-light);
+}
+.row-top { display: flex; gap: 16px; align-items: flex-start; }
+
+.upload {
+  width: 56px; height: 56px; flex: 0 0 auto;
+  display: grid; place-items: center;
+  border: 1px dashed #5b5b62; border-radius: 8px;
+  color: #7f7f87; font-size: 11px; line-height: 1.3; text-align: center;
+  cursor: pointer; position: relative; overflow: hidden;
+  transition: all 0.2s;
+}
+.upload:hover { border-color: var(--orange); color: var(--muted); }
+.upload.has {
+  border-style: solid; border-color: rgba(246, 160, 0, 0.3);
+  background: rgba(246, 160, 0, 0.05);
+}
+.upload-remove {
+  position: absolute; top: 2px; right: 2px;
+  width: 14px; height: 14px; border-radius: 50%;
+  background: rgba(0,0,0,0.6); color: #fff;
+  font-size: 10px; display: grid; place-items: center;
+  z-index: 10;
+}
+
+.prompt {
+  flex: 1; min-width: 0;
+  min-height: 60px; max-height: 120px;
+  resize: none; border: 0; outline: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: 13.5px; line-height: 1.6;
+}
+.prompt::placeholder { color: var(--dim); }
+.prompt:disabled { cursor: not-allowed; color: var(--dim); }
+
+.pills {
+  position: absolute; left: 16px; bottom: 14px;
+  display: flex; gap: 8px; flex-wrap: wrap;
+}
+.pill {
+  height: 28px; padding: 0 10px;
+  display: flex; align-items: center; gap: 6px;
+  border: 1px solid #38383e; border-radius: 8px;
+  background: #242428; color: #bebec4; font-size: 12px;
+  cursor: pointer; transition: all 0.2s;
+}
+.pill:hover { background: #2c2c32; border-color: #4c4c54; color: var(--text); }
+.pill .lbl { color: var(--dim); }
+.pill .val { color: #d8d8de; font-weight: 500; }
+.pill span.arrow { font-size: 10px; color: var(--dim); margin-left: 2px; }
+
+.send {
+  position: absolute; right: 14px; bottom: 14px;
+  width: 36px; height: 36px;
+  display: grid; place-items: center;
+  border-radius: 8px;
+  background: var(--amber); color: #0a0a0c;
+  font-size: 18px; font-weight: 700;
+  transition: all 0.2s;
+}
+.send:hover:not(:disabled) { filter: brightness(1.05); transform: scale(1.02); }
+.send:disabled { opacity: 0.3; cursor: not-allowed; }
+
+.stop {
+  position: absolute; right: 14px; bottom: 14px;
+  width: 36px; height: 36px;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  background: #111113;
+  border: 1px solid #3a3a42;
+  transition: all 0.2s;
+}
+.stop:hover { background: #1a1a1e; border-color: #5a5a62; transform: scale(1.05); }
+.stop-sq {
+  width: 10px; height: 10px;
+  border-radius: 1.5px;
+  background: #fff;
+}
+
+/* Right Sidebar (Collections) */
+.right-panel {
+  padding: 18px 16px;
+  background: rgba(22,22,30,0.45);
+  overflow: hidden;
+  display: flex; flex-direction: column;
+}
+.fav-head {
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 14px; font-weight: 700; margin-bottom: 14px;
+}
+.count {
+  padding: 2px 10px; border-radius: 999px;
+  color: var(--amber); background: var(--amber-dim);
+  font-size: 12px; font-weight: 600;
+}
+.fav-tabs {
+  display: flex; gap: 22px;
+  border-bottom: 1px solid var(--border);
+  height: 34px;
+}
+.fav-tabs span {
+  color: var(--dim); font-size: 13px; padding-bottom: 8px;
+  cursor: pointer; transition: all 0.2s;
+}
+.fav-tabs span:hover { color: var(--muted); }
+.fav-tabs .on {
+  color: var(--orange);
+  border-bottom: 2px solid var(--orange);
+  font-weight: 600;
+}
+.filters {
+  display: flex; gap: 8px; margin: 16px 0 12px;
+}
+.filter {
+  height: 26px; padding: 0 12px; border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--dim); font-size: 12px;
+  display: inline-flex; align-items: center;
+  cursor: pointer; transition: all 0.2s;
+}
+.filter:hover { border-color: rgba(255,255,255,0.15); color: var(--muted); }
+.filter.on {
+  border-color: var(--amber);
+  color: var(--amber);
+  background: var(--amber-dim);
+}
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  flex: 1;
+  overflow-y: auto;
+}
+.grid::-webkit-scrollbar { width: 3px; }
+.grid::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+.thumb {
+  aspect-ratio: 1;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: rgba(0,0,0,0.25);
+  overflow: hidden;
+  position: relative;
+  cursor: pointer;
+  transition: transform 0.2s, border-color 0.2s;
+}
+.thumb:hover { transform: scale(1.03); border-color: rgba(255,255,255,0.2); }
+.thumb-img {
+  width: 100%; height: 100%; object-fit: cover;
+}
+
+/* menus & modals */
+.menu {
+  position: fixed; z-index: 1201; min-width: 168px;
+  padding: 6px; border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: #1a1a22;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.04);
+}
+.menu-item {
+  width: 100%;
+  display: flex; align-items: center; gap: 10px;
+  text-align: left;
+  padding: 9px 12px; border-radius: 8px;
+  font-size: 13px; color: rgba(255,255,255,0.88);
+  position: relative;
+}
+.menu-item:hover, .menu-item.open { background: rgba(255,255,255,0.08); }
+.menu-item .mi-ico {
+  width: 16px; text-align: center; flex: 0 0 auto;
+  opacity: 0.75; font-size: 13px;
+}
+.menu-item .mi-label { flex: 1; min-width: 0; }
+.menu-item .mi-chevron { color: #8a8a91; font-size: 12px; }
+.menu-item.danger { color: #ff7a7e; }
+.menu-item.danger:hover { background: rgba(255,70,75,0.12); }
+.menu-item.danger .mi-ico { opacity: 1; }
+
+.submenu {
+  position: absolute;
+  left: calc(100% - 2px);
+  top: -6px;
+  min-width: 180px;
+  max-height: 280px;
+  overflow-y: auto;
+  padding: 6px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: #1c1c21;
+  box-shadow: 0 14px 36px rgba(0,0,0,0.55);
+}
+.submenu.flip-left { left: auto; right: calc(100% - 2px); }
+.submenu-item {
+  width: 100%;
+  display: flex; align-items: center; gap: 10px;
+  text-align: left;
+  padding: 9px 12px; border-radius: 8px;
+  font-size: 13px; color: rgba(255,255,255,0.88);
+}
+.submenu-item:hover { background: rgba(255,255,255,0.08); }
+.submenu-item.active { color: var(--orange); }
+.submenu-item .folder {
+  width: 14px; height: 14px; flex: 0 0 auto; color: var(--orange);
+}
+.submenu-item .plus { color: var(--orange); font-weight: 700; width: 14px; text-align: center; }
+.submenu-divider {
+  height: 1px; margin: 4px 8px;
+  background: rgba(255,255,255,0.08);
+}
+
+.overlay {
+  position: fixed; inset: 0; z-index: 1300;
+  background: rgba(0,0,0,0.55);
+  display: grid; place-items: center;
+  backdrop-filter: blur(4px);
+}
+.dialog {
+  width: 420px; max-width: calc(100vw - 32px);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px 20px 16px;
+  box-shadow: 0 20px 48px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.04);
+}
+.dialog-head {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 16px;
+}
+.info-ico, .warn-ico {
+  width: 26px; height: 26px; border-radius: 999px;
+  background: var(--orange); color: #fff;
+  display: grid; place-items: center; font-weight: 700; font-size: 13px;
+  flex: 0 0 auto; font-style: italic; font-family: Georgia, serif;
+}
+.warn-ico { font-style: normal; font-family: inherit; color: #1a1200; font-weight: 800; }
+.dialog-head h3 { flex: 1; font-size: 16px; font-weight: 700; }
+.close-x {
+  width: 28px; height: 28px; border-radius: 6px;
+  color: var(--muted); font-size: 18px;
+}
+.close-x:hover { background: rgba(255,255,255,0.06); color: #fff; }
+.dialog p {
+  color: #a8a8b0; font-size: 14px; line-height: 1.6;
+  margin-bottom: 18px; white-space: pre-line;
+}
+.dialog-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 4px; }
+.btn-cancel {
+  height: 36px; padding: 0 16px; border-radius: 8px;
+  background: rgba(255,255,255,0.06); color: var(--text); font-weight: 600;
+  border: 1px solid var(--border);
+}
+.btn-cancel:hover { background: rgba(255,255,255,0.1); }
+.btn-ok {
+  height: 36px; padding: 0 16px; border-radius: 8px;
+  background: var(--amber); color: #0a0a0c; font-weight: 700;
+  box-shadow: 0 0 12px rgba(245,158,11,0.2);
+}
+.btn-ok:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; }
+.field { margin-bottom: 18px; }
+.field label {
+  display: block; margin-bottom: 8px;
+  font-size: 13px; color: var(--muted);
+}
+.input-wrap {
+  display: flex; align-items: center; gap: 8px;
+  height: 42px; padding: 0 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: rgba(0,0,0,0.3);
+}
+.input-wrap:focus-within { border-color: rgba(245,158,11,0.55); }
+.input-wrap input {
+  flex: 1; min-width: 0; height: 100%;
+  border: 0; outline: 0; background: transparent; color: var(--text);
+}
+.input-wrap input::placeholder { color: #707078; }
+.input-clear {
+  width: 18px; height: 18px; border-radius: 999px;
+  background: #3a3a42; color: #bbb;
+  display: grid; place-items: center; font-size: 12px; line-height: 1;
+  flex: 0 0 auto;
+}
+.input-clear:hover { background: #4a4a54; color: #fff; }
+.char-count {
+  flex: 0 0 auto;
+  color: #707078; font-size: 12px; white-space: nowrap;
+}
+.toast {
+  position: fixed; top: 64px; left: 50%; transform: translateX(-50%);
+  z-index: 1400; padding: 10px 16px; border-radius: 10px;
+  background: var(--bg-elevated); border: 1px solid var(--border); color: var(--text);
+  font-size: 13px; box-shadow: 0 10px 28px rgba(0,0,0,0.45);
+}
+.note {
+  margin-top: 10px; padding: 8px 10px; border-radius: 8px;
+  background: var(--amber-dim); border: 1px solid rgba(245,158,11,0.25);
+  color: #fbbf24; font-size: 11px; line-height: 1.5;
+}
+@media (max-width: 1100px) {
+  .app-glass { grid-template-columns: 280px minmax(0, 1fr); }
+  .right-panel { display: none; }
+}
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.3); }
+</style>
+</head>
+<body>
+<div class="ambient-bg" aria-hidden="true">
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+  <div class="blob blob-3"></div>
+</div>
+<div id="app" class="app" :class="{ 'app-dragging': dragSessionId }" @click="closeMenu">
+  <header class="topbar">
+    <div style="display:flex;align-items:center;gap:16px;min-width:0;flex:1;">
+      <div class="brand">
+        <div class="brand-mark"><i class="ph-bold ph-cube"></i></div>
+        <div class="brand-name">智岩 AI</div>
+      </div>
+      <nav class="page-tabs">
+        <div class="page-tab active"><i class="ph ph-palette"></i><span>图像生成</span><span class="x">×</span></div>
+        <div class="page-tab" @click="showToast('镜头生成仅在正式版可用')"><i class="ph ph-video-camera"></i><span>镜头生成</span></div>
+        <div class="page-tab" @click="showToast('ComfyUI仅在正式版可用')"><i class="ph ph-gear"></i><span>ComfyUI</span></div>
+      </nav>
+    </div>
+    <div class="top-right">
+      <button type="button" title="通知"><i class="ph ph-bell" style="font-size:18px;"></i></button>
+      <button type="button" title="主题"><i class="ph ph-moon" style="font-size:18px;"></i></button>
+      <div class="avatar">魏</div>
+    </div>
+  </header>
+
+  <div class="app-chrome">
+  <div class="app-glass">
+  <aside class="sidebar">
+    <div class="btn-stack">
+      <button class="btn-ghost" :disabled="scope === 'all'" :title="scope === 'all' ? '切换到「个人」后可新建' : ''" @click="openCreateGroup">＋ 新建分组</button>
+      <button class="btn-main" :disabled="scope === 'all'" :title="scope === 'all' ? '切换到「个人」后可新建' : ''" @click="createSession">＋ 新建会话</button>
+    </div>
+
+    <div class="segment">
+      <button :class="{ active: scope === 'mine' }" @click="scope = 'mine'">个人</button>
+      <button :class="{ active: scope === 'all' }" @click="scope = 'all'">全部</button>
+    </div>
+
+    <div class="search">
+      <span class="ico">⌕</span>
+      <input v-model.trim="search" :placeholder="searchPlaceholder" />
+    </div>
+
+    <!-- 全部：分组 / 会话 轻量小 Tab -->
+    <div v-if="scope === 'all'" class="mini-tabs">
+      <button :class="{ active: allTab === 'groups' }" @click="allTab = 'groups'">分组</button>
+      <button :class="{ active: allTab === 'sessions' }" @click="allTab = 'sessions'">会话</button>
+    </div>
+
+    <div class="nav-scroll">
+      <!-- 个人：分组 + 会话（分区可折叠，默认展开） -->
+      <template v-if="scope === 'mine'">
+        <button
+          class="section-toggle"
+          :class="{ collapsed: !sectionOpen.groups }"
+          @click="sectionOpen.groups = !sectionOpen.groups"
+        >
+          <span>分组</span>
+          <span class="chevron">›</span>
+        </button>
+        <div v-show="sectionOpen.groups">
+          <div v-if="filteredGroups.length === 0" class="empty-hint" style="padding-left:10px">
+            {{ search ? '无匹配分组' : '暂无分组，点击上方新建' }}
+          </div>
+          <div v-for="g in filteredGroups" :key="g.id" class="group-block">
+            <div
+              class="row group-row"
+              :class="{
+                expanded: g.expanded,
+                'menu-open': menu && menu.kind === 'group' && menu.id === g.id,
+                'drop-over': dropTargetGroupId === g.id,
+              }"
+              @click="toggleGroup(g)"
+              @dragover.prevent="onGroupDragOver(g.id)"
+              @dragleave="onGroupDragLeave(g.id)"
+              @drop.prevent="onGroupDrop(g.id)"
+            >
+              <span class="row-prefix">
+                <svg v-if="g.expanded" class="folder-ico" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path d="M2 6a2 2 0 012-2h4l2 2h6a2 2 0 012 2v.5H4.5A1.5 1.5 0 003 9.5l-1 5.5A2 2 0 004 17h12a2 2 0 001.96-1.6L19 9H4a2 2 0 01-2-2V6z"/>
+                </svg>
+                <svg v-else class="folder-ico" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"/>
+                </svg>
+              </span>
+              <div class="name">{{ g.name }}</div>
+              <button class="more-btn" title="更多" @click.stop="openMenu($event, 'group', g.id)">⋯</button>
+            </div>
+            <div v-show="g.expanded" class="session-list">
+              <div
+                v-for="s in sessionsOf(g.id)"
+                :key="s.id"
+                class="row"
+                :class="sessionRowClass(s)"
+                :draggable="canDragSession(s) ? 'true' : 'false'"
+                @dragstart="onSessionDragStart($event, s.id)"
+                @dragend="onSessionDragEnd"
+                @click="selectSession(s.id)"
+              >
+                <span class="row-prefix">
+                  <span class="dot" :class="s.dot"></span>
+                </span>
+                <div class="name">{{ s.name }}</div>
+                <button class="more-btn" title="更多" @click.stop="openMenu($event, 'session', s.id)">⋯</button>
+              </div>
+              <div v-if="sessionsOf(g.id).length === 0" class="empty-hint">暂无会话</div>
+            </div>
+          </div>
+        </div>
+
+        <button
+          class="section-toggle"
+          :class="{ collapsed: !sectionOpen.sessions }"
+          @click="sectionOpen.sessions = !sectionOpen.sessions"
+        >
+          <span>会话</span>
+          <span class="chevron">›</span>
+        </button>
+        <div
+          v-show="sectionOpen.sessions"
+          class="drop-zone-ungroup"
+          :class="{ 'drop-over': dropTargetGroupId === 'ungroup' }"
+          @dragover.prevent="onUngroupDragOver"
+          @dragleave="onUngroupDragLeave"
+          @drop.prevent="onUngroupDrop"
+        >
+          <template v-for="bucket in ungroupedTimeBuckets" :key="bucket.key">
+            <div v-if="bucket.list.length" class="nav-section">
+              <div class="section-title">{{ bucket.label }}</div>
+              <div class="all-list">
+                <div
+                  v-for="s in bucket.list"
+                  :key="s.id"
+                  class="row"
+                  :class="sessionRowClass(s)"
+                  :draggable="canDragSession(s) ? 'true' : 'false'"
+                  @dragstart="onSessionDragStart($event, s.id)"
+                  @dragend="onSessionDragEnd"
+                  @click="selectSession(s.id)"
+                >
+                  <span class="row-prefix">
+                    <span class="dot" :class="s.dot"></span>
+                  </span>
+                  <div class="name">{{ s.name }}</div>
+                  <button class="more-btn" title="更多" @click.stop="openMenu($event, 'session', s.id)">⋯</button>
+                </div>
+              </div>
+            </div>
+          </template>
+          <div v-if="ungroupedSessions.length === 0" class="empty-hint" style="padding-left:10px">
+            {{ search ? '无匹配会话' : '暂无会话' }}
+          </div>
+        </div>
+      </template>
+
+      <!-- 全部：分组 / 会话 Tab -->
+      <template v-else>
+        <!-- 分组 Tab：所有人分组，创建时间倒序 -->
+        <template v-if="allTab === 'groups'">
+          <div v-if="filteredAllGroups.length === 0" class="empty-hint" style="padding-left:10px;margin-top:4px">
+            {{ search ? '无匹配分组' : '暂无分组' }}
+          </div>
+          <div v-for="g in filteredAllGroups" :key="g.id" class="group-block" style="margin-top:4px">
+            <div
+              class="row group-row"
+              :class="{
+                expanded: g.expanded,
+                'menu-open': menu && menu.kind === 'group' && menu.id === g.id,
+              }"
+              @click="toggleGroup(g)"
+            >
+              <span class="row-prefix">
+                <svg v-if="g.expanded" class="folder-ico" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path d="M2 6a2 2 0 012-2h4l2 2h6a2 2 0 012 2v.5H4.5A1.5 1.5 0 003 9.5l-1 5.5A2 2 0 004 17h12a2 2 0 001.96-1.6L19 9H4a2 2 0 01-2-2V6z"/>
+                </svg>
+                <svg v-else class="folder-ico" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"/>
+                </svg>
+              </span>
+              <div class="name">{{ g.name }}</div>
+              <button
+                v-if="isMine(g.owner)"
+                class="more-btn"
+                title="更多"
+                @click.stop="openMenu($event, 'group', g.id)"
+              >⋯</button>
+            </div>
+            <div v-show="g.expanded" class="session-list">
+              <div
+                v-for="s in allSessionsOf(g.id)"
+                :key="s.id"
+                class="row"
+                :class="allSessionRowClass(s)"
+                @click="selectSession(s.id)"
+              >
+                <span class="row-prefix">
+                  <span v-if="isMine(s.owner)" class="dot" :class="s.dot"></span>
+                  <span v-else class="user-avatar">{{ userOf(s.owner).name }}</span>
+                </span>
+                <div class="name">{{ s.name }}</div>
+                <button
+                  v-if="isMine(s.owner)"
+                  class="more-btn"
+                  title="更多"
+                  @click.stop="openMenu($event, 'session', s.id)"
+                >⋯</button>
+              </div>
+              <div v-if="allSessionsOf(g.id).length === 0" class="empty-hint">暂无会话</div>
+            </div>
+          </div>
+        </template>
+
+        <!-- 会话 Tab：今天 / 昨天 / 更早 -->
+        <template v-else>
+        <template v-for="bucket in allTimeBuckets" :key="bucket.key">
+          <div v-if="bucket.list.length" class="nav-section" :style="bucket.key === 'today' ? 'margin-top:4px' : ''">
+            <div class="section-title">{{ bucket.label }}</div>
+            <div class="all-list">
+              <div
+                v-for="s in bucket.list"
+                :key="s.id"
+                class="row"
+                :class="allSessionRowClass(s)"
+                @click="selectSession(s.id)"
+              >
+                <span class="row-prefix">
+                  <span v-if="isMine(s.owner)" class="dot" :class="s.dot"></span>
+                  <span v-else class="user-avatar">{{ userOf(s.owner).name }}</span>
+                </span>
+                <div class="name">{{ s.name }}</div>
+                <button
+                  v-if="isMine(s.owner)"
+                  class="more-btn"
+                  title="更多"
+                  @click.stop="openMenu($event, 'session', s.id)"
+                >⋯</button>
+              </div>
+            </div>
+          </div>
+        </template>
+        <div v-if="allViewSessions.length === 0" class="empty-hint" style="padding-left:10px">
+          {{ search ? '无匹配会话' : '暂无会话' }}
+        </div>
+        </template>
+      </template>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="chat-title">
+      <span class="dot" :class="currentSession?.dot || 'green'"></span>
+      <strong>{{ currentSession?.name || '未选择会话' }}</strong>
+      <span class="badge">图像生成</span>
+    </div>
+
+    <!-- Chat Stream -->
+    <section v-if="currentRounds.length || generating" class="stream" ref="streamEl">
+      <article v-for="r in currentRounds" :key="r.id" class="round">
+        <div class="msg-user">
+          <div class="msg-av"></div>
+          <div class="msg-body">
+            <div class="msg-text">{{ r.prompt }}</div>
+            
+            <div class="result-card">
+              <!-- Metadata Row -->
+              <div class="model-meta-row" style="margin: 0 0 12px 0;">
+                <span class="model-tag">{{ r.model }}</span>
+                <span class="model-params">
+                  {{ r.ratio }} · {{ r.quality }} · {{ r.time }}
+                </span>
+              </div>
+
+              <!-- Generating State -->
+              <template v-if="r.status === 'generating'">
+                <div class="skel-container">
+                  <div class="skel-shimmer"></div>
+                  <div class="skel-content">
+                    <div class="spinner"></div>
+                    <div style="font-size: 13px; color: var(--muted); font-weight: 500;">
+                      正在生成中 {{ r.progress }}%
+                    </div>
+                  </div>
+                </div>
+                <div class="loading-progress-bar">
+                  <div class="loading-progress-fill" :style="{ width: r.progress + '%' }"></div>
+                </div>
+                <div class="loading-foot">
+                  <span>预计还需要 {{ Math.ceil((100 - r.progress) * 0.08) }} 秒</span>
+                </div>
+              </template>
+
+              <!-- Cancelled State -->
+              <template v-else-if="r.status === 'cancelled'">
+                <div style="background: #210d10; border: 1px solid #4a1518; border-radius: 6px; padding: 12px 16px; color: #f87171; font-size: 13px; font-weight: 500;">
+                  已取消生成
+                </div>
+              </template>
+
+              <!-- Completed State -->
+              <template v-else-if="r.status === 'done'">
+                <div class="result-img-container">
+                  <img :src="r.imgUrl" class="result-img" alt="Generated Image" />
+                </div>
+                <div class="result-actions">
+                  <button class="act" type="button" @click="editPrompt(r)">✏️ 编辑提示词</button>
+                  <button class="act" type="button" @click="regeneratePrompt(r)">🔄 重新生成</button>
+                  <button class="act" type="button" @click="saveToLibrary">＋ 存入词库</button>
+                  <button class="act" type="button" @click="deleteRound(r.id)">🗑️ 删除</button>
+                  <span v-if="r.isAccepted" style="margin-left: auto; color: var(--orange); font-size: 12px; font-weight: 600; display: flex; align-items: center;">1张已采纳</span>
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <!-- Empty State -->
+    <section v-else class="canvas">
+      <div class="empty-state">
+        <div class="icon">🎨</div>
+        <h1>输入提示词开始生成图像</h1>
+        <p>选择模型与参数（由当前模型配置决定），输入描述<br />文字即可生成</p>
+      </div>
+    </section>
+
+    <!-- Composer (Input Area) -->
+    <section class="composer-wrap">
+      <div class="composer" :class="{ locked: generating }">
+        <div class="row-top">
+          <!-- Upload Box -->
+          <div
+            class="upload"
+            :class="{ has: hasRef }"
+            @click="toggleUpload"
+          >
+            <template v-if="hasRef">
+              <div class="upload-remove" @click.stop="removeUpload">×</div>
+              <div style="width: 100%; height: 100%; display: grid; place-items: center; background: rgba(246, 160, 0, 0.05);">
+                <div style="width: 20px; height: 12px; background: var(--orange); border-radius: 2px;"></div>
+              </div>
+            </template>
+            <template v-else>＋<br />图片</template>
+          </div>
+          <!-- Textarea -->
+          <textarea
+            class="prompt"
+            rows="3"
+            v-model="prompt"
+            :disabled="generating"
+            placeholder="描述你想生成的图像..."
+            @keydown.meta.enter.prevent="onSendOrStop"
+            @keydown.ctrl.enter.prevent="onSendOrStop"
+          ></textarea>
+        </div>
+        
+        <!-- Dropdown Selectors (Pills) -->
+        <div class="pills">
+          <div class="pill" @click="showToast('模型切换仅在正式版可用')">
+            <span class="lbl">模型</span> <span class="val">Gemini 3 Pro Image</span> <span class="arrow">▾</span>
+          </div>
+          <div class="pill" @click="showToast('比例切换仅在正式版可用')">
+            <span class="lbl">比例</span> <span class="val">1:1 正方形</span> <span class="arrow">▾</span>
+          </div>
+          <div class="pill" @click="showToast('质量切换仅在正式版可用')">
+            <span class="lbl">质量</span> <span class="val">Standard (1K)</span> <span class="arrow">▾</span>
+          </div>
+          <div class="pill" @click="showToast('数量切换仅在正式版可用')">
+            <span class="lbl">数量</span> <span class="val">1 张</span> <span class="arrow">▾</span>
+          </div>
+        </div>
+
+        <!-- Action Button (Send / Stop) -->
+        <button
+          v-if="!generating"
+          class="send"
+          type="button"
+          title="发送"
+          :disabled="!canSend"
+          @click="startGenerate"
+        >↑</button>
+        <button
+          v-else
+          class="stop"
+          type="button"
+          title="取消生成"
+          aria-label="取消生成"
+          @click="cancelGenerate"
+        >
+          <span class="stop-sq"></span>
+        </button>
+      </div>
+    </section>
+  </main>
+
+  <aside class="right-panel">
+    <div class="fav-head">
+      <span>📌 会话收藏</span>
+      <span class="count">1 张</span>
+    </div>
+    <div class="fav-tabs">
+      <span class="on">图片收藏</span>
+      <span>提示词库</span>
+    </div>
+    <div class="filters">
+      <span class="filter on">全部</span>
+      <span class="filter">按日期</span>
+      <span class="filter">按模型</span>
+    </div>
+    <div class="grid">
+      <div class="thumb" @click="showToast('查看收藏详情仅在正式版可用')">
+        <img src="assets/image-gen-test/kv-test-square-centered.png" class="thumb-img" alt="Fav Image" />
+      </div>
+      <div class="thumb" style="opacity: 0.3; display: grid; place-items: center; color: var(--dim); font-size: 20px;">
+        <span>＋</span>
+      </div>
+    </div>
+  </aside>
+  </div><!-- /.app-glass -->
+  </div><!-- /.app-chrome -->
+
+  <!-- 点击外部关闭菜单 / 移到分组子菜单 -->
+  <div v-if="menu" class="menu-backdrop" @click="closeMenu"></div>
+
+  <!-- 三点菜单 + 移到分组右侧子菜单 -->
+  <div
+    v-if="menu"
+    class="menu"
+    :style="{ left: menu.x + 'px', top: menu.y + 'px' }"
+    @click.stop
+  >
+    <template v-if="menu.kind === 'session'">
+      <button class="menu-item" @mouseenter="closeMoveMenu" @click="startRename('session')">
+        <span class="mi-ico">✎</span><span class="mi-label">重命名</span>
+      </button>
+      <div
+        class="menu-item"
+        :class="{ open: moveOpen }"
+        @mouseenter="openMoveMenu"
+        @mouseleave="scheduleCloseMoveMenu"
+        @click="openMoveMenu"
+      >
+        <span class="mi-ico">📁</span>
+        <span class="mi-label">移到分组</span>
+        <span class="mi-chevron">›</span>
+        <div
+          v-if="moveOpen"
+          class="submenu"
+          :class="{ 'flip-left': menu.flipSub }"
+          @mouseenter="openMoveMenu"
+          @mouseleave="scheduleCloseMoveMenu"
+          @click.stop
+        >
+          <button class="submenu-item" @click="openCreateGroupFromMove">
+            <span class="plus">+</span>
+            <span>新建分组</span>
+          </button>
+          <div class="submenu-divider"></div>
+          <button
+            v-for="g in moveTargetGroups"
+            :key="g.id"
+            class="submenu-item"
+            :class="{ active: currentMenuSession?.groupId === g.id }"
+            @click="moveSessionTo(g.id)"
+          >
+            <svg class="folder" viewBox="0 0 20 20" fill="currentColor"><path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"/></svg>
+            <span>{{ g.name }}</span>
+          </button>
+          <div v-if="moveTargetGroups.length === 0" class="empty-hint" style="padding:8px 12px">暂无分组</div>
+        </div>
+      </div>
+      <button
+        v-if="currentMenuSession?.groupId"
+        class="menu-item"
+        @mouseenter="closeMoveMenu"
+        @click="moveSessionTo(null)"
+      >
+        <span class="mi-ico">↖</span><span class="mi-label">移出分组</span>
+      </button>
+      <button class="menu-item danger" @mouseenter="closeMoveMenu" @click="startDelete('session')">
+        <span class="mi-ico">🗑</span><span class="mi-label">删除</span>
+      </button>
+    </template>
+    <template v-else>
+      <button class="menu-item" @click="startRename('group')">
+        <span class="mi-ico">✎</span><span class="mi-label">重命名</span>
+      </button>
+      <button class="menu-item danger" @click="startDelete('group')">
+        <span class="mi-ico">📂</span><span class="mi-label">解散分组</span>
+      </button>
+    </template>
+  </div>
+
+  <!-- 新建会话 / 新建分组 / 重命名 -->
+  <div v-if="isNameModal" class="overlay" @click.self="modal = null">
+    <div class="dialog" @click.stop>
+      <div class="dialog-head">
+        <div class="info-ico">i</div>
+        <h3>{{ modalTitle }}</h3>
+        <button class="close-x" @click="modal = null">×</button>
+      </div>
+      <div class="field">
+        <label>名称</label>
+        <div class="input-wrap">
+          <input
+            ref="nameInput"
+            v-model="modal.input"
+            maxlength="60"
+            :placeholder="namePlaceholder"
+            @keyup.enter="confirmModal"
+          />
+          <button v-if="modal.input" class="input-clear" title="清空" @click="modal.input = ''">×</button>
+          <span class="char-count">{{ (modal.input || '').length }} / 60</span>
+        </div>
+      </div>
+      <div class="dialog-actions">
+        <button class="btn-cancel" @click="modal = null">取消</button>
+        <button class="btn-ok" :disabled="!(modal.input || '').trim()" @click="confirmModal">{{ primaryBtnText }}</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 删除 / 解散确认 -->
+  <div v-if="modal?.type === 'delete'" class="overlay" @click.self="modal = null">
+    <div class="dialog" @click.stop>
+      <div class="dialog-head">
+        <div class="warn-ico">!</div>
+        <h3>{{ modal.target === 'group' ? '确认解散分组' : '确认删除' }}</h3>
+        <button class="close-x" @click="modal = null">×</button>
+      </div>
+      <p>{{ deleteBody }}</p>
+      <div class="dialog-actions">
+        <button class="btn-cancel" @click="modal = null">取消</button>
+        <button class="btn-ok" @click="confirmModal">{{ modal.target === 'group' ? '解散' : '删除' }}</button>
+      </div>
+    </div>
+  </div>
+
+  <div v-if="toast" class="toast">{{ toast }}</div>
+</div>
+
+<script>
+const { createApp, computed, ref, nextTick, watch } = Vue;
+
+createApp({
+  setup() {
+    const scope = ref('mine');
+    const allTab = ref('sessions');
+    const search = ref('');
+    const currentId = ref('s9'); // Default to H8131 to show Govee chat rounds!
+    const menu = ref(null);
+    const moveOpen = ref(false);
+    const modal = ref(null);
+    const toast = ref('');
+    const nameInput = ref(null);
+    const dragSessionId = ref(null);
+    const dropTargetGroupId = ref(null);
+    // 分区折叠：默认都展开
+    const sectionOpen = ref({ groups: true, sessions: true });
+    let toastTimer = null;
+    let seq = 100;
+    let pendingMoveSessionId = null;
+
+    const prompt = ref(
+      '生成一张 Govee 智能氛围灯的客厅场景图。画面中是现代简约客厅，电视背景墙后方有柔和的 RGB 灯带，沙发旁有一盏智能落地灯，灯光从蓝色渐变到紫色，营造沉浸式观影氛围。整体风格真实、温暖、有高级感。'
+    );
+    const hasRef = ref(false);
+    const generating = ref(false);
+    const streamEl = ref(null);
+    let genTimer = null;
+    let progressTimer = null;
+
+    const sessionChats = ref({
+      s9: [ // H8131
+        {
+          id: 'r1',
+          prompt: '生成一张 Govee 智能氛围灯的客厅场景图。画面中是现代简约客厅，电视背景墙后方有柔和的 RGB 灯带，沙发旁有一盏智能落地灯，灯光从蓝色渐变到紫色，营造沉浸式观影氛围。整体风格真实、温暖、有高级感。适合电商详情页和品牌宣传使用。画面干净，产品清晰，空间有层次，摄影棚级光影，16:9 横版构图。',
+          model: 'Gemini 3 Pro Image',
+          ratio: '16:9',
+          quality: 'Standard (1K)',
+          time: '2026-07-17 15:26:55',
+          status: 'cancelled',
+          imgUrl: '',
+          hasRef: false,
+          isAccepted: false
+        }
+      ],
+      s2: [ // 会话A-主视觉探索
+        {
+          id: 'r2',
+          prompt: '生成一张家用落地电风扇的渲染图，极简白色设计，背景为北欧风客厅，阳光明媚，空气感十足。',
+          model: 'Gemini 3 Pro Image',
+          ratio: '16:9',
+          quality: 'Standard (1K)',
+          time: '2026-07-15 10:24:15',
+          status: 'done',
+          imgUrl: 'assets/image-gen-test/kv-test-electric-fan-ultrawide.png',
+          hasRef: false
+        }
+      ]
+    });
+
+    const groups = ref([
+      { id: 'g1', name: 'H8131-风扇主图', expanded: true, owner: 'me', createdAt: 100 },
+      { id: 'g2', name: 'XXX-详情页', expanded: true, owner: 'me', createdAt: 90 },
+      { id: 'g3', name: '风扇主图合集', expanded: false, owner: 'linhua', createdAt: 80 },
+      { id: 'g4', name: '详情页方案', expanded: false, owner: 'beyna', createdAt: 70 },
+    ]);
+
+    const USERS = {
+      me: { name: '魏', color: '#7466ff', text: '#120e35' },
+      linhua: { name: '林', color: '#e85d75', text: '#fff' },
+      beyna: { name: 'B', color: '#3b82f6', text: '#fff' },
+    };
+
+    const sessions = ref([
+      { id: 's1', name: 'sss', groupId: null, dot: 'green', updatedAt: 60, owner: 'me', day: 'today' },
+      { id: 's2', name: '会话A-主视觉探索', groupId: 'g1', dot: 'green', updatedAt: 50, owner: 'me', day: 'today' },
+      { id: 's3', name: '会话B-白底套图', groupId: 'g1', dot: 'red', updatedAt: 40, owner: 'me', day: 'earlier' },
+      { id: 's4', name: '详情页头图', groupId: 'g2', dot: 'orange', updatedAt: 30, owner: 'me', day: 'earlier' },
+      { id: 's5', name: '图像生成4', groupId: null, dot: 'red', updatedAt: 20, owner: 'me', day: 'yesterday' },
+      { id: 's6', name: '图像生成3', groupId: null, dot: 'green', updatedAt: 10, owner: 'me', day: 'earlier' },
+      { id: 's7', name: '同事的出图会话', groupId: 'g3', dot: 'orange', updatedAt: 55, owner: 'linhua', day: 'today' },
+      { id: 's8', name: 'XXX', groupId: null, dot: 'red', updatedAt: 25, owner: 'me', day: 'yesterday' },
+      { id: 's9', name: 'H8131', groupId: null, dot: 'green', updatedAt: 24, owner: 'me', day: 'earlier' },
+      { id: 's10', name: 'test', groupId: null, dot: 'green', updatedAt: 22, owner: 'beyna', day: 'earlier' },
+      { id: 's11', name: '图像生成验证测试-Beyna-主图', groupId: 'g4', dot: 'orange', updatedAt: 18, owner: 'beyna', day: 'earlier' },
+    ]);
+
+    const TIME_BUCKETS = [
+      { key: 'today', label: '今天' },
+      { key: 'yesterday', label: '昨天' },
+      { key: 'earlier', label: '更早' },
+    ];
+
+    const normalizeDay = (day) => {
+      if (day === 'today' || day === 'yesterday') return day;
+      return 'earlier';
+    };
+
+    const bucketSessions = (list) =>
+      TIME_BUCKETS.map(({ key, label }) => ({
+        key,
+        label,
+        list: sortByTime(list.filter(s => normalizeDay(s.day) === key)),
+      }));
+
+    const match = (text) => {
+      const q = search.value.toLowerCase();
+      if (!q) return true;
+      return text.toLowerCase().includes(q);
+    };
+
+    const sortByTime = (list) => [...list].sort((a, b) => b.updatedAt - a.updatedAt);
+    const sortByCreated = (list) => [...list].sort((a, b) => b.createdAt - a.createdAt);
+
+    const isMine = (ownerId) => ownerId === 'me';
+    const userOf = (ownerId) => USERS[ownerId] || { name: '?', color: '#555', text: '#fff' };
+
+    const mySessions = computed(() => sessions.value.filter(s => s.owner === 'me'));
+    const myGroups = computed(() => groups.value.filter(g => g.owner === 'me'));
+
+    const filteredGroups = computed(() => {
+      let list = myGroups.value;
+      if (search.value) {
+        list = list.filter(g => {
+          if (match(g.name)) return true;
+          return mySessions.value.some(s => s.groupId === g.id && match(s.name));
+        });
+      }
+      return sortByCreated(list);
+    });
+
+    const filteredAllGroups = computed(() => {
+      let list = groups.value;
+      if (search.value) {
+        list = list.filter(g => {
+          if (match(g.name)) return true;
+          return sessions.value.some(s => s.groupId === g.id && match(s.name));
+        });
+      }
+      return sortByCreated(list);
+    });
+
+    const sessionsOf = (groupId) => {
+      let list = mySessions.value.filter(s => s.groupId === groupId);
+      if (search.value) {
+        const g = groups.value.find(x => x.id === groupId);
+        if (!(g && match(g.name))) list = list.filter(s => match(s.name));
+      }
+      return sortByTime(list);
+    };
+
+    const allSessionsOf = (groupId) => {
+      let list = sessions.value.filter(s => s.groupId === groupId);
+      if (search.value) {
+        const g = groups.value.find(x => x.id === groupId);
+        if (!(g && match(g.name))) list = list.filter(s => match(s.name));
+      }
+      return sortByTime(list);
+    };
+
+    const ungroupedSessions = computed(() => {
+      let list = mySessions.value.filter(s => !s.groupId);
+      if (search.value) list = list.filter(s => match(s.name));
+      return sortByTime(list);
+    });
+
+    const ungroupedTimeBuckets = computed(() => bucketSessions(ungroupedSessions.value));
+
+    const allViewSessions = computed(() => {
+      let list = sessions.value;
+      if (search.value) list = list.filter(s => match(s.name));
+      return sortByTime(list);
+    });
+
+    const allTimeBuckets = computed(() => bucketSessions(allViewSessions.value));
+
+    const searchPlaceholder = computed(() => {
+      if (scope.value === 'mine') return '搜索会话 / 分组...';
+      if (allTab.value === 'groups') return '搜索分组...';
+      return '搜索会话...';
+    });
+
+    const canDragSession = (s) => scope.value === 'mine' && s.owner === 'me';
+
+    const sessionRowClass = (s) => ({
+      active: currentId.value === s.id,
+      'menu-open': menu.value && menu.value.kind === 'session' && menu.value.id === s.id,
+      draggable: canDragSession(s),
+      dragging: dragSessionId.value === s.id,
+    });
+
+    const allSessionRowClass = (s) => ({
+      active: currentId.value === s.id,
+      'menu-open': menu.value && menu.value.kind === 'session' && menu.value.id === s.id,
+    });
+
+    const assignSessionToGroup = (sessionId, groupId, { silent } = {}) => {
+      const s = sessions.value.find(x => x.id === sessionId);
+      if (!s || s.owner !== 'me') return false;
+      if ((s.groupId || null) === (groupId || null)) return false;
+      s.groupId = groupId || null;
+      s.updatedAt = Date.now();
+      if (groupId) {
+        sectionOpen.value.groups = true;
+        const g = groups.value.find(x => x.id === groupId);
+        if (g) g.expanded = true;
+      } else {
+        sectionOpen.value.sessions = true;
+      }
+      if (!silent) {
+        showToast(groupId ? '已移到分组' : '已移出分组');
+      }
+      return true;
+    };
+
+    const onSessionDragStart = (e, sessionId) => {
+      const s = sessions.value.find(x => x.id === sessionId);
+      if (!canDragSession(s)) {
+        e.preventDefault();
+        return;
+      }
+      dragSessionId.value = sessionId;
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', sessionId);
+    };
+
+    const onSessionDragEnd = () => {
+      dragSessionId.value = null;
+      dropTargetGroupId.value = null;
+    };
+
+    const onGroupDragOver = (groupId) => {
+      if (!dragSessionId.value) return;
+      dropTargetGroupId.value = groupId;
+    };
+
+    const onGroupDragLeave = (groupId) => {
+      if (dropTargetGroupId.value === groupId) dropTargetGroupId.value = null;
+    };
+
+    const onGroupDrop = (groupId) => {
+      if (!dragSessionId.value) return;
+      assignSessionToGroup(dragSessionId.value, groupId);
+      onSessionDragEnd();
+    };
+
+    const onUngroupDragOver = () => {
+      if (!dragSessionId.value) return;
+      const s = sessions.value.find(x => x.id === dragSessionId.value);
+      if (s?.groupId) dropTargetGroupId.value = 'ungroup';
+    };
+
+    const onUngroupDragLeave = () => {
+      if (dropTargetGroupId.value === 'ungroup') dropTargetGroupId.value = null;
+    };
+
+    const onUngroupDrop = () => {
+      if (!dragSessionId.value) return;
+      assignSessionToGroup(dragSessionId.value, null);
+      onSessionDragEnd();
+    };
+
+    watch(scope, (v) => {
+      if (v === 'all') allTab.value = 'sessions';
+    });
+
+    const currentSession = computed(() => sessions.value.find(s => s.id === currentId.value));
+    const currentMenuSession = computed(() => {
+      if (!menu.value || menu.value.kind !== 'session') return null;
+      return sessions.value.find(s => s.id === menu.value.id);
+    });
+
+    // 移到分组子菜单：只列真实分组，不含「未分组」伪项
+    const moveTargetGroups = computed(() => sortByCreated(myGroups.value));
+
+    const isNameModal = computed(() =>
+      ['createSession', 'createGroup', 'rename'].includes(modal.value?.type)
+    );
+
+    const modalTitle = computed(() => {
+      if (!modal.value) return '';
+      if (modal.value.type === 'createSession') return '新建会话';
+      if (modal.value.type === 'createGroup') return '新建分组';
+      if (modal.value.type === 'rename') {
+        return modal.value.target === 'group' ? '重命名分组' : '重命名会话';
+      }
+      return '';
+    });
+
+    const namePlaceholder = computed(() => {
+      if (modal.value?.type === 'createSession' || modal.value?.target === 'session') return '请输入会话名称';
+      return '请输入分组名称';
+    });
+
+    const primaryBtnText = computed(() => {
+      if (modal.value?.type === 'rename') return '保存';
+      return '创建';
+    });
+
+    const deleteBody = computed(() => {
+      if (!modal.value || modal.value.type !== 'delete') return '';
+      if (modal.value.target === 'session') {
+        return '删除后会话内容将无法恢复，确定要删除吗？';
+      }
+      const g = groups.value.find(x => x.id === modal.value.id);
+      const n = sessions.value.filter(s => s.groupId === modal.value.id && s.owner === 'me').length;
+      if (n === 0) return `确定解散分组「${g?.name || ''}」？`;
+      return `确定解散分组「${g?.name || ''}」？\n组内 ${n} 个会话将移到「会话」区，不会被删除。`;
+    });
+
+    const showToast = (msg) => {
+      toast.value = msg;
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => { toast.value = ''; }, 1800);
+    };
+
+    const focusNameInput = async () => {
+      await nextTick();
+      nameInput.value?.focus();
+      nameInput.value?.select?.();
+    };
+
+    watch(isNameModal, (v) => { if (v) focusNameInput(); });
+
+    // 搜索命中时自动展开相关分区与分组文件夹
+    watch(search, (q) => {
+      if (!q) return;
+      sectionOpen.value.groups = true;
+      sectionOpen.value.sessions = true;
+      groups.value.forEach(g => {
+        if (match(g.name) || sessions.value.some(s => s.groupId === g.id && match(s.name))) {
+          g.expanded = true;
+        }
+      });
+    });
+
+    let moveCloseTimer = null;
+    const openMoveMenu = () => {
+      clearTimeout(moveCloseTimer);
+      moveOpen.value = true;
+    };
+    const closeMoveMenu = () => {
+      clearTimeout(moveCloseTimer);
+      moveOpen.value = false;
+    };
+    const scheduleCloseMoveMenu = () => {
+      clearTimeout(moveCloseTimer);
+      moveCloseTimer = setTimeout(() => { moveOpen.value = false; }, 100);
+    };
+
+    const closeMenu = () => {
+      clearTimeout(moveCloseTimer);
+      menu.value = null;
+      moveOpen.value = false;
+    };
+
+    const openMenu = (e, kind, id) => {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const menuW = 180;
+      const subW = 200;
+      const x = Math.min(rect.right - 8, window.innerWidth - menuW - 12);
+      const flipSub = x + menuW + subW > window.innerWidth - 8;
+      menu.value = {
+        kind, id,
+        x,
+        y: Math.min(rect.bottom + 4, window.innerHeight - 160),
+        flipSub,
+      };
+      moveOpen.value = false;
+    };
+
+    const currentRounds = computed(() => {
+      if (!currentId.value) return [];
+      if (!sessionChats.value[currentId.value]) {
+        sessionChats.value[currentId.value] = [];
+      }
+      return sessionChats.value[currentId.value];
+    });
+
+    const canSend = computed(() => !!(prompt.value || '').trim() && !generating.value);
+
+    const scrollBottom = async () => {
+      await nextTick();
+      const el = streamEl.value;
+      if (el) el.scrollTop = el.scrollHeight;
+    };
+
+    const toggleUpload = () => {
+      if (generating.value) return;
+      hasRef.value = !hasRef.value;
+      if (hasRef.value) {
+        showToast('已成功上传参考图');
+      }
+    };
+
+    const removeUpload = () => {
+      hasRef.value = false;
+      showToast('已移除参考图');
+    };
+
+    const getMockImage = (promptText) => {
+      const p = promptText.toLowerCase();
+      if (p.includes('风扇') || p.includes('fan')) {
+        return 'assets/image-gen-test/kv-test-electric-fan-ultrawide.png';
+      }
+      if (p.includes('outpaint') || p.includes('扩图')) {
+        return 'assets/image-gen-test/kv-test-ai-outpaint-wide-and-tall.png';
+      }
+      const goveeImages = [
+        'assets/image-gen-test/kv-test-square-centered.png',
+        'assets/image-gen-test/kv-test-oversized-scene-source.png'
+      ];
+      return goveeImages[Math.floor(Math.random() * goveeImages.length)];
+    };
+
+    const startGenerate = () => {
+      const text = (prompt.value || '').trim();
+      if (!text) return;
+      if (!currentId.value) {
+        showToast('请先选择或新建一个会话');
+        return;
+      }
+      
+      clearTimeout(genTimer);
+      clearInterval(progressTimer);
+
+      const id = 'r' + (++seq);
+      const now = new Date();
+      const timeStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+      
+      const newRound = {
+        id,
+        prompt: text,
+        model: 'Gemini 3 Pro Image',
+        ratio: '16:9',
+        quality: 'Standard (1K)',
+        time: timeStr,
+        status: 'generating',
+        progress: 0,
+        hasRef: hasRef.value,
+        imgUrl: getMockImage(text)
+      };
+      
+      if (!sessionChats.value[currentId.value]) {
+        sessionChats.value[currentId.value] = [];
+      }
+      sessionChats.value[currentId.value].push(newRound);
+      generating.value = true;
+      scrollBottom();
+
+      // Clear input fields immediately
+      prompt.value = '';
+      hasRef.value = false;
+
+      // Real-time progress counter (takes about 8 seconds to complete)
+      progressTimer = setInterval(() => {
+        if (newRound.progress < 98) {
+          newRound.progress += Math.floor(Math.random() * 3) + 1;
+          if (newRound.progress > 98) newRound.progress = 98;
+        }
+      }, 100);
+
+      genTimer = setTimeout(() => {
+        clearInterval(progressTimer);
+        const r = currentRounds.value.find(x => x.id === id);
+        if (r && r.status === 'generating') {
+          r.progress = 100;
+          r.status = 'done';
+          generating.value = false;
+          showToast('图像已生成');
+          scrollBottom();
+        }
+      }, 8000);
+    };
+
+    const cancelGenerate = () => {
+      const current = [...currentRounds.value].reverse().find(r => r.status === 'generating');
+      if (!current) return;
+      
+      clearTimeout(genTimer);
+      clearInterval(progressTimer);
+      
+      current.status = 'cancelled';
+      generating.value = false;
+      
+      // Restore prompt text and reference image state!
+      prompt.value = current.prompt;
+      hasRef.value = current.hasRef;
+      
+      showToast('已取消生成，输入框已自动恢复');
+      scrollBottom();
+    };
+
+    const onSendOrStop = () => {
+      if (generating.value) cancelGenerate();
+      else startGenerate();
+    };
+
+    const editPrompt = (r) => {
+      if (generating.value) {
+        showToast('生成中，无法编辑提示词');
+        return;
+      }
+      prompt.value = r.prompt;
+      hasRef.value = r.hasRef || false;
+      showToast('提示词与参考图已载入输入框');
+    };
+
+    const regeneratePrompt = (r) => {
+      if (generating.value) {
+        showToast('生成中，无法重新生成');
+        return;
+      }
+      prompt.value = r.prompt;
+      hasRef.value = r.hasRef || false;
+      startGenerate();
+    };
+
+    const saveToLibrary = () => {
+      showToast('已存入提示词库');
+    };
+
+    const deleteRound = (id) => {
+      if (currentId.value && sessionChats.value[currentId.value]) {
+        sessionChats.value[currentId.value] = sessionChats.value[currentId.value].filter(r => r.id !== id);
+      }
+      showToast('会话记录已删除');
+    };
+
+    const toggleGroup = (g) => { g.expanded = !g.expanded; };
+    const selectSession = (id) => {
+      currentId.value = id;
+      scrollBottom();
+    };
+
+    const openCreateGroup = () => {
+      closeMenu();
+      pendingMoveSessionId = null;
+      sectionOpen.value.groups = true;
+      modal.value = { type: 'createGroup', input: '' };
+    };
+
+    const openCreateGroupFromMove = () => {
+      pendingMoveSessionId = menu.value?.id || null;
+      closeMenu();
+      sectionOpen.value.groups = true;
+      modal.value = { type: 'createGroup', input: '' };
+    };
+
+    const createSession = () => {
+      closeMenu();
+      sectionOpen.value.sessions = true;
+      modal.value = { type: 'createSession', input: '' };
+    };
+
+    const startRename = (target) => {
+      const id = menu.value.id;
+      closeMenu();
+      const item = target === 'group'
+        ? groups.value.find(g => g.id === id)
+        : sessions.value.find(s => s.id === id);
+      modal.value = { type: 'rename', target, id, input: item?.name || '' };
+    };
+
+    const moveSessionTo = (groupId) => {
+      const id = menu.value?.id;
+      if (!id) return;
+      if ((sessions.value.find(x => x.id === id)?.groupId || null) === (groupId || null)) {
+        closeMenu();
+        return;
+      }
+      assignSessionToGroup(id, groupId);
+      closeMenu();
+    };
+
+    const startDelete = (target) => {
+      const id = menu.value.id;
+      closeMenu();
+      modal.value = { type: 'delete', target, id };
+    };
+
+    const confirmModal = () => {
+      const m = modal.value;
+      if (!m) return;
+
+      if (m.type === 'createSession') {
+        const name = (m.input || '').trim();
+        if (!name) return showToast('请输入会话名称');
+        const id = 's' + (++seq);
+        sessions.value.unshift({
+          id, name, groupId: null, dot: 'green',
+          updatedAt: Date.now(), owner: 'me', day: 'today',
+        });
+        currentId.value = id;
+        sectionOpen.value.sessions = true;
+        modal.value = null;
+        showToast('已新建会话');
+        return;
+      }
+
+      if (m.type === 'createGroup') {
+        const name = (m.input || '').trim();
+        if (!name) return showToast('请输入分组名称');
+        const gid = 'g' + (++seq);
+        groups.value.unshift({ id: gid, name, expanded: true, owner: 'me', createdAt: Date.now() });
+        sectionOpen.value.groups = true;
+        if (pendingMoveSessionId) {
+          const s = sessions.value.find(x => x.id === pendingMoveSessionId);
+          if (s) {
+            s.groupId = gid;
+            s.updatedAt = Date.now();
+          }
+          pendingMoveSessionId = null;
+          modal.value = null;
+          showToast('已创建分组并移入会话');
+          return;
+        }
+        modal.value = null;
+        showToast('已创建分组');
+        return;
+      }
+
+      if (m.type === 'rename') {
+        const name = (m.input || '').trim();
+        if (!name) return showToast('名称不能为空');
+        if (m.target === 'group') {
+          const g = groups.value.find(x => x.id === m.id);
+          if (g) g.name = name;
+        } else {
+          const s = sessions.value.find(x => x.id === m.id);
+          if (s) s.name = name;
+        }
+        modal.value = null;
+        showToast('已保存');
+        return;
+      }
+
+      if (m.type === 'delete') {
+        if (m.target === 'session') {
+          sessions.value = sessions.value.filter(s => s.id !== m.id);
+          if (currentId.value === m.id) {
+            const next = sortByTime(mySessions.value)[0];
+            currentId.value = next?.id || null;
+          }
+          modal.value = null;
+          showToast('会话已删除');
+        } else {
+          sessions.value.forEach(s => {
+            if (s.groupId === m.id) s.groupId = null;
+          });
+          groups.value = groups.value.filter(g => g.id !== m.id);
+          sectionOpen.value.sessions = true;
+          modal.value = null;
+          showToast('分组已解散，会话已移到会话区');
+        }
+      }
+    };
+
+    return {
+      scope, allTab, search, searchPlaceholder, currentId, menu, moveOpen, modal, toast, nameInput, groups, sectionOpen,
+      dragSessionId, dropTargetGroupId,
+      filteredGroups, filteredAllGroups, ungroupedSessions, ungroupedTimeBuckets, allViewSessions, allTimeBuckets,
+      currentSession, currentMenuSession,
+      isMine, userOf, canDragSession, sessionRowClass, allSessionRowClass,
+      moveTargetGroups, isNameModal, modalTitle, namePlaceholder, primaryBtnText, deleteBody,
+      sessionsOf, allSessionsOf, closeMenu, openMenu, toggleGroup, selectSession,
+      onSessionDragStart, onSessionDragEnd, onGroupDragOver, onGroupDragLeave, onGroupDrop,
+      onUngroupDragOver, onUngroupDragLeave, onUngroupDrop,
+      openMoveMenu, closeMoveMenu, scheduleCloseMoveMenu,
+      openCreateGroup, openCreateGroupFromMove, createSession,
+      startRename, moveSessionTo, startDelete, confirmModal,
+      prompt, hasRef, generating, streamEl, currentRounds, canSend,
+      toggleUpload, removeUpload, startGenerate, cancelGenerate, onSendOrStop,
+      editPrompt, regeneratePrompt, saveToLibrary, deleteRound, sessionChats,
+    };
+  },
+}).mount('#app');
+</script>
+</body>
+</html>
