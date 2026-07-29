@@ -50,14 +50,9 @@ body{background:#080a0f}.glass{background:linear-gradient(145deg,rgba(25,29,40,.
       <aside class="w-[244px] shrink-0 border-r border-line bg-black/10 flex flex-col">
         <div class="p-4 pb-3">
           <div class="text-[10px] text-white/30 tracking-[.2em] uppercase px-2 mb-2">素材库</div>
-          <button @click="setNav('original')" :class="navClass('original')" class="w-full h-10 px-3 rounded-lg flex items-center justify-between text-[13px]">
-            <span class="flex items-center gap-3"><i class="ph-duotone ph-archive text-lg"></i>原素材库</span>
-            <i @click.stop="originalOpen=!originalOpen" class="ph-bold text-[11px] text-white/35" :class="originalOpen?'ph-caret-down':'ph-caret-right'"></i>
+          <button @click="setNav('original')" :class="navClass('original')" class="w-full h-10 px-3 rounded-lg flex items-center gap-3 text-[13px]">
+            <i class="ph-duotone ph-archive text-lg"></i>原素材库
           </button>
-          <div v-if="originalOpen" class="ml-5 pl-3 border-l border-white/10 mt-1 space-y-1">
-            <button @click="setNav('product')" :class="navClass('product')" class="w-full h-8 px-3 rounded-md flex items-center gap-2 text-[12px]"><i class="ph ph-package"></i>产品素材</button>
-            <button @click="setNav('reference')" :class="navClass('reference')" class="w-full h-8 px-3 rounded-md flex items-center gap-2 text-[12px]"><i class="ph ph-images"></i>参考素材</button>
-          </div>
           <button @click="setNav('generated')" :class="navClass('generated')" class="w-full h-10 px-3 rounded-lg flex items-center gap-3 text-[13px] mt-1"><i class="ph-duotone ph-sparkle text-lg"></i>生成素材库</button>
           <button @click="setNav('usable')" :class="navClass('usable')" class="w-full h-10 px-3 rounded-lg flex items-center gap-3 text-[13px] mt-1"><i class="ph-duotone ph-seal-check text-lg"></i>可用素材库</button>
         </div>
@@ -111,10 +106,12 @@ body{background:#080a0f}.glass{background:linear-gradient(145deg,rgba(25,29,40,.
                 <button @click.stop="toggleCardMenu(a,$event)" class="absolute right-2 top-2 z-10 w-7 h-7 rounded-md border border-white/15 bg-black/60 text-white/70 hover:text-white hover:bg-black/80 shadow-sm transition-all" :class="menuAssetId===a.assetId?'opacity-100':'opacity-0 group-hover:opacity-100'" title="更多操作"><i class="ph-bold ph-dots-three"></i></button>
                 <span v-if="a.mediaType==='video'" class="absolute right-2 bottom-2 px-1.5 py-0.5 rounded bg-black/75 text-[10px] font-medium">{{durationText(a.duration)}}</span>
               </div>
-              <div class="px-3 py-2 flex items-center gap-1.5 rounded-b-xl bg-black/20" :class="isGroupPage?'min-h-[52px]':'h-12'">
+              <div class="px-3 py-2 flex items-center gap-1.5 rounded-b-xl bg-black/20" :class="cardMetaExtra(a) || isGroupPage ? 'min-h-[52px]' : 'h-12'">
                 <div class="min-w-0 flex-1">
                   <span class="text-[12px] truncate block" :title="a.name">{{a.name}}</span>
                   <span v-if="isGroupPage" class="text-[10px] text-white/30 truncate block">{{membershipText(a)}}</span>
+                  <span v-else-if="activeNav==='usable'" class="text-[10px] text-white/40 truncate block mt-0.5">{{sizeText(a)}} · {{channelText(a)}}</span>
+                  <span v-else-if="activeNav==='generated'" class="text-[10px] truncate block mt-0.5" :class="auditColor(a.auditStatus)">{{auditText(a.auditStatus)}}</span>
                 </div>
                 <button @click.stop="runAction('download',a)" class="w-7 h-7 rounded-md text-white/45 hover:text-white hover:bg-white/10 shrink-0" title="下载"><i class="ph-bold ph-download-simple"></i></button>
               </div>
@@ -158,9 +155,6 @@ body{background:#080a0f}.glass{background:linear-gradient(145deg,rgba(25,29,40,.
             <info-row label="所有者" :value="detail.asset.ownerName"></info-row>
           </info-block>
           <info-block title="素材信息" icon="ph-stack">
-            <editable-row v-if="showProductFields(detail.asset)" label="SKU" :value="detail.asset.sku" :editable="isOwner(detail.asset)" @save="v=>saveField('sku',v)"></editable-row>
-            <editable-row v-if="showProductFields(detail.asset)" label="商品名称" :value="detail.asset.productName" :editable="isOwner(detail.asset)" @save="v=>saveField('productName',v)"></editable-row>
-            <info-row v-if="detail.asset.originalType" label="原素材类型" :value="detail.asset.originalType==='product'?'产品素材':'参考素材'"></info-row>
             <info-row v-if="detail.asset.originMethod" label="产生方式" :value="methodText(detail.asset.originMethod)"></info-row>
             <info-row v-if="detail.asset.sourceModule" label="来源模块" :value="detail.asset.sourceModule"></info-row>
             <div v-if="detail.asset.sourceAsset" class="py-2.5 flex gap-4 text-[12px]"><span class="w-20 shrink-0 text-white/35">来源素材</span><button @click="openSource(detail.asset)" class="ml-auto text-right text-primary hover:underline">{{detail.asset.sourceAsset}}</button></div>
@@ -180,21 +174,13 @@ body{background:#080a0f}.glass{background:linear-gradient(145deg,rgba(25,29,40,.
   <transition name="fade">
     <div v-if="upload.show" class="fixed inset-0 z-[70] bg-black/65 backdrop-blur-sm grid place-items-center" @click.self="closeUpload">
       <div class="w-[520px] rounded-2xl border border-line bg-[#151922] shadow-2xl overflow-hidden rise">
-        <div class="modal-head"><b class="text-[15px]">{{upload.step==='choose'?'选择原素材类型':(upload.type==='product'?'上传产品素材':'上传参考素材')}}</b><button @click="closeUpload" class="modal-close"><i class="ph-bold ph-x"></i></button></div>
-        <div v-if="upload.step==='choose'" class="p-6 grid grid-cols-2 gap-3">
-          <button @click="chooseUploadType('product')" class="p-5 rounded-xl border border-line hover:border-primary/50 hover:bg-primary/[.05] text-left"><i class="ph-duotone ph-package text-2xl text-primary"></i><div class="text-[14px] mt-3">产品素材</div></button>
-          <button @click="chooseUploadType('reference')" class="p-5 rounded-xl border border-line hover:border-sky-400/50 hover:bg-sky-400/[.05] text-left"><i class="ph-duotone ph-images text-2xl text-sky-400"></i><div class="text-[14px] mt-3">参考素材</div></button>
-        </div>
-        <div v-else class="p-6 space-y-4">
-          <template v-if="upload.type==='product'">
-            <label class="block"><span class="text-[12px] text-white/55">SKU <em class="text-red-400 not-italic">*</em></span><select v-model="upload.sku" @change="syncUploadProduct" class="field w-full h-10 rounded-lg px-3 text-[12px] mt-2"><option value="">搜索或选择 SKU</option><option value="GV-H8131">GV-H8131</option><option value="FAN-200">FAN-200</option></select></label>
-            <label class="block"><span class="text-[12px] text-white/55">商品名称 <em class="text-red-400 not-italic">*</em></span><input :value="upload.productName" readonly class="field w-full h-10 rounded-lg px-3 text-[12px] mt-2 text-white/70 cursor-default" placeholder="选择 SKU 后自动带入"></label>
-          </template>
+        <div class="modal-head"><b class="text-[15px]">上传素材</b><button @click="closeUpload" class="modal-close"><i class="ph-bold ph-x"></i></button></div>
+        <div class="p-6 space-y-4">
           <label class="block"><span class="text-[12px] text-white/55">可见范围</span><div class="grid grid-cols-2 gap-2 mt-2"><button @click="upload.visibility='team'" :class="upload.visibility==='team'?'border-primary/50 bg-primary/10 text-primary':'border-line text-white/50'" class="h-10 rounded-lg border text-[12px]">团队范围</button><button @click="upload.visibility='private'" :class="upload.visibility==='private'?'border-primary/50 bg-primary/10 text-primary':'border-line text-white/50'" class="h-10 rounded-lg border text-[12px]">仅自己</button></div></label>
           <label class="block"><span class="text-[12px] text-white/55">移到分组</span><select v-model="upload.groupId" class="field w-full h-10 rounded-lg px-3 text-[12px] mt-2"><option value="">不分组</option><option v-for="g in groups" :key="g.id" :value="g.id">{{g.name}}</option></select></label>
           <label class="block"><span class="text-[12px] text-white/55">文件 <em class="text-red-400 not-italic">*</em></span><div class="mt-2 flex items-center gap-3"><button @click="$refs.uploadInput.click()" class="h-10 px-4 rounded-lg border border-line bg-white/[.04] hover:bg-white/[.08] text-[12px]"><i class="ph ph-file-plus mr-2"></i>选择图片或视频</button><span v-if="upload.files.length" class="text-[11px] text-white/35 truncate">已选择 {{upload.files.length}} 个文件</span><input ref="uploadInput" type="file" multiple accept="image/*,video/*" class="hidden" @change="onFiles"></div><div v-if="upload.files.length" class="mt-2 max-h-20 overflow-y-auto text-[10px] text-white/40 space-y-1"><div v-for="f in upload.files" :key="f.name" class="truncate">{{f.name}}</div></div></label>
         </div>
-        <div v-if="upload.step!=='choose'" class="h-16 px-6 border-t border-line bg-black/15 flex items-center justify-end gap-2"><button @click="closeUpload" class="h-9 px-4 text-[12px] text-white/45">取消</button><button @click="submitUpload" class="h-9 px-5 rounded-lg bg-primary text-ink font-semibold text-[12px]">开始上传</button></div>
+        <div class="h-16 px-6 border-t border-line bg-black/15 flex items-center justify-end gap-2"><button @click="closeUpload" class="h-9 px-4 text-[12px] text-white/45">取消</button><button @click="submitUpload" class="h-9 px-5 rounded-lg bg-primary text-ink font-semibold text-[12px]">开始上传</button></div>
       </div>
     </div>
   </transition>
@@ -260,24 +246,24 @@ const EditableRow=defineComponent({props:['label','value','editable'],emits:['sa
 createApp({
 components:{InfoBlock,InfoRow,EditableRow},
 setup(){
-  const currentUser='me',activeNav=ref('original'),originalOpen=ref(true),menuAssetId=ref(null),menuPos=reactive({top:0,left:0,openUp:true}),selectMode=ref(false),scrollArea=ref(null);
+  const currentUser='me',activeNav=ref('original'),menuAssetId=ref(null),menuPos=reactive({top:0,left:0,openUp:true}),selectMode=ref(false),scrollArea=ref(null);
   const filters=reactive({search:'',media:'all',time:'all',audit:'all',channel:'all',library:'all'});
   const groups=ref([{id:'g1',name:'Prime Day 备选'},{id:'g2',name:'新品上市'},{id:'g3',name:'A+ 页面素材'}]);
   const assets=ref([
-    {assetId:'A001',name:'H7131_产品主图.jpg',mediaType:'image',format:'JPG',width:3200,height:3200,fileSize:'4.8 MB',createdAt:'2026-07-23 14:26',ownerId:'me',ownerName:'我',visibility:'team',libraryMembership:['original','usable'],originalType:'product',sku:'GV-H7131',productName:'Govee 氛围落地灯',auditStatus:'passed',groupId:'g1',channels:['通用'],url:'https://images.unsplash.com/photo-1540932239986-30128078f3c5?w=900&q=85',selected:false,manualAudit:false},
-    {assetId:'A002',name:'客厅暖光参考.jpg',mediaType:'image',format:'JPG',width:2400,height:1600,fileSize:'2.1 MB',createdAt:'2026-07-22 10:08',ownerId:'me',ownerName:'我',visibility:'private',libraryMembership:['original'],originalType:'reference',auditStatus:'none',groupId:'g2',url:'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=900&q=85',selected:false,manualAudit:true},
-    {assetId:'A003',name:'H7131_夏日场景_生成01.png',mediaType:'image',format:'PNG',width:2048,height:2048,fileSize:'5.6 MB',createdAt:'2026-07-23 11:45',ownerId:'me',ownerName:'我',visibility:'team',libraryMembership:['generated','usable'],originMethod:'model',sourceModule:'图像生成',sourceAsset:'H7131_产品主图.jpg',sku:'GV-H7131',productName:'Govee 氛围落地灯',auditStatus:'passed',groupId:'g1',channels:['Amazon','独立站'],url:'https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=900&q=85',selected:false,manualAudit:false},
-    {assetId:'A004',name:'Brand_KV_夏季提案.png',mediaType:'image',format:'PNG',width:2560,height:1440,fileSize:'6.2 MB',createdAt:'2026-07-21 16:20',ownerId:'me',ownerName:'我',visibility:'private',libraryMembership:['generated'],originMethod:'model',sourceModule:'图像生成',sourceAsset:'3 个输入素材',sku:'',productName:'',auditStatus:'risk',groupId:null,placeholder:'bg-gradient-to-br from-rose-500/25 via-purple-500/10 to-slate-900',selected:false,manualAudit:false},
-    {assetId:'A005',name:'落地灯动态展示.mp4',mediaType:'video',format:'MP4',width:1080,height:1920,duration:42,fileSize:'18.4 MB',createdAt:'2026-07-20 09:32',ownerId:'me',ownerName:'我',visibility:'team',libraryMembership:['generated','usable'],originMethod:'model',sourceModule:'镜头生成',sourceAsset:'H7131_产品主图.jpg',sku:'GV-H7131',productName:'Govee 氛围落地灯',auditStatus:'passed',groupId:'g2',channels:['TikTok Shop'],placeholder:'bg-gradient-to-br from-violet-500/25 to-indigo-950',selected:false,manualAudit:false},
-    {assetId:'A006',name:'A+_生活方式模块_1500.jpg',mediaType:'image',format:'JPG',width:1500,height:1500,fileSize:'1.9 MB',createdAt:'2026-07-19 13:12',ownerId:'me',ownerName:'我',visibility:'team',libraryMembership:['usable'],originMethod:'adapt',sourceModule:'素材适配',sourceAsset:'H7131_夏日场景_生成01.png',sku:'GV-H7131',productName:'Govee 氛围落地灯',auditStatus:'passed',groupId:'g3',channels:['Amazon'],requirementType:'A+ 模块图',language:'英语',url:'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=900&q=85',selected:false,manualAudit:false},
-    {assetId:'A007',name:'FAN200_商城横幅.png',mediaType:'image',format:'PNG',width:2560,height:1080,fileSize:'3.7 MB',createdAt:'2026-07-18 17:06',ownerId:'other',ownerName:'李设计',visibility:'team',libraryMembership:['usable'],originMethod:'adapt',sourceModule:'素材适配',sourceAsset:'FAN200 产品素材.jpg',sku:'FAN-200',productName:'智能循环扇',auditStatus:'passed',groupId:'g1',channels:['Amazon'],requirementType:'Store Banner',language:'英语',placeholder:'bg-gradient-to-br from-sky-500/25 to-cyan-950',selected:false,manualAudit:false},
-    {assetId:'A008',name:'桌面风扇产品环绕.mov',mediaType:'video',format:'MOV',width:1920,height:1080,duration:78,fileSize:'42.8 MB',createdAt:'2026-07-17 15:40',ownerId:'other',ownerName:'王摄影',visibility:'team',libraryMembership:['original'],originalType:'product',sku:'FAN-200',productName:'智能循环扇',auditStatus:'none',groupId:null,placeholder:'bg-gradient-to-br from-emerald-500/20 to-slate-950',selected:false,manualAudit:true},
-    {assetId:'A009',name:'露营场景_模型生成02.jpg',mediaType:'image',format:'JPG',width:2048,height:1365,fileSize:'3.3 MB',createdAt:'2026-07-16 08:55',ownerId:'other',ownerName:'赵运营',visibility:'team',libraryMembership:['generated'],originMethod:'model',sourceModule:'图像生成',sourceAsset:'2 个参考素材',sku:'',productName:'',auditStatus:'pending',groupId:'g2',url:'https://images.unsplash.com/photo-1504851149312-7a075b496cc7?w=900&q=85',selected:false,manualAudit:false},
-    {assetId:'A010',name:'审核模块直接入库_白底图.jpg',mediaType:'image',format:'JPG',width:2000,height:2000,fileSize:'2.7 MB',createdAt:'2026-07-15 12:28',ownerId:'me',ownerName:'我',visibility:'team',libraryMembership:['usable'],originMethod:'direct',sourceModule:'素材审核',sku:'',productName:'',auditStatus:'passed',groupId:null,placeholder:'bg-gradient-to-br from-slate-200/25 to-slate-700/20',selected:false,manualAudit:false}
+    {assetId:'A001',name:'H7131_主图参考.jpg',mediaType:'image',format:'JPG',width:3200,height:3200,fileSize:'4.8 MB',createdAt:'2026-07-23 14:26',ownerId:'me',ownerName:'我',visibility:'private',libraryMembership:['original','usable'],auditStatus:'passed',groupId:'g1',channels:['通用'],url:'https://images.unsplash.com/photo-1540932239986-30128078f3c5?w=900&q=85',selected:false,manualAudit:false},
+    {assetId:'A002',name:'客厅暖光参考.jpg',mediaType:'image',format:'JPG',width:2400,height:1600,fileSize:'2.1 MB',createdAt:'2026-07-22 10:08',ownerId:'me',ownerName:'我',visibility:'private',libraryMembership:['original'],auditStatus:'none',groupId:'g2',url:'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=900&q=85',selected:false,manualAudit:true},
+    {assetId:'A003',name:'夏日场景_生成01.png',mediaType:'image',format:'PNG',width:2048,height:2048,fileSize:'5.6 MB',createdAt:'2026-07-23 11:45',ownerId:'me',ownerName:'我',visibility:'team',libraryMembership:['generated','usable'],originMethod:'model',sourceModule:'图像生成',sourceAsset:'H7131_主图参考.jpg',auditStatus:'passed',groupId:'g1',channels:['Amazon'],url:'https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=900&q=85',selected:false,manualAudit:false},
+    {assetId:'A004',name:'Brand_KV_夏季提案.png',mediaType:'image',format:'PNG',width:2560,height:1440,fileSize:'6.2 MB',createdAt:'2026-07-21 16:20',ownerId:'me',ownerName:'我',visibility:'private',libraryMembership:['generated'],originMethod:'model',sourceModule:'图像生成',sourceAsset:'3 个输入素材',auditStatus:'risk',groupId:null,placeholder:'bg-gradient-to-br from-rose-500/25 via-purple-500/10 to-slate-900',selected:false,manualAudit:false},
+    {assetId:'A005',name:'落地灯动态展示.mp4',mediaType:'video',format:'MP4',width:1080,height:1920,duration:42,fileSize:'18.4 MB',createdAt:'2026-07-20 09:32',ownerId:'me',ownerName:'我',visibility:'team',libraryMembership:['generated','usable'],originMethod:'model',sourceModule:'镜头生成',sourceAsset:'H7131_主图参考.jpg',auditStatus:'passed',groupId:'g2',channels:['TikTok Shop'],placeholder:'bg-gradient-to-br from-violet-500/25 to-indigo-950',selected:false,manualAudit:false},
+    {assetId:'A006',name:'A+_生活方式模块_1500.jpg',mediaType:'image',format:'JPG',width:1500,height:1500,fileSize:'1.9 MB',createdAt:'2026-07-19 13:12',ownerId:'me',ownerName:'我',visibility:'team',libraryMembership:['usable'],originMethod:'adapt',sourceModule:'素材适配',sourceAsset:'夏日场景_生成01.png',auditStatus:'passed',groupId:'g3',channels:['Amazon'],requirementType:'A+ 模块图',language:'英语',url:'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=900&q=85',selected:false,manualAudit:false},
+    {assetId:'A007',name:'商城横幅_适配.png',mediaType:'image',format:'PNG',width:2560,height:1080,fileSize:'3.7 MB',createdAt:'2026-07-18 17:06',ownerId:'other',ownerName:'李设计',visibility:'team',libraryMembership:['usable'],originMethod:'adapt',sourceModule:'素材适配',sourceAsset:'产品环绕参考.jpg',auditStatus:'passed',groupId:'g1',channels:['Amazon'],requirementType:'Store Banner',language:'英语',placeholder:'bg-gradient-to-br from-sky-500/25 to-cyan-950',selected:false,manualAudit:false},
+    {assetId:'A008',name:'桌面风扇环绕参考.mov',mediaType:'video',format:'MOV',width:1920,height:1080,duration:78,fileSize:'42.8 MB',createdAt:'2026-07-17 15:40',ownerId:'other',ownerName:'王摄影',visibility:'team',libraryMembership:['original'],auditStatus:'none',groupId:null,placeholder:'bg-gradient-to-br from-emerald-500/20 to-slate-950',selected:false,manualAudit:true},
+    {assetId:'A009',name:'露营场景_模型生成02.jpg',mediaType:'image',format:'JPG',width:2048,height:1365,fileSize:'3.3 MB',createdAt:'2026-07-16 08:55',ownerId:'other',ownerName:'赵运营',visibility:'team',libraryMembership:['generated'],originMethod:'model',sourceModule:'图像生成',sourceAsset:'2 个输入素材',auditStatus:'pending',groupId:'g2',url:'https://images.unsplash.com/photo-1504851149312-7a075b496cc7?w=900&q=85',selected:false,manualAudit:false},
+    {assetId:'A010',name:'审核模块直接入库_白底图.jpg',mediaType:'image',format:'JPG',width:2000,height:2000,fileSize:'2.7 MB',createdAt:'2026-07-15 12:28',ownerId:'me',ownerName:'我',visibility:'team',libraryMembership:['usable'],originMethod:'direct',sourceModule:'素材审核',auditStatus:'passed',groupId:null,channels:['通用'],placeholder:'bg-gradient-to-br from-slate-200/25 to-slate-700/20',selected:false,manualAudit:false}
   ]);
   const detail=reactive({open:false,asset:null,list:[],editName:false,nameBase:'',ext:''});
   const listScrollTop=ref(0);
-  const upload=reactive({show:false,step:'choose',type:null,sku:'',productName:'',visibility:'team',groupId:'',files:[]});
+  const upload=reactive({show:false,visibility:'private',groupId:'',files:[]});
   const groupModal=reactive({show:false,mode:'single',asset:null,groupId:''});
   const editModal=reactive({show:false,kind:'',title:'',value:'',placeholder:'',target:null});
   const confirmModal=reactive({show:false,type:'',title:'',message:'',target:null});
@@ -285,16 +271,14 @@ setup(){
 
   const isGroupPage=computed(()=>groups.value.some(g=>g.id===activeNav.value));
   const isOwner=a=>a?.ownerId===currentUser;
-  const pageTitle=computed(()=>({original:'原素材库',product:'产品素材',reference:'参考素材',generated:'生成素材库',usable:'可用素材库'}[activeNav.value]||groups.value.find(g=>g.id===activeNav.value)?.name||'素材管理'));
-  const canUpload=computed(()=>['original','product','reference'].includes(activeNav.value));
-  const searchPlaceholder=computed(()=>activeNav.value==='product'?'搜索文件名 / SKU / 商品名称':'搜索文件名');
+  const pageTitle=computed(()=>({original:'原素材库',generated:'生成素材库',usable:'可用素材库'}[activeNav.value]||groups.value.find(g=>g.id===activeNav.value)?.name||'素材管理'));
+  const canUpload=computed(()=>activeNav.value==='original');
+  const searchPlaceholder=computed(()=>'搜索文件名');
   const hasFilters=computed(()=>Object.entries(filters).some(([k,v])=>v!=='all'&&(k!=='search'||v)));
   const visibleAssets=computed(()=>assets.value.filter(a=>isOwner(a)||a.visibility==='team'));
   const filteredAssets=computed(()=>{
     let list=visibleAssets.value;
     if(activeNav.value==='original')list=list.filter(a=>a.libraryMembership.includes('original'));
-    else if(activeNav.value==='product')list=list.filter(a=>a.libraryMembership.includes('original')&&a.originalType==='product');
-    else if(activeNav.value==='reference')list=list.filter(a=>a.libraryMembership.includes('original')&&a.originalType==='reference');
     else if(activeNav.value==='generated')list=list.filter(a=>a.libraryMembership.includes('generated'));
     else if(activeNav.value==='usable')list=list.filter(a=>a.libraryMembership.includes('usable'));
     else if(isGroupPage.value)list=list.filter(a=>a.groupId===activeNav.value);
@@ -316,11 +300,7 @@ setup(){
     }
     if(filters.search){
       const q=filters.search.toLowerCase();
-      list=list.filter(a=>{
-        const hitName=a.name.toLowerCase().includes(q);
-        if(activeNav.value==='product')return hitName||(a.sku||'').toLowerCase().includes(q)||(a.productName||'').toLowerCase().includes(q);
-        return hitName||(a.sku||'').toLowerCase().includes(q)||(a.productName||'').toLowerCase().includes(q);
-      });
+      list=list.filter(a=>a.name.toLowerCase().includes(q));
     }
     return [...list].sort((a,b)=>b.createdAt.localeCompare(a.createdAt));
   });
@@ -331,9 +311,7 @@ setup(){
   const menuStyle=computed(()=>({left:menuPos.left+'px',top:menuPos.openUp?menuPos.top+'px':menuPos.bottom+'px',transform:menuPos.openUp?'translateY(-100%)':'none'}));
   const emptyState=computed(()=>{
     if(filters.search||filters.media!=='all'||filters.time!=='all'||filters.audit!=='all'||filters.channel!=='all'||filters.library!=='all')return{title:'没有符合条件的素材',desc:'调整或清空筛选条件后再试。'};
-    if(activeNav.value==='product')return{title:'暂无产品素材',desc:'上传图片或视频，并关联商品与 SKU。',action:'上传素材'};
-    if(activeNav.value==='reference')return{title:'暂无参考素材',desc:'上传图片或视频作为视觉参考。',action:'上传素材'};
-    if(activeNav.value==='original')return{title:'暂无原素材',desc:'上传素材并选择产品素材或参考素材。',action:'上传素材'};
+    if(activeNav.value==='original')return{title:'暂无原素材',desc:'上传图片或视频作为参考图。',action:'上传素材'};
     if(activeNav.value==='generated')return{title:'暂无生成素材',desc:'在图像生成或镜头生成中采纳结果后出现在这里。'};
     if(activeNav.value==='usable')return{title:'暂无可用素材',desc:'审核通过或适配确认入库后会出现在这里。'};
     if(isGroupPage.value)return{title:'该分组暂无素材',desc:'可从各素材库将素材加入此分组。'};
@@ -361,10 +339,12 @@ setup(){
   function groupName(id){return groups.value.find(g=>g.id===id)?.name||''}
   function membershipText(a){return a.libraryMembership.map(x=>({original:'原素材库',generated:'生成素材库',usable:'可用素材库'}[x])).join(' · ')}
   function durationText(sec=0){const h=Math.floor(sec/3600),m=Math.floor(sec%3600/60),s=sec%60;return h?`${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`:`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`}
+  function sizeText(a){return a.width&&a.height?`${a.width}×${a.height}`:'—'}
+  function channelText(a){return (a.channels&&a.channels.length)?a.channels[0]:'通用'}
+  function cardMetaExtra(a){return activeNav.value==='usable'||activeNav.value==='generated'}
   function auditText(s){return({passed:'已通过',risk:'有风险',pending:'审核中',none:'未审核'}[s]||s)}
   function auditColor(s){return s==='passed'?'text-emerald-400':s==='risk'?'text-orange-400':s==='pending'?'text-sky-400':'text-white/50'}
   function methodText(s){return({model:'模型生成',audit:'审核通过',adapt:'素材适配',direct:'审核直接入库'}[s]||s)}
-  function showProductFields(a){return a.originalType!=='reference'&&(a.originalType==='product'||a.libraryMembership.includes('generated')||a.libraryMembership.includes('usable'))}
   function showRequirementType(a){return a.originMethod==='adapt'&&!!a.requirementType}
   function canAdapt(a){return a.mediaType==='image'&&a.libraryMembership.includes('usable')}
   function canAudit(a){
@@ -407,21 +387,17 @@ setup(){
   function previousAsset(){if(detailIndex.value>0){detail.asset=detail.list[detailIndex.value-1];detail.editName=false}}
   function nextAsset(){if(detailIndex.value<detail.list.length-1){detail.asset=detail.list[detailIndex.value+1];detail.editName=false}}
   function openSource(a){showToast(`已定位来源：${a.sourceAsset}`)}
-  function saveField(key,value){if(!isOwner(detail.asset))return;detail.asset[key]=value;showToast(key==='sku'?'SKU 已同步到全部所属库':'商品名称已同步到全部所属库')}
   function startRename(a){if(!isOwner(a))return;detail.asset=a;const dot=a.name.lastIndexOf('.');detail.ext=dot>0?a.name.slice(dot):'';detail.nameBase=dot>0?a.name.slice(0,dot):a.name;if(detail.open)detail.editName=true;else{editModal.show=true;editModal.kind='assetName';editModal.title='重命名素材';editModal.value=detail.nameBase;editModal.placeholder='素材名称';editModal.target={asset:a,ext:detail.ext}}}
   function saveName(){if(!detail.nameBase.trim())return showToast('名称不能为空','error');detail.asset.name=detail.nameBase.trim()+detail.ext;detail.editName=false;showToast('素材已重命名')}
 
-  function startUpload(){if(activeNav.value==='original')Object.assign(upload,{show:true,step:'choose',type:null,sku:'',productName:'',visibility:'team',groupId:'',files:[]});else chooseUploadType(activeNav.value==='product'?'product':'reference')}
-  function chooseUploadType(type){Object.assign(upload,{show:true,step:'form',type,sku:'',productName:'',visibility:type==='product'?'team':'private',groupId:'',files:[]})}
-  function syncUploadProduct(){upload.productName=({ 'GV-H8131':'Govee 氛围落地灯','FAN-200':'智能循环扇' })[upload.sku]||''}
+  function startUpload(){Object.assign(upload,{show:true,visibility:'private',groupId:'',files:[]})}
   function closeUpload(){upload.show=false;upload.files=[]}
   function onFiles(e){upload.files=Array.from(e.target.files||[])}
   function submitUpload(){
-    if(upload.type==='product'&&(!upload.sku||!upload.productName))return showToast('请选择 SKU','error');
     if(!upload.files.length)return showToast('请先选择文件','error');
-    const sku=upload.sku,productName=upload.productName;let success=0,failed=0;
-    upload.files.forEach((f,i)=>{if(f.name.toLowerCase().includes('fail')){failed++;return}const video=f.type.startsWith('video');assets.value.unshift({assetId:'UP'+Date.now()+i,name:f.name,mediaType:video?'video':'image',format:(f.name.split('.').pop()||'').toUpperCase(),width:video?1920:3000,height:video?1080:3000,duration:video?36:undefined,fileSize:(f.size/1024/1024).toFixed(1)+' MB',createdAt:'2026-07-23 17:25',ownerId:'me',ownerName:'我',visibility:upload.visibility,libraryMembership:['original'],originalType:upload.type,sku,productName,auditStatus:'none',groupId:upload.groupId||null,placeholder:upload.type==='product'?'bg-gradient-to-br from-amber-500/20 to-slate-950':'bg-gradient-to-br from-sky-500/20 to-slate-950',selected:false,manualAudit:true});success++});
-    closeUpload();activeNav.value=upload.type;showToast(`上传完成：成功 ${success} 个${failed?`，失败 ${failed} 个（已逐项记录）`:''}`,failed?'error':'success');
+    let success=0,failed=0;
+    upload.files.forEach((f,i)=>{if(f.name.toLowerCase().includes('fail')){failed++;return}const video=f.type.startsWith('video');assets.value.unshift({assetId:'UP'+Date.now()+i,name:f.name,mediaType:video?'video':'image',format:(f.name.split('.').pop()||'').toUpperCase(),width:video?1920:3000,height:video?1080:3000,duration:video?36:undefined,fileSize:(f.size/1024/1024).toFixed(1)+' MB',createdAt:'2026-07-23 17:25',ownerId:'me',ownerName:'我',visibility:upload.visibility,libraryMembership:['original'],auditStatus:'none',groupId:upload.groupId||null,placeholder:'bg-gradient-to-br from-sky-500/20 to-slate-950',selected:false,manualAudit:true});success++});
+    closeUpload();activeNav.value='original';showToast(`上传完成：成功 ${success} 个${failed?`，失败 ${failed} 个（已逐项记录）`:''}`,failed?'error':'success');
   }
   function openGrouping(mode,a=null){if(mode==='batch'&&!selectedCount.value)return;groupModal.show=true;groupModal.mode=mode;groupModal.asset=a;groupModal.groupId=a?.groupId||''}
   function confirmGrouping(){const targets=groupModal.mode==='batch'?assets.value.filter(a=>a.selected):[groupModal.asset];targets.filter(Boolean).forEach(a=>a.groupId=groupModal.groupId||null);showToast(groupModal.groupId?`已移动 ${targets.length} 个素材到「${groupName(groupModal.groupId)}」`:`已将 ${targets.length} 个素材移出分组`);groupModal.show=false;if(groupModal.mode==='batch')exitSelect()}
@@ -433,7 +409,7 @@ setup(){
   function doConfirm(){if(confirmModal.type==='group'){const g=confirmModal.target;assets.value.forEach(a=>{if(a.groupId===g.id)a.groupId=null});groups.value=groups.value.filter(x=>x.id!==g.id);if(activeNav.value===g.id)activeNav.value='original';showToast('分组已删除，素材已保留')}else if(confirmModal.type==='asset'){assets.value=assets.value.filter(a=>a.assetId!==confirmModal.target.assetId);if(detail.asset?.assetId===confirmModal.target.assetId)closeDetail();showToast('素材已删除')}else{const ids=new Set(confirmModal.target.map(a=>a.assetId)),skipped=selectedCount.value-ids.size;assets.value=assets.value.filter(a=>!ids.has(a.assetId));showToast(`已删除 ${ids.size} 个素材${skipped?`，跳过 ${skipped} 个无权限项`:''}`);exitSelect()}confirmModal.show=false}
   function batchDownload(){showToast(`已开始打包下载 ${selectedCount.value} 个素材`)}
 
-  return{activeNav,originalOpen,menuAssetId,menuAsset,menuStyle,selectMode,scrollArea,filters,groups,assets,detail,upload,groupModal,editModal,confirmModal,toast,isGroupPage,pageTitle,canUpload,searchPlaceholder,hasFilters,filteredAssets,selectedCount,detailList,detailIndex,emptyState,isOwner,navClass,setNav,resetFilters,onTimeChange,closeCardMenu,toggleCardMenu,groupCount,groupName,membershipText,durationText,auditText,auditColor,methodText,showProductFields,showRequirementType,assetActions,runAction,cardClick,toggleSelect,selectAsset,clearSelection,exitSelect,selectAll,openDetail,closeDetail,previousAsset,nextAsset,openSource,saveField,startRename,saveName,startUpload,chooseUploadType,syncUploadProduct,closeUpload,onFiles,submitUpload,openGrouping,confirmGrouping,openGroupEdit,confirmEdit,askDeleteGroup,askBatchDelete,doConfirm,batchDownload,showToast}
+  return{activeNav,menuAssetId,menuAsset,menuStyle,selectMode,scrollArea,filters,groups,assets,detail,upload,groupModal,editModal,confirmModal,toast,isGroupPage,pageTitle,canUpload,searchPlaceholder,hasFilters,filteredAssets,selectedCount,detailList,detailIndex,emptyState,isOwner,navClass,setNav,resetFilters,onTimeChange,closeCardMenu,toggleCardMenu,groupCount,groupName,membershipText,durationText,sizeText,channelText,cardMetaExtra,auditText,auditColor,methodText,showRequirementType,assetActions,runAction,cardClick,toggleSelect,selectAsset,clearSelection,exitSelect,selectAll,openDetail,closeDetail,previousAsset,nextAsset,openSource,startRename,saveName,startUpload,closeUpload,onFiles,submitUpload,openGrouping,confirmGrouping,openGroupEdit,confirmEdit,askDeleteGroup,askBatchDelete,doConfirm,batchDownload,showToast}
 }
 }).mount('#app');
 </script>

@@ -2307,7 +2307,7 @@ div:hover > .group-actions {
       <div class="bg-picker-header">
         <div>
           <div class="dialog-title" style="margin:0;">选择底图</div>
-          <div class="dialog-sub">仅可选可用素材库中的图片<span v-if="pickerLockedSku"> · 当前限定 SKU：{{ pickerLockedSku }}</span></div>
+          <div class="dialog-sub">仅可选可用素材库中的图片</div>
         </div>
         <button @click="closeBgPicker" style="background:none;border:none;color:var(--text-dim);font-size:18px;cursor:pointer;line-height:1;"><i class="ph ph-x"></i></button>
       </div>
@@ -2315,7 +2315,7 @@ div:hover > .group-actions {
         <div class="lib-filter-bar">
           <div class="lib-search">
             <i class="ph ph-magnifying-glass"></i>
-            <input type="text" v-model="librarySearch" placeholder="搜索文件名 / SKU / 商品名称">
+            <input type="text" v-model="librarySearch" placeholder="搜索文件名">
           </div>
           <select class="lib-filter-select" v-model="libraryChannelFilter">
             <option value="all" hidden>适用渠道</option>
@@ -2343,7 +2343,7 @@ div:hover > .group-actions {
                 <div class="check" v-if="isPickerDraftSelected(asset.id)"><i class="ph-bold ph-check"></i></div>
               </div>
               <div class="name">{{ asset.name }}</div>
-              <div class="meta">{{ asset.sku || '无 SKU' }} · {{ asset.productName || '—' }}</div>
+              <div class="meta">{{ (asset.channels || []).join(' · ') || '—' }}</div>
             </div>
           </div>
         </div>
@@ -2367,15 +2367,15 @@ div:hover > .group-actions {
       </div>
       <div class="config-group">
         <div class="section-label">SKU <span style="color:var(--red)">*</span></div>
-        <input class="text-input" v-model="newProjectSku">
+        <input class="text-input" v-model="newProjectSku" @input="updateNewProjectName" placeholder="例如：FL-A30-BK">
       </div>
       <div class="config-group">
         <div class="section-label">商品名称 <span style="color:var(--red)">*</span></div>
-        <input class="text-input" v-model="newProjectProductName">
+        <input class="text-input" v-model="newProjectProductName" @input="updateNewProjectName" placeholder="例如：落地灯 A30">
       </div>
       <div class="config-group">
         <div class="section-label">任务名称（选填）</div>
-        <input class="text-input" v-model="newProjectName">
+        <input class="text-input" v-model="newProjectName" placeholder="例如：主图适配">
       </div>
       <div class="dialog-actions">
         <button class="ghost-btn" @click="showNewProject=false">取消</button>
@@ -2536,6 +2536,14 @@ createApp({
     const newProjectName = ref('');
     const projectSearch = ref('');
 
+    function updateNewProjectName() {
+      const sku = newProjectSku.value.trim();
+      const productName = newProjectProductName.value.trim();
+      if (sku || productName) {
+        newProjectName.value = `${sku} ${productName}`.trim();
+      }
+    }
+
     const showNewGroupModal = ref(false);
     const newGroupName = ref('');
 
@@ -2678,18 +2686,10 @@ createApp({
         .filter(project => {
           if (!keyword) return true;
           return project.name.toLowerCase().includes(keyword)
-            || project.sku.toLowerCase().includes(keyword)
-            || project.productName.toLowerCase().includes(keyword);
+            || (project.sku || '').toLowerCase().includes(keyword)
+            || (project.productName || '').toLowerCase().includes(keyword);
         });
     });
-
-    function updateNewProjectName() {
-      if (newProjectSku.value || newProjectProductName.value) {
-        newProjectName.value = `${newProjectSku.value} ${newProjectProductName.value}`.trim();
-      } else {
-        newProjectName.value = '';
-      }
-    }
 
     // ========== 社媒物料生成配置 ==========
     const channelConfig = {
@@ -2896,8 +2896,8 @@ createApp({
           url: item.url,
           name: item.name || '商品图',
           assetId: item.assetId || '',
-          sku: item.sku || '',
-          productName: item.productName || '',
+          sku: '',
+          productName: '',
           visibility: item.visibility || 'team',
           channels: item.channels ? [...item.channels] : []
         });
@@ -2932,14 +2932,14 @@ createApp({
     const defaultTemplateSceneBg = demoSceneImages.bedroom;
 
     const materialLibrary = ref([
-      { id: 'A001', name: 'H7131_产品主图.jpg', url: demoSceneImages.product, sku: 'GV-H7131', productName: 'Govee 氛围落地灯', mediaType: 'image', channels: ['通用'], visibility: 'team', createdAt: '2026-07-23 14:26' },
-      { id: 'A003', name: 'H7131_夏日场景_生成01.png', url: demoSceneImages.livingRoom, sku: 'GV-H7131', productName: 'Govee 氛围落地灯', mediaType: 'image', channels: ['Amazon', '独立站'], visibility: 'team', createdAt: '2026-07-23 11:45' },
-      { id: 'A011', name: 'H7131_卧室暖光.jpg', url: demoSceneImages.bedroom, sku: 'GV-H7131', productName: 'Govee 氛围落地灯', mediaType: 'image', channels: ['通用'], visibility: 'private', createdAt: '2026-07-22 09:18' },
-      { id: 'A006', name: 'A+_生活方式模块_1500.jpg', url: demoSceneImages.holiday, sku: 'GV-H7131', productName: 'Govee 氛围落地灯', mediaType: 'image', channels: ['Amazon'], visibility: 'team', createdAt: '2026-07-19 13:12' },
-      { id: 'A007', name: 'FAN200_商城横幅.png', url: demoSceneImages.outdoor, sku: 'FAN-200', productName: '智能循环扇', mediaType: 'image', channels: ['Amazon'], visibility: 'team', createdAt: '2026-07-18 17:06' },
-      { id: 'A012', name: 'FAN200_产品主图.jpg', url: demoSceneImages.product, sku: 'FAN-200', productName: '智能循环扇', mediaType: 'image', channels: ['通用'], visibility: 'team', createdAt: '2026-07-17 10:40' },
-      { id: 'A013', name: 'Gaming_Desk_Scene.jpg', url: demoSceneImages.gaming, sku: 'H789012', productName: '智能台灯', mediaType: 'image', channels: ['TikTok Shop'], visibility: 'team', createdAt: '2026-07-16 08:55' },
-      { id: 'A010', name: '审核直接入库_白底图.jpg', url: demoSceneImages.product, sku: '', productName: '', mediaType: 'image', channels: ['通用'], visibility: 'team', createdAt: '2026-07-15 12:28' }
+      { id: 'A001', name: 'H7131_主图参考.jpg', url: demoSceneImages.product, mediaType: 'image', channels: ['通用'], visibility: 'team', createdAt: '2026-07-23 14:26' },
+      { id: 'A003', name: '夏日场景_生成01.png', url: demoSceneImages.livingRoom, mediaType: 'image', channels: ['Amazon', '独立站'], visibility: 'team', createdAt: '2026-07-23 11:45' },
+      { id: 'A011', name: '卧室暖光参考.jpg', url: demoSceneImages.bedroom, mediaType: 'image', channels: ['通用'], visibility: 'private', createdAt: '2026-07-22 09:18' },
+      { id: 'A006', name: 'A+_生活方式模块_1500.jpg', url: demoSceneImages.holiday, mediaType: 'image', channels: ['Amazon'], visibility: 'team', createdAt: '2026-07-19 13:12' },
+      { id: 'A007', name: '商城横幅_适配.png', url: demoSceneImages.outdoor, mediaType: 'image', channels: ['Amazon'], visibility: 'team', createdAt: '2026-07-18 17:06' },
+      { id: 'A012', name: '风扇主图参考.jpg', url: demoSceneImages.product, mediaType: 'image', channels: ['通用'], visibility: 'team', createdAt: '2026-07-17 10:40' },
+      { id: 'A013', name: 'Gaming_Desk_Scene.jpg', url: demoSceneImages.gaming, mediaType: 'image', channels: ['TikTok Shop'], visibility: 'team', createdAt: '2026-07-16 08:55' },
+      { id: 'A010', name: '审核直接入库_白底图.jpg', url: demoSceneImages.product, mediaType: 'image', channels: ['通用'], visibility: 'team', createdAt: '2026-07-15 12:28' }
     ]);
 
     const librarySearch = ref('');
@@ -2947,18 +2947,8 @@ createApp({
     const libraryTimeFilter = ref('all');
     const hasLibraryFilters = computed(() => !!(librarySearch.value || libraryChannelFilter.value !== 'all' || libraryTimeFilter.value !== 'all'));
 
-    const pickerLockedSku = computed(() => {
-      const fromDraft = pickerDrafts.value.find(item => item.sku)?.sku;
-      if (fromDraft) return fromDraft;
-      const fromSelected = productImages.value.find(item => item.sku)?.sku;
-      return fromSelected || '';
-    });
-
     const filteredLibraryAssets = computed(() => {
       let list = materialLibrary.value.filter(a => a.mediaType === 'image');
-      if (pickerLockedSku.value) {
-        list = list.filter(a => a.sku === pickerLockedSku.value);
-      }
       if (libraryChannelFilter.value !== 'all') {
         list = list.filter(a => a.channels?.includes(libraryChannelFilter.value) || (libraryChannelFilter.value !== '通用' && a.channels?.includes('通用')));
       }
@@ -2975,7 +2965,7 @@ createApp({
       }
       if (librarySearch.value.trim()) {
         const q = librarySearch.value.trim().toLowerCase();
-        list = list.filter(a => `${a.name} ${a.sku || ''} ${a.productName || ''}`.toLowerCase().includes(q));
+        list = list.filter(a => (a.name || '').toLowerCase().includes(q));
       }
       return list;
     });
@@ -3106,14 +3096,12 @@ createApp({
             url: asset.url,
             name: asset.name,
             assetId: asset.id,
-            sku: asset.sku || '',
-            productName: asset.productName || '',
             visibility: asset.visibility || 'team',
             channels: asset.channels ? [...asset.channels] : []
           });
         }
       });
-      // 已选底图也计入同 SKU 锁定，并预填草稿便于继续加选
+      // 已选底图预填草稿便于继续加选
       if (!pickerDrafts.value.length && productImages.value.length) {
         productImages.value.forEach(img => {
           if (!img.assetId) return;
@@ -3121,8 +3109,6 @@ createApp({
             url: img.url,
             name: img.name,
             assetId: img.assetId,
-            sku: img.sku || '',
-            productName: img.productName || '',
             visibility: img.visibility || 'team',
             channels: img.channels ? [...img.channels] : []
           });
@@ -3147,29 +3133,10 @@ createApp({
         pickerDrafts.value.splice(idx, 1);
         return;
       }
-      const lockedSku = pickerLockedSku.value;
-      if (lockedSku && asset.sku !== lockedSku) {
-        showToast('请选择同一商品的底图');
-        return;
-      }
-      if (!lockedSku && !asset.sku && pickerDrafts.value.length > 0) {
-        showToast('无 SKU 素材仅支持单图适配');
-        return;
-      }
-      if (!asset.sku && pickerDrafts.value.length === 0 && productImages.value.some(img => img.assetId && img.assetId !== asset.id)) {
-        showToast('当前任务已有其他底图，请选择带 SKU 的同商品图片');
-        return;
-      }
-      if (pickerDrafts.value.some(item => !item.sku) && asset.id !== pickerDrafts.value[0]?.assetId) {
-        showToast('无 SKU 素材仅支持单图适配');
-        return;
-      }
       pickerDrafts.value.push({
         url: asset.url,
         name: asset.name,
         assetId: asset.id,
-        sku: asset.sku || '',
-        productName: asset.productName || '',
         visibility: asset.visibility || 'team',
         channels: asset.channels ? [...asset.channels] : []
       });
@@ -3177,15 +3144,6 @@ createApp({
     function confirmBgPicker() {
       if (!pickerDrafts.value.length) return;
       const drafts = [...pickerDrafts.value];
-      const skus = [...new Set(drafts.map(item => item.sku).filter(Boolean))];
-      if (skus.length > 1) {
-        showToast('请选择同一商品的底图');
-        return;
-      }
-      if (drafts.length > 1 && drafts.some(item => !item.sku)) {
-        showToast('无 SKU 素材仅支持单图适配');
-        return;
-      }
       // 用草稿整体替换当前任务底图，避免重复叠加
       productImages.value = [];
       previewImageId.value = '';
@@ -4191,7 +4149,7 @@ createApp({
       const taskName = newProjectName.value.trim();
       projects.push({
         id: 't' + Date.now(),
-        name: taskName ? `${sku} ${productName} ${taskName}` : `${sku} ${productName}`,
+        name: taskName || `${sku} ${productName}`,
         sku,
         productName,
         groupId: null,
@@ -4890,7 +4848,7 @@ createApp({
       availableTypes, availableSizes, allSizesSelected, allSizesHaveTemplate, channelRuleHint,
       getTemplatesForSize, toggleSize, toggleAllSizes,
       mainTitle, subTitle, productImages, previewImageId, materialLibrary,
-      librarySearch, libraryChannelFilter, libraryTimeFilter, hasLibraryFilters, pickerLockedSku,
+      librarySearch, libraryChannelFilter, libraryTimeFilter, hasLibraryFilters,
       resetLibraryFilters, onLibraryTimeChange, filteredLibraryAssets,
       generateCount,
       showBgPicker, pickerDrafts,
