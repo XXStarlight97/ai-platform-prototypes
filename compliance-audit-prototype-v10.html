@@ -158,20 +158,17 @@ if (typeof tailwind !== 'undefined') {
 .mv-risk-pill.low { color:#60a5fa; border-color:rgba(59,130,246,0.28); background:rgba(59,130,246,0.10); }
 .mv-risk-pill.pass { color:#4ade80; border-color:rgba(34,197,94,0.28); background:rgba(34,197,94,0.10); }
 .mv-right-actions { padding:10px 16px; border-bottom:1px solid rgba(255,255,255,0.06); display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
-.mv-right-body { flex:1; min-height:0; overflow:auto; padding:14px 16px; }
-.mv-mat-list { display:flex; flex-direction:column; gap:8px; }
-.mv-mat-row { display:flex; align-items:stretch; gap:14px; padding:10px 12px; border:1px solid rgba(255,255,255,0.10); border-radius:12px; background:rgba(0,0,0,0.22); transition:border-color .15s, background .15s; }
-.mv-mat-row:hover { border-color:rgba(245,158,11,0.30); background:rgba(255,255,255,0.03); }
-.mv-mat-row.is-selected { border-color:rgba(245,158,11,0.50); background:rgba(245,158,11,0.08); }
-.mv-mat-check { display:flex; align-items:flex-start; padding-top:4px; flex-shrink:0; }
-.mv-mat-thumb { position:relative; width:120px; height:90px; flex-shrink:0; border-radius:8px; overflow:hidden; background:#0e0e14; border:1px solid rgba(255,255,255,0.08); cursor:pointer; padding:0; }
+.mv-right-body { flex:1; min-height:0; overflow:auto; padding:0; }
+.mv-mat-table { width:100%; text-align:left; border-collapse:collapse; }
+.mv-mat-table thead tr { border-bottom:1px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.03); }
+.mv-mat-table th { padding:12px 14px; font-size:12px; font-weight:500; color:rgba(255,255,255,0.45); white-space:nowrap; }
+.mv-mat-table td { padding:12px 14px; border-bottom:1px solid rgba(255,255,255,0.06); vertical-align:middle; font-size:13px; }
+.mv-mat-table tbody tr { transition:background .15s; }
+.mv-mat-table tbody tr:hover { background:rgba(255,255,255,0.03); }
+.mv-mat-table tbody tr.is-selected { background:rgba(245,158,11,0.08); }
+.mv-mat-thumb { position:relative; width:88px; height:66px; border-radius:8px; overflow:hidden; background:#0e0e14; border:1px solid rgba(255,255,255,0.08); cursor:pointer; padding:0; display:block; }
 .mv-mat-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
 .mv-mat-thumb:hover { outline:1px solid rgba(245,158,11,0.45); }
-.mv-mat-info { flex:1; min-width:0; display:flex; flex-direction:column; justify-content:center; gap:6px; }
-.mv-mat-info .title { font-size:13px; font-weight:500; color:rgba(255,255,255,0.92); line-height:1.35; word-break:break-all; }
-.mv-mat-meta { display:flex; flex-wrap:wrap; gap:6px 14px; font-size:12px; color:rgba(255,255,255,0.45); }
-.mv-mat-meta .k { color:rgba(255,255,255,0.32); margin-right:4px; }
-.mv-mat-risk { font-size:11px; color:rgba(255,255,255,0.42); }
 
 .task-expand-btn { width:22px; height:22px; border-radius:6px; border:1px solid rgba(255,255,255,0.10); background:rgba(255,255,255,0.04); color:rgba(255,255,255,0.64); display:inline-flex; align-items:center; justify-content:center; transition:all .15s; flex-shrink:0; }
 .task-expand-btn:hover { color:rgba(255,255,255,0.92); background:rgba(255,255,255,0.08); border-color:rgba(255,255,255,0.18); }
@@ -356,27 +353,43 @@ if (typeof tailwind !== 'undefined') {
 
 
       <template v-else>
-        <section class="mv-right flex-1 min-h-0">
-          <div class="mv-right-head" style="flex-wrap:wrap;align-items:center;">
-            <div class="flex items-center gap-2 flex-1 min-w-[240px] flex-wrap">
-              <input type="text" v-model="materialCatalogSearchDraft" @keyup.enter="submitMaterialCatalogQuery" placeholder="搜索任务名称" class="filter-control w-[220px] max-w-full placeholder-text-tertiary">
-              <div class="custom-select filter-select w-[120px]" :class="{'is-open': openDropdownKey==='catalogTime'}" @click.stop>
-                <button type="button" @click="toggleDropdown('catalogTime', $event)" class="custom-select-trigger" :class="{'is-open': openDropdownKey==='catalogTime', 'is-placeholder': !materialCatalogTimeDraft, 'has-clear': !!materialCatalogTimeDraft && materialCatalogTimeDraft!=='all'}">
-                  <span class="truncate flex-1 text-left">{{ dropdownLabel(timeRangeOptions, materialCatalogTimeDraft, '审核时间') }}</span>
-                </button>
-                <button v-if="materialCatalogTimeDraft && materialCatalogTimeDraft!=='all'" type="button" class="custom-select-clear" title="清除" @click.stop="clearMaterialCatalogDraft('time')"><i class="ph ph-x"></i></button>
-              </div>
-              <button @click="submitMaterialCatalogQuery" class="filter-btn filter-btn-query shrink-0">查询</button>
-              <button @click="resetMaterialCatalogFilters" class="filter-btn filter-btn-reset shrink-0 px-2">重置</button>
-            </div>
-            <div class="mv-risk-summary">
-              <span class="text-[12px] text-text-tertiary shrink-0">风险结果</span>
-              <span class="mv-risk-pill high">高 {{ selectedTaskRiskSummary.high }}</span>
-              <span class="mv-risk-pill medium">中 {{ selectedTaskRiskSummary.medium }}</span>
-              <span class="mv-risk-pill low">低 {{ selectedTaskRiskSummary.low }}</span>
-              <span class="mv-risk-pill pass">通过 {{ selectedTaskRiskSummary.pass }}</span>
+        <div class="filter-toolbar shrink-0 bg-bg-elevated/90 border border-border-default rounded-[14px] shadow-lg shadow-black/50 ring-1 ring-white/5 px-5 py-3 flex items-center gap-4 flex-nowrap">
+          <div class="filter-inline">
+            <span class="filter-label-inline">任务名称</span>
+            <input type="text" v-model="materialCatalogSearchDraft" @keyup.enter="submitMaterialCatalogQuery" placeholder="请输入" class="filter-control w-[180px] placeholder-text-tertiary">
+          </div>
+          <div class="filter-inline">
+            <span class="filter-label-inline">素材类型</span>
+            <div class="custom-select filter-select w-[96px]" :class="{'is-open': openDropdownKey==='catalogMedia'}" @click.stop>
+              <button type="button" @click="toggleDropdown('catalogMedia', $event)" class="custom-select-trigger" :class="{'is-open': openDropdownKey==='catalogMedia', 'is-placeholder': !materialCatalogMediaDraft, 'has-clear': !!materialCatalogMediaDraft}">
+                <span class="truncate flex-1 text-left">{{ dropdownLabel(catalogMediaOptions, materialCatalogMediaDraft) }}</span>
+              </button>
+              <button v-if="materialCatalogMediaDraft" type="button" class="custom-select-clear" title="清除" @click.stop="clearMaterialCatalogDraft('media')"><i class="ph ph-x"></i></button>
             </div>
           </div>
+          <div class="filter-inline">
+            <span class="filter-label-inline">审核结果</span>
+            <div class="custom-select filter-select w-[120px]" :class="{'is-open': openDropdownKey==='catalogResult'}" @click.stop>
+              <button type="button" @click="toggleDropdown('catalogResult', $event)" class="custom-select-trigger" :class="{'is-open': openDropdownKey==='catalogResult', 'is-placeholder': !materialCatalogResultDraft, 'has-clear': !!materialCatalogResultDraft}">
+                <span class="truncate flex-1 text-left">{{ dropdownLabel(taskResultOptions, materialCatalogResultDraft) }}</span>
+              </button>
+              <button v-if="materialCatalogResultDraft" type="button" class="custom-select-clear" title="清除" @click.stop="clearMaterialCatalogDraft('result')"><i class="ph ph-x"></i></button>
+            </div>
+          </div>
+          <div class="filter-inline">
+            <span class="filter-label-inline">审核时间</span>
+            <div class="custom-select filter-select w-[100px]" :class="{'is-open': openDropdownKey==='catalogTime'}" @click.stop>
+              <button type="button" @click="toggleDropdown('catalogTime', $event)" class="custom-select-trigger" :class="{'is-open': openDropdownKey==='catalogTime', 'is-placeholder': !materialCatalogTimeDraft, 'has-clear': !!materialCatalogTimeDraft && materialCatalogTimeDraft!=='all'}">
+                <span class="truncate flex-1 text-left">{{ dropdownLabel(timeRangeOptions, materialCatalogTimeDraft) }}</span>
+              </button>
+              <button v-if="materialCatalogTimeDraft && materialCatalogTimeDraft!=='all'" type="button" class="custom-select-clear" title="清除" @click.stop="clearMaterialCatalogDraft('time')"><i class="ph ph-x"></i></button>
+            </div>
+          </div>
+          <div class="flex-1 min-w-[8px]"></div>
+          <button @click="submitMaterialCatalogQuery" class="filter-btn filter-btn-query">查询</button>
+          <button @click="resetMaterialCatalogFilters" class="filter-btn filter-btn-reset">重置</button>
+        </div>
+        <section class="mv-right flex-1 min-h-0">
           <div class="mv-right-actions">
             <label class="flex items-center gap-2 text-[13px] text-text-secondary cursor-pointer select-none">
               <input type="checkbox" class="accent-primary" :checked="isCatalogAllSelected" :indeterminate.prop="isCatalogPartiallySelected" @change="toggleSelectAllCatalog">
@@ -388,45 +401,69 @@ if (typeof tailwind !== 'undefined') {
             <button v-if="selectedCatalogIds.length" @click="clearCatalogSelection" class="h-[30px] px-3 rounded-lg border border-border-default text-[12px] text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all">取消选择</button>
           </div>
           <div class="mv-right-body">
-            <div v-if="expandedTaskMaterials.length === 0" class="py-20 text-center text-text-tertiary text-[13px]">
-              <i class="ph-duotone ph-images text-[32px] opacity-30 block mb-2"></i>
-              暂无素材，试试调整搜索或时间筛选
-            </div>
-            <div v-else class="mv-mat-list">
-              <div v-for="item in expandedTaskMaterials" :key="item.id" class="mv-mat-row" :class="{'is-selected': selectedCatalogIds.includes(item.id)}">
-                <label class="mv-mat-check cursor-pointer">
-                  <input type="checkbox" class="accent-primary" :checked="selectedCatalogIds.includes(item.id)" @change="toggleCatalogSelect(item)">
-                </label>
-                <button type="button" class="mv-mat-thumb" title="查看大图" @click="openMaterialLightbox(item)">
-                  <img :src="item.thumb" :alt="item.name">
-                  <div v-if="item.mediaType==='video'" class="absolute inset-0 flex items-center justify-center bg-black/35 pointer-events-none"><i class="ph-fill ph-play text-white text-lg"></i></div>
-                  <div v-if="item.duration" class="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-black/70 text-[10px] text-white">{{ item.duration }}</div>
-                </button>
-                <div class="mv-mat-info">
-                  <div class="flex items-start gap-2 flex-wrap">
-                    <div class="title flex-1 min-w-0">{{ item.name }}</div>
-                    <span v-if="item.rechecking" class="rechecking-badge shrink-0">复审中</span>
+            <table class="mv-mat-table min-w-[1280px]">
+              <thead>
+                <tr>
+                  <th class="w-[48px]">
+                    <input type="checkbox" class="accent-primary" :checked="isCatalogAllSelected" :indeterminate.prop="isCatalogPartiallySelected" @change="toggleSelectAllCatalog" title="全选">
+                  </th>
+                  <th class="w-[104px]">预览</th>
+                  <th class="min-w-[160px]">文件名</th>
+                  <th class="w-[88px]">素材类型</th>
+                  <th class="w-[132px]">审核结果</th>
+                  <th class="min-w-[148px]">风险命中</th>
+                  <th class="min-w-[220px]">主要命中项</th>
+                  <th class="min-w-[160px]">来源</th>
+                  <th class="w-[148px]">审核时间</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-if="expandedTaskMaterials.length === 0">
+                  <td colspan="9" class="py-20 text-center text-text-tertiary text-[13px]">
+                    <i class="ph-duotone ph-images text-[32px] opacity-30 block mb-2"></i>
+                    暂无素材，试试调整搜索或时间筛选
+                  </td>
+                </tr>
+                <tr v-for="item in expandedTaskMaterials" :key="item.id" :class="{'is-selected': selectedCatalogIds.includes(item.id)}">
+                  <td>
+                    <input type="checkbox" class="accent-primary" :checked="selectedCatalogIds.includes(item.id)" @change="toggleCatalogSelect(item)">
+                  </td>
+                  <td>
+                    <button type="button" class="mv-mat-thumb" title="查看详情" @click="openMaterialLightbox(item)">
+                      <img :src="item.thumb" :alt="item.name">
+                      <div v-if="item.mediaType==='video'" class="absolute inset-0 flex items-center justify-center bg-black/35 pointer-events-none"><i class="ph-fill ph-play text-white text-sm"></i></div>
+                      <div v-if="item.duration" class="absolute bottom-0.5 right-0.5 px-1 rounded bg-black/70 text-[9px] text-white leading-tight">{{ item.duration }}</div>
+                    </button>
+                  </td>
+                  <td>
+                    <div class="flex items-center gap-2 min-w-0">
+                      <span class="font-medium text-text-primary text-[13px] truncate" :title="item.name">{{ item.name }}</span>
+                      <span v-if="item.rechecking" class="rechecking-badge shrink-0">复审中</span>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="media-type-badge" :class="item.mediaType==='video'?'video':''">{{ mediaTypeLabel(item.mediaType) }}</span>
+                  </td>
+                  <td>
+                    <span v-if="item.rechecking" class="rechecking-badge">复审中</span>
                     <span v-else :class="auditResultBadgeClass(item.auditStatus)">{{ auditResultLabel(item.auditStatus) }}</span>
-                  </div>
-                  <div class="mv-mat-meta">
-                    <span><span class="k">来源</span>{{ item.sourceLabel }}</span>
-                    <span><span class="k">类型</span>{{ item.mediaType==='video' ? '视频' : '图片' }}</span>
-                    <span><span class="k">渠道</span>{{ item.channelLabel || '通用' }}</span>
-                    <span><span class="k">审核时间</span>{{ item.auditTime || '—' }}</span>
-                    <span><span class="k">SKU</span>{{ item.sku || '—' }}</span>
-                    <span><span class="k">商品名称</span>{{ item.productName || '—' }}</span>
-                  </div>
-                  <div class="mv-mat-risk">
-                    <span class="text-text-tertiary">风险命中：</span>
+                  </td>
+                  <td class="text-[12px] leading-relaxed whitespace-nowrap">
                     <template v-if="!item.highCount && !item.mediumCount && !item.lowCount"><span class="text-text-tertiary">无</span></template>
                     <template v-else>
                       <span v-if="item.highCount" class="text-red-400">高风险{{ item.highCount }}个</span><span v-if="item.highCount && (item.mediumCount || item.lowCount)" class="text-text-tertiary">，</span><span v-if="item.mediumCount" class="text-amber-400">中风险{{ item.mediumCount }}个</span><span v-if="item.mediumCount && item.lowCount" class="text-text-tertiary">，</span><span v-if="item.lowCount" class="text-blue-400">低风险{{ item.lowCount }}个</span>
                     </template>
-                    <span v-if="item.primaryHit" class="text-text-tertiary"> · 主要命中项：</span><span v-if="item.primaryHit" class="text-text-secondary">{{ item.primaryHit }}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+                  </td>
+                  <td class="text-[12px] text-text-secondary max-w-[280px]">
+                    <span class="line-clamp-2" :title="item.primaryHit || ''">{{ item.primaryHit || '—' }}</span>
+                  </td>
+                  <td class="text-[12px] text-text-secondary max-w-[220px]">
+                    <span class="line-clamp-2" :title="item.sourceLabel">{{ item.sourceLabel || '—' }}</span>
+                  </td>
+                  <td class="text-[12px] text-text-secondary whitespace-nowrap">{{ item.auditTime || '—' }}</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </section>
       </template>
@@ -741,6 +778,12 @@ if (typeof tailwind !== 'undefined') {
       </template>
       <template v-else-if="openDropdownKey==='uploadMedia'">
         <button v-for="opt in uploadMediaOptions" :key="opt.value || 'all'" type="button" @click="selectDropdownValue('uploadMediaFilter', opt.value, 'uploadMedia')" class="custom-select-option" :class="{'is-active': uploadMediaFilter===opt.value}">{{ opt.label }}</button>
+      </template>
+      <template v-else-if="openDropdownKey==='catalogMedia'">
+        <button v-for="opt in catalogMediaOptions" :key="'cmedia-'+opt.value" type="button" @click="selectDropdownValue('materialCatalogMediaDraft', opt.value, 'catalogMedia')" class="custom-select-option" :class="{'is-active': materialCatalogMediaDraft===opt.value}">{{ opt.label }}</button>
+      </template>
+      <template v-else-if="openDropdownKey==='catalogResult'">
+        <button v-for="opt in taskResultOptions" :key="'cresult-'+opt.value" type="button" @click="selectDropdownValue('materialCatalogResultDraft', opt.value, 'catalogResult')" class="custom-select-option" :class="{'is-active': materialCatalogResultDraft===opt.value}">{{ opt.label }}</button>
       </template>
       <template v-else-if="openDropdownKey==='catalogTime'">
         <button v-for="opt in timeRangeOptions" :key="'ctime-'+opt.value" type="button" @click="selectDropdownValue('materialCatalogTimeDraft', opt.value, 'catalogTime')" class="custom-select-option" :class="{'is-active': materialCatalogTimeDraft===opt.value}">{{ opt.label }}</button>
@@ -1260,6 +1303,10 @@ createApp({
       { value:'low', label:'存在低风险' },
       { value:'pass', label:'未发现明显风险' }
     ];
+    const catalogMediaOptions = [
+      { value:'image', label:'图片' },
+      { value:'video', label:'视频' }
+    ];
     const taskPageSizeOptions = [
       { value:10, label:'10 / 页' },
       { value:20, label:'20 / 页' },
@@ -1321,10 +1368,14 @@ createApp({
     ];
     const homeViewMode = ref('tasks');
     const taskTimeFilter = ref('30d');
-    // 素材视图：扁平列表；搜索任务名称 + 时间筛选（点查询生效）
+    // 素材视图：任务名称 + 素材类型 + 审核结果 + 审核时间（点查询生效；无审核进度）
     const materialCatalogSearchDraft = ref('');
+    const materialCatalogMediaDraft = ref('');
+    const materialCatalogResultDraft = ref('');
     const materialCatalogTimeDraft = ref('30d');
     const materialCatalogSearch = ref('');
+    const materialCatalogMediaFilter = ref('');
+    const materialCatalogResultFilter = ref('');
     const materialCatalogTimeFilter = ref('30d');
     const selectedCatalogIds = ref([]);
     const materialLightboxOpen = ref(false);
@@ -1356,7 +1407,7 @@ createApp({
       };
     }
     function isFilterDropdown(key) {
-      return ['taskStatus', 'taskResult', 'taskTime', 'catalogTime', 'librarySource', 'libraryMedia', 'libraryAudit', 'libraryGroup'].includes(key);
+      return ['taskStatus', 'taskResult', 'taskTime', 'catalogMedia', 'catalogResult', 'catalogTime', 'librarySource', 'libraryMedia', 'libraryAudit', 'libraryGroup'].includes(key);
     }
     function toggleDropdown(key, event) {
       if (openDropdownKey.value === key) {
@@ -1386,6 +1437,8 @@ createApp({
       else if (refName === 'libraryMediaFilter') libraryMediaFilter.value = value;
       else if (refName === 'libraryAuditFilter') libraryAuditFilter.value = value;
       else if (refName === 'libraryGroupFilter') libraryGroupFilter.value = value;
+      else if (refName === 'materialCatalogMediaDraft') materialCatalogMediaDraft.value = value;
+      else if (refName === 'materialCatalogResultDraft') materialCatalogResultDraft.value = value;
       else if (refName === 'materialCatalogTimeDraft') materialCatalogTimeDraft.value = value;
       closeAllDropdowns();
     }
@@ -2528,6 +2581,10 @@ createApp({
     const expandedTaskMaterials = computed(() => {
       const q = materialCatalogSearch.value.trim();
       const time = materialCatalogTimeFilter.value;
+      const media = materialCatalogMediaFilter.value;
+      const result = materialCatalogResultFilter.value;
+      const matchMedia = (item) => !media || (item.mediaType || 'image') === media;
+      const matchResult = (item) => !result || (item.auditStatus || 'pass') === result;
       const items = [];
       mockTasks.value.forEach(task => {
         if (task.taskStatus !== 'done') return;
@@ -2535,31 +2592,22 @@ createApp({
         getTaskMaterialSnapshot(task.id).forEach((mat, i) => {
           const item = buildCatalogItemFromMaterial(task, mat, i);
           if (!withinTimeRange(item.auditTime, time)) return;
+          if (!matchMedia(item)) return;
+          if (!matchResult(item)) return;
           items.push(item);
         });
       });
-      // 搜任务名时只返回任务素材；无搜索词时附带自动化检测素材
+      // 任务名称只筛任务侧：有搜索词时不附带自动化素材
       if (!q) {
         autoDetectMaterials.value.forEach((mat, i) => {
           const item = buildAutoCatalogItem(mat, i);
           if (!withinTimeRange(item.auditTime, time)) return;
+          if (!matchMedia(item)) return;
+          if (!matchResult(item)) return;
           items.push(item);
         });
       }
       return items.sort((a, b) => (b.auditTime || '').localeCompare(a.auditTime || ''));
-    });
-    const selectedTaskRiskSummary = computed(() => {
-      const items = expandedTaskMaterials.value;
-      let high = 0, medium = 0, low = 0, pass = 0;
-      items.forEach(i => {
-        const s = i.auditStatus || 'pass';
-        if (s === 'pass') pass += 1;
-        else if (s === 'high') high += 1;
-        else if (s === 'medium') medium += 1;
-        else if (s === 'low') low += 1;
-        else pass += 1;
-      });
-      return { high, medium, low, pass };
     });
     const catalogSelectableIds = computed(() => expandedTaskMaterials.value.map(i => i.id));
     const isCatalogAllSelected = computed(() => catalogSelectableIds.value.length > 0 && catalogSelectableIds.value.every(id => selectedCatalogIds.value.includes(id)));
@@ -2580,16 +2628,22 @@ createApp({
     });
     function clearMaterialCatalogDraft(field) {
       if (field === 'time') materialCatalogTimeDraft.value = 'all';
+      if (field === 'result') materialCatalogResultDraft.value = '';
+      if (field === 'media') materialCatalogMediaDraft.value = '';
       closeAllDropdowns();
     }
     function submitMaterialCatalogQuery() {
       materialCatalogSearch.value = materialCatalogSearchDraft.value;
+      materialCatalogMediaFilter.value = materialCatalogMediaDraft.value || '';
+      materialCatalogResultFilter.value = materialCatalogResultDraft.value || '';
       materialCatalogTimeFilter.value = materialCatalogTimeDraft.value || 'all';
       clearCatalogSelection();
       closeAllDropdowns();
     }
     function resetMaterialCatalogFilters() {
       materialCatalogSearchDraft.value = '';
+      materialCatalogMediaDraft.value = '';
+      materialCatalogResultDraft.value = '';
       materialCatalogTimeDraft.value = '30d';
       submitMaterialCatalogQuery();
     }
@@ -3210,7 +3264,7 @@ createApp({
       currentPage, navTabs, activeTabId, isHomeTab, switchTab, closeTab, closeCurrentTaskTab,
       homeViewMode, timeRangeOptions, materialChannelFilterOptions,
       formData, uploadedFiles, safeAreaChannelOptions, selectedChannelLabel,
-      openDropdownKey, dropdownMenuStyle, uploadListSectionRef, taskStatusOptions, taskResultOptions, taskPageSizeOptions, uploadMediaOptions, libraryTypeOptions,
+      openDropdownKey, dropdownMenuStyle, uploadListSectionRef, taskStatusOptions, taskResultOptions, catalogMediaOptions, taskPageSizeOptions, uploadMediaOptions, libraryTypeOptions,
       libraryMediaOptions, librarySourceOptions, libraryAuditOptions, libraryGroupOptions, librarySourceLabel, libraryAuditLabel,
       toggleDropdown, closeAllDropdowns, isFilterDropdown, dropdownLabel, selectDropdownValue, selectChannel, selectPageSize, openMaterialDetailTab,
       uploadFileSearch, uploadMediaFilter, useCompactUploadList, uploadFileStats, filteredUploadedFiles,
@@ -3221,9 +3275,9 @@ createApp({
       goTaskPage, onTaskPageSizeChange, clearTaskFilterDraft, submitTaskQuery, resetTaskFilters, gotoTaskPage,
       taskUsableCount, taskUsableLabel, downloadTaskUsableMaterials, downloadActiveTaskUsableMaterials, activeTaskUsableCount,
       isTaskExpanded, toggleTaskExpand, getTaskPreviewMaterials, thumbCornerClass, openTaskDetailAtMaterial,
-      materialCatalogSearchDraft, materialCatalogTimeDraft,
-      materialCatalogSearch, materialCatalogTimeFilter,
-      selectedCatalogIds, expandedTaskMaterials, selectedTaskRiskSummary,
+      materialCatalogSearchDraft, materialCatalogMediaDraft, materialCatalogResultDraft, materialCatalogTimeDraft,
+      materialCatalogSearch, materialCatalogMediaFilter, materialCatalogResultFilter, materialCatalogTimeFilter,
+      selectedCatalogIds, expandedTaskMaterials,
       isCatalogAllSelected, isCatalogPartiallySelected, submitMaterialCatalogQuery, resetMaterialCatalogFilters, clearMaterialCatalogDraft,
       toggleCatalogSelect, toggleSelectAllCatalog, clearCatalogSelection,
       downloadSelectedCatalog, downloadSingleCatalogMaterial,
