@@ -291,7 +291,7 @@
                 <div class="flex items-center gap-3 shrink-0 ml-6">
                   <div class="relative group w-[160px]">
                     <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary group-focus-within:text-primary transition-colors"></i>
-                    <input type="text" v-model="searchQuery" placeholder="搜索技能、标签或描述..." 
+                    <input type="text" v-model="searchQuery" placeholder="搜索技能名称或描述..." 
                            class="w-full h-[32px] bg-black/20 border border-border-default rounded-lg pl-9 pr-3 text-[13px] outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all placeholder-text-tertiary truncate">
                   </div>
                   <div class="relative w-[160px]">
@@ -384,7 +384,7 @@
                 <div class="flex items-center gap-3 shrink-0 ml-6">
                   <div class="relative group">
                     <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary group-focus-within:text-primary transition-colors"></i>
-                    <input type="text" v-model="mineSearchQuery" placeholder="搜索技能、标签或描述..." 
+                    <input type="text" v-model="mineSearchQuery" placeholder="搜索技能名称或描述..." 
                            class="w-[200px] h-[32px] bg-black/20 border border-border-default rounded-lg pl-9 pr-3 text-[13px] outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all placeholder-text-tertiary">
                   </div>
                 </div>
@@ -400,9 +400,13 @@
                         <div class="w-12 h-12 rounded-xl bg-gradient-to-br flex items-center justify-center text-2xl shadow-inner border border-white/10 shrink-0" :class="ms.gradient">
                           <i :class="ms.icon"></i>
                         </div>
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-2 flex-wrap justify-end">
                           <!-- Status Badge：失败原因仅在详情页展示 -->
-                          <span v-if="ms.status === '已发布'" class="px-2 py-0.5 rounded text-[11px] font-medium bg-green-500/10 text-green-400 border border-green-500/20">已发布</span>
+                          <span v-if="ms.status === '检测中'" class="px-2 py-0.5 rounded text-[11px] font-medium bg-amber-500/10 text-amber-300 border border-amber-500/25">检测中</span>
+                          <template v-else-if="ms.status === '已发布'">
+                            <span class="px-2 py-0.5 rounded text-[11px] font-medium bg-green-500/10 text-green-400 border border-green-500/20">已发布</span>
+                            <span v-if="ms.pendingVersionDetect" class="px-2 py-0.5 rounded text-[11px] font-medium bg-amber-500/10 text-amber-300 border border-amber-500/25">新版本检测中</span>
+                          </template>
                           <span v-else-if="ms.status === '发布失败'" class="px-2 py-0.5 rounded text-[11px] font-medium bg-red-500/10 text-red-400 border border-red-500/20">发布失败</span>
                           <span v-else-if="ms.status === '已下架'" class="px-2 py-0.5 rounded text-[11px] font-medium bg-white/10 text-text-tertiary border border-white/10">已下架</span>
 
@@ -532,9 +536,13 @@
                 <span class="text-sm font-mono text-text-tertiary">v{{ detailHeaderVersion }}</span>
               </h2>
               <!-- 下载态角标（已是最新/有新版本）只在「我的下载」卡片展示，详情与广场入口一致 -->
-              <span v-if="activeTab.skillData.status === '发布失败'" class="px-2 py-0.5 rounded text-[11px] font-medium bg-red-500/10 text-red-400 border border-red-500/20">发布失败</span>
+              <span v-if="activeTab.skillData.status === '检测中'" class="px-2 py-0.5 rounded text-[11px] font-medium bg-amber-500/10 text-amber-300 border border-amber-500/25">检测中</span>
+              <span v-else-if="activeTab.skillData.status === '发布失败'" class="px-2 py-0.5 rounded text-[11px] font-medium bg-red-500/10 text-red-400 border border-red-500/20">发布失败</span>
               <span v-else-if="activeTab.skillData.status === '已下架' || activeTab.skillData.unlisted || activeTab.skillData.downloadState === 'unpublished'" class="px-2 py-0.5 rounded text-[11px] font-medium bg-white/10 text-text-tertiary border border-white/10">已下架</span>
-              <span v-else class="px-2 py-0.5 rounded text-[11px] font-medium bg-green-500/10 text-green-400 border border-green-500/20">已发布</span>
+              <template v-else>
+                <span class="px-2 py-0.5 rounded text-[11px] font-medium bg-green-500/10 text-green-400 border border-green-500/20">已发布</span>
+                <span v-if="activeTab.skillData.pendingVersionDetect" class="px-2 py-0.5 rounded text-[11px] font-medium bg-amber-500/10 text-amber-300 border border-amber-500/25">新版本检测中</span>
+              </template>
             </div>
 
             <!-- Content Split -->
@@ -626,8 +634,8 @@
               <!-- Right: Metadata & Action -->
               <div class="flex-[1] min-w-[320px] bg-bg-base/30 p-6 overflow-y-auto flex flex-col gap-6 custom-scrollbar">
                 
-                <!-- 我的技能 · 发布失败 -->
-                <template v-if="activeTab.mode === 'ownerFailed'">
+                <!-- 我的技能 · 检测中：技能信息 + 管理（含当前状态） -->
+                <template v-if="activeTab.mode === 'ownerDetecting'">
                   <div>
                     <h4 class="text-[13px] font-semibold text-text-secondary uppercase tracking-wider mb-4">技能信息</h4>
                     <div class="space-y-4">
@@ -636,7 +644,7 @@
                         <span class="text-[13px]">{{ activeTab.skillData.author }}</span>
                       </div>
                       <div class="flex justify-between items-center">
-                        <span class="text-[13px] text-text-tertiary">部门</span>
+                        <span class="text-[13px] text-text-tertiary">岗位</span>
                         <span class="text-[13px]">{{ activeTab.skillData.dept || '—' }}</span>
                       </div>
                       <div class="flex justify-between items-center">
@@ -655,14 +663,49 @@
                   </div>
                   <hr class="border-border-default">
                   <div>
-                    <h4 class="text-[13px] font-semibold text-text-secondary uppercase tracking-wider mb-3">标签</h4>
-                    <div class="flex flex-wrap gap-2">
-                      <span v-for="tag in (activeTab.skillData.tags || [])" :key="tag" class="px-2.5 py-1 rounded bg-white/5 border border-border-light text-[12px] text-text-secondary">{{ tag }}</span>
+                    <h4 class="text-[13px] font-semibold text-text-secondary uppercase tracking-wider mb-4">管理</h4>
+                    <div class="space-y-4">
+                      <div class="flex justify-between items-center">
+                        <span class="text-[13px] text-text-tertiary">当前状态</span>
+                        <span class="px-2 py-0.5 rounded text-[11px] font-medium bg-amber-500/10 text-amber-300 border border-amber-500/25">检测中</span>
+                      </div>
+                    </div>
+                    <div class="mt-4 p-3 rounded-lg bg-amber-500/5 border border-amber-500/20 text-[12px] text-text-secondary leading-relaxed">
+                      安全检测进行中，完成后将自动更新状态。检测中不可安装、下架或更新版本。
+                    </div>
+                  </div>
+                </template>
+
+                <!-- 我的技能 · 发布失败 -->
+                <template v-else-if="activeTab.mode === 'ownerFailed'">
+                  <div>
+                    <h4 class="text-[13px] font-semibold text-text-secondary uppercase tracking-wider mb-4">技能信息</h4>
+                    <div class="space-y-4">
+                      <div class="flex justify-between items-center">
+                        <span class="text-[13px] text-text-tertiary">作者</span>
+                        <span class="text-[13px]">{{ activeTab.skillData.author }}</span>
+                      </div>
+                      <div class="flex justify-between items-center">
+                        <span class="text-[13px] text-text-tertiary">岗位</span>
+                        <span class="text-[13px]">{{ activeTab.skillData.dept || '—' }}</span>
+                      </div>
+                      <div class="flex justify-between items-center">
+                        <span class="text-[13px] text-text-tertiary">分类</span>
+                        <span class="text-[13px]">{{ activeTab.skillData.category }}</span>
+                      </div>
+                      <div class="flex justify-between items-center">
+                        <span class="text-[13px] text-text-tertiary">版本</span>
+                        <span class="text-[13px] font-mono">v{{ formatVersion(activeTab.skillData.version) }}</span>
+                      </div>
+                      <div class="flex justify-between items-center">
+                        <span class="text-[13px] text-text-tertiary">提交时间</span>
+                        <span class="text-[13px]">{{ activeTab.skillData.submitTime || activeTab.skillData.updatedAt || '—' }}</span>
+                      </div>
                     </div>
                   </div>
                   <hr class="border-border-default">
                   <div>
-                    <h4 class="text-[13px] font-semibold text-text-secondary uppercase tracking-wider mb-4">发布失败</h4>
+                    <h4 class="text-[13px] font-semibold text-text-secondary uppercase tracking-wider mb-4">管理</h4>
                     <div class="space-y-4">
                       <div class="flex justify-between items-center">
                         <span class="text-[13px] text-text-tertiary">当前状态</span>
@@ -679,18 +722,50 @@
                   </div>
                 </template>
 
-                <!-- 我的技能 · 已下架 -->
+                <!-- 我的技能 · 已下架：技能信息 + 管理（含当前状态） -->
                 <template v-else-if="activeTab.mode === 'ownerUnpublished'">
                   <div>
-                    <h4 class="text-[13px] font-semibold text-text-secondary uppercase tracking-wider mb-4">下架说明</h4>
-                    <div class="p-4 bg-white/[0.03] border border-border-default rounded-xl space-y-2">
+                    <h4 class="text-[13px] font-semibold text-text-secondary uppercase tracking-wider mb-4">技能信息</h4>
+                    <div class="space-y-4">
+                      <div class="flex justify-between items-center">
+                        <span class="text-[13px] text-text-tertiary">作者</span>
+                        <span class="text-[13px]">{{ activeTab.skillData.author }}</span>
+                      </div>
+                      <div class="flex justify-between items-center">
+                        <span class="text-[13px] text-text-tertiary">岗位</span>
+                        <span class="text-[13px]">{{ activeTab.skillData.dept || '—' }}</span>
+                      </div>
+                      <div class="flex justify-between items-center">
+                        <span class="text-[13px] text-text-tertiary">分类</span>
+                        <span class="text-[13px]">{{ activeTab.skillData.category }}</span>
+                      </div>
+                      <div class="flex justify-between items-center">
+                        <span class="text-[13px] text-text-tertiary">版本</span>
+                        <span class="text-[13px] font-mono">v{{ formatVersion(activeTab.skillData.version) }}</span>
+                      </div>
+                      <div class="flex justify-between items-center">
+                        <span class="text-[13px] text-text-tertiary">更新时间</span>
+                        <span class="text-[13px]">{{ activeTab.skillData.updatedAt || '—' }}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <hr class="border-border-default">
+                  <div>
+                    <h4 class="text-[13px] font-semibold text-text-secondary uppercase tracking-wider mb-4">管理</h4>
+                    <div class="space-y-4">
+                      <div class="flex justify-between items-center">
+                        <span class="text-[13px] text-text-tertiary">当前状态</span>
+                        <span class="px-2 py-0.5 rounded text-[11px] font-medium bg-white/10 text-text-tertiary border border-white/10">已下架</span>
+                      </div>
+                    </div>
+                    <div class="mt-4 p-4 bg-white/[0.03] border border-border-default rounded-xl space-y-2">
                       <p class="text-[13px] text-text-secondary leading-relaxed">该技能已从广场下架，新用户无法搜索和安装。</p>
                       <p class="text-[12px] text-text-tertiary">已下载用户不受影响，可继续使用本地版本。</p>
                     </div>
+                    <button @click="editDraft(activeTab.skillData)" class="mt-4 w-full py-2.5 rounded-lg bg-primary hover:bg-primary-hover text-bg-base text-[14px] font-semibold transition-colors flex items-center justify-center gap-2">
+                      <i class="ph-bold ph-arrow-counter-clockwise"></i> 重新发布
+                    </button>
                   </div>
-                  <button @click="editDraft(activeTab.skillData)" class="w-full py-2.5 rounded-lg bg-primary hover:bg-primary-hover text-bg-base text-[14px] font-semibold transition-colors flex items-center justify-center gap-2">
-                    <i class="ph-bold ph-arrow-counter-clockwise"></i> 重新发布
-                  </button>
                 </template>
 
                 <template v-else-if="activeTab.mode === 'downloaded'">
@@ -734,7 +809,7 @@
                         <span class="text-[13px]">{{ activeTab.skillData.author }}</span>
                       </div>
                       <div class="flex justify-between items-center">
-                        <span class="text-[13px] text-text-tertiary">部门</span>
+                        <span class="text-[13px] text-text-tertiary">岗位</span>
                         <span class="text-[13px]">{{ activeTab.skillData.dept || '—' }}</span>
                       </div>
                       <div class="flex justify-between items-center">
@@ -757,17 +832,6 @@
                         <span class="text-[13px] text-text-tertiary">收藏数</span>
                         <span class="text-[13px]">{{ activeTab.skillData.favorites }}</span>
                       </div>
-                    </div>
-                  </div>
-
-                  <hr class="border-border-default">
-
-                  <div>
-                    <h4 class="text-[13px] font-semibold text-text-secondary uppercase tracking-wider mb-3">标签</h4>
-                    <div class="flex flex-wrap gap-2">
-                      <span v-for="tag in activeTab.skillData.tags" :key="tag" class="px-2.5 py-1 rounded bg-white/5 border border-border-light text-[12px] text-text-secondary">
-                        {{ tag }}
-                      </span>
                     </div>
                   </div>
                 </template>
@@ -807,12 +871,24 @@
                     </div>
                   </div>
 
-                  <!-- 作者管理区：仅自己的已发布技能可见 -->
-                  <template v-if="isOwnSkill(activeTab.skillData) && !activeTab.skillData.unlisted">
+                  <!-- 作者管理区：含当前状态；检测中整卡走 ownerDetecting -->
+                  <template v-if="isOwnSkill(activeTab.skillData) && !activeTab.skillData.unlisted && activeTab.skillData.status !== '检测中'">
                     <hr class="border-border-default">
                     <div>
                       <h4 class="text-[13px] font-semibold text-text-secondary uppercase tracking-wider mb-4">管理</h4>
-                      <div class="space-y-2.5">
+                      <div class="space-y-4">
+                        <div class="flex justify-between items-center">
+                          <span class="text-[13px] text-text-tertiary">当前状态</span>
+                          <div class="flex items-center gap-1.5 flex-wrap justify-end">
+                            <span class="px-2 py-0.5 rounded text-[11px] font-medium bg-green-500/10 text-green-400 border border-green-500/20">已发布</span>
+                            <span v-if="activeTab.skillData.pendingVersionDetect" class="px-2 py-0.5 rounded text-[11px] font-medium bg-amber-500/10 text-amber-300 border border-amber-500/25">新版本检测中</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div v-if="activeTab.skillData.pendingVersionDetect" class="mt-4 p-3 rounded-lg bg-amber-500/5 border border-amber-500/20 text-[12px] text-text-secondary leading-relaxed">
+                        新版本 v{{ activeTab.skillData.pendingVersion }} 检测中，线上仍为 v{{ activeTab.skillData.version }}。检测完成前暂不可更新版本或下架。
+                      </div>
+                      <div class="mt-4 space-y-2.5" v-else>
                         <button @click="openUpdateVersion(resolveOwnRecord(activeTab.skillData))" class="w-full h-[36px] rounded-lg bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 text-[13px] font-semibold transition-colors flex items-center justify-center gap-2">
                           <i class="ph-bold ph-cloud-arrow-up"></i> 更新版本
                         </button>
@@ -834,7 +910,7 @@
                         </div>
                       </div>
                       <div class="flex justify-between items-center">
-                        <span class="text-[13px] text-text-tertiary">部门</span>
+                        <span class="text-[13px] text-text-tertiary">岗位</span>
                         <span class="text-[13px]">{{ activeTab.skillData.dept || '—' }}</span>
                       </div>
                       <div class="flex justify-between items-center">
@@ -860,18 +936,6 @@
                     </div>
                   </div>
                   
-                  <hr class="border-border-default">
-
-                  <!-- Tags -->
-                  <div>
-                    <h4 class="text-[13px] font-semibold text-text-secondary uppercase tracking-wider mb-3">标签</h4>
-                    <div class="flex flex-wrap gap-2">
-                      <span v-for="tag in activeTab.skillData.tags" :key="tag" class="px-2.5 py-1 rounded bg-white/5 border border-border-light text-[12px] text-text-secondary">
-                        {{ tag }}
-                      </span>
-                    </div>
-                  </div>
-
                 </template>
               </div>
             </div>
@@ -919,7 +983,7 @@
                       </div>
                     </div>
 
-                    <!-- 更新版本：名称/分类锁定；必填换包+版本+说明；描述/图标/标签可一并改 -->
+                    <!-- 更新版本：名称/分类锁定；必填换包+版本+说明；描述/图标可一并改 -->
                     <template v-if="createMode === 'updateVersion'">
                       <div class="grid grid-cols-2 gap-6">
                         <div class="space-y-2">
@@ -954,10 +1018,6 @@
                       <div class="space-y-2">
                         <label class="block text-[13px] font-medium text-text-secondary">技能描述</label>
                         <textarea v-model="form.desc" rows="2" placeholder="可一并更新广场展示描述" class="w-full bg-black/20 border border-border-default rounded-lg p-3 text-[13px] outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all resize-none"></textarea>
-                      </div>
-                      <div class="space-y-2">
-                        <label class="block text-[13px] font-medium text-text-secondary">标签 (用逗号分隔)</label>
-                        <input type="text" v-model="form.tags" placeholder="例如：Code Review, BugFix" class="w-full h-[36px] bg-black/20 border border-border-default rounded-lg px-3 text-[13px] outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all">
                       </div>
                     </template>
 
@@ -1010,11 +1070,6 @@
                       <textarea required v-model="form.desc" rows="2" placeholder="简要描述该技能的功能、适用场景..." class="w-full bg-black/20 border border-border-default rounded-lg p-3 text-[13px] outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all resize-none"></textarea>
                     </div>
 
-                    <!-- Tags -->
-                    <div class="space-y-2">
-                      <label class="block text-[13px] font-medium text-text-secondary">标签 (用逗号分隔)</label>
-                      <input type="text" v-model="form.tags" placeholder="例如：Code Review, BugFix" class="w-full h-[36px] bg-black/20 border border-border-default rounded-lg px-3 text-[13px] outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all">
-                    </div>
                     </template>
                   </form>
                 </div>
@@ -1046,7 +1101,10 @@
            @click.stop>
         <!-- 我的技能菜单 -->
         <template v-if="cardMenu.context === 'mine'">
-          <template v-if="cardMenu.skill.status === '发布失败'">
+          <template v-if="cardMenu.skill.status === '检测中' || cardMenu.skill.pendingVersionDetect">
+            <button @click="openDetailView(cardMenu.skill)" class="w-full text-left px-3 py-2 text-[13px] text-text-secondary hover:text-text-primary hover:bg-white/5 rounded-lg transition-colors">查看详情</button>
+          </template>
+          <template v-else-if="cardMenu.skill.status === '发布失败'">
             <button @click="editDraft(cardMenu.skill)" class="w-full text-left px-3 py-2 text-[13px] text-text-secondary hover:text-text-primary hover:bg-white/5 rounded-lg transition-colors">修改后重新发布</button>
             <div class="h-px bg-border-light my-1 mx-2"></div>
             <button @click="deleteDraft(cardMenu.skill)" class="w-full text-left px-3 py-2 text-[13px] text-red-400 hover:bg-red-500/10 rounded-lg transition-colors">删除</button>
@@ -1216,39 +1274,39 @@
     const { createApp, ref, computed, reactive, watch, onUnmounted } = Vue;
 
     // Dummy Data mapped to actual departments
-    const ORG_DEPTS = ['所有部门', '照明事业部 (LBU)', '家电事业部 (ABU)', '营销中心 (MC)', '用户中心 (UC)', '交付中心 (DC)', '质量平台 (QP)', '制造平台 (MP)', '数字平台 (DP)', '支持平台 (SP)'];
+    const ORG_DEPTS = ['全部岗位', '产品经理', '前端开发工程师', 'Java开发工程师', '测试工程师', '平面设计师', '运营专员'];
     
     const MOCK_SKILLS = [
-      { id: '1', name: '智能代码审查专家', desc: '深度分析 PR/MR 代码，找出潜在的 Bug、性能瓶颈以及不符合规范的写法，并给出修改建议。', category: '开发工具', tags: ['Code Review', 'BugFix', 'Vue3'], author: 'You', dept: '数字平台 (DP)', downloads: '1.2k', favorites: 328, version: '1.2.0', updatedAt: '2026-06-16 14:30', icon: 'ph-duotone ph-code', gradient: 'from-blue-600 to-cyan-500',
+      { id: '1', name: '智能代码审查专家', desc: '深度分析 PR/MR 代码，找出潜在的 Bug、性能瓶颈以及不符合规范的写法，并给出修改建议。', category: '开发工具', author: 'You', dept: '前端开发工程师', downloads: '1.2k', favorites: 328, version: '1.2.0', updatedAt: '2026-06-16 14:30', icon: 'ph-duotone ph-code', gradient: 'from-blue-600 to-cyan-500',
         history: [
           { version: '1.2.0', date: '2026-06-16 14:30', notes: ['修复了分析深度的容错率问题', '新增了输出语言 lang 字段支持', '优化 Prompt 执行效率，Token 消耗减少 15%'] },
           { version: '1.1.0', date: '2026-06-10 09:15', notes: ['优化 Prompt 执行效率', '更新 examples 目录下的测试用例'] },
           { version: '1.0.0', date: '2026-06-01 10:00', notes: ['初始版本发布'] },
         ] },
-      { id: '2', name: '小红书爆款文案器', desc: '输入简短的产品卖点，一键生成符合小红书语境的带 Emoji 爆款排版文案。', category: '内容创作', tags: ['文案', '社媒', '营销'], author: 'Sarah', dept: '营销中心 (MC)', downloads: '3.4k', favorites: 512, version: '2.0.1', updatedAt: '2026-06-14 09:15', icon: 'ph-duotone ph-pen-nib', gradient: 'from-pink-600 to-rose-400',
+      { id: '2', name: '小红书爆款文案器', desc: '输入简短的产品卖点，一键生成符合小红书语境的带 Emoji 爆款排版文案。', category: '内容创作', author: 'Sarah', dept: '运营专员', downloads: '3.4k', favorites: 512, version: '2.0.1', updatedAt: '2026-06-14 09:15', icon: 'ph-duotone ph-pen-nib', gradient: 'from-pink-600 to-rose-400',
         history: [
           { version: '2.0.1', date: '2026-06-14 09:15', notes: ['修复长文案 Emoji 错位问题'] },
           { version: '2.0.0', date: '2026-06-06 15:40', notes: ['重构文案模板体系，新增 6 种爆款结构'] },
           { version: '1.9.0', date: '2026-05-28 10:20', notes: ['新增标题党强度调节参数'] },
         ] },
-      { id: '3', name: 'Shopify 竞品提取器', desc: '抓取 Shopify 竞品站点的关键商品描述、SKU 和定价策略，结构化输出。', category: '数据分析', tags: ['Crawler', 'Shopify', 'JSON'], author: 'Leo', dept: '数字平台 (DP)', downloads: '850', favorites: 186, version: '1.1.0', updatedAt: '2026-06-12 16:20', icon: 'ph-duotone ph-database', gradient: 'from-emerald-600 to-teal-400',
+      { id: '3', name: 'Shopify 竞品提取器', desc: '抓取 Shopify 竞品站点的关键商品描述、SKU 和定价策略，结构化输出。', category: '数据分析', author: 'Leo', dept: '运营专员', downloads: '850', favorites: 186, version: '1.1.0', updatedAt: '2026-06-12 16:20', icon: 'ph-duotone ph-database', gradient: 'from-emerald-600 to-teal-400',
         history: [
           { version: '1.1.0', date: '2026-06-12 16:20', notes: ['新增定价策略结构化抓取', '支持 Collections 页批量提取'] },
           { version: '1.0.5', date: '2026-06-02 11:00', notes: ['修复分页抓取遗漏问题'] },
           { version: '1.0.0', date: '2026-05-20 09:00', notes: ['初始版本发布'] },
         ] },
-      { id: '4', name: '多语种本地化翻译', desc: '专为软件 UI/UX 文本设计的翻译技能，保持占位符不变，支持 12 种主流语言。', category: '内容创作', tags: ['i18n', '翻译', '工具'], author: 'Maria', dept: '支持平台 (SP)', downloads: '2.1k', favorites: 274, version: '1.1.0', updatedAt: '2026-06-10 11:45', icon: 'ph-duotone ph-translate', gradient: 'from-indigo-600 to-blue-500',
+      { id: '4', name: '多语种本地化翻译', desc: '专为软件 UI/UX 文本设计的翻译技能，保持占位符不变，支持 12 种主流语言。', category: '内容创作', author: 'Maria', dept: '平面设计师', downloads: '2.1k', favorites: 274, version: '1.1.0', updatedAt: '2026-06-10 11:45', icon: 'ph-duotone ph-translate', gradient: 'from-indigo-600 to-blue-500',
         history: [
           { version: '1.1.0', date: '2026-06-10 11:45', notes: ['新增 4 种小语种支持', '占位符校验规则增强'] },
           { version: '1.0.0', date: '2026-05-25 14:00', notes: ['初始版本发布'] },
         ] },
-      { id: '5', name: '会议纪要提炼', desc: '将杂乱的会议语音转写文本提取为：核心决议、待办事项(Owner+DDL)以及讨论细节。', category: '办公效率', tags: ['办公', '总结', 'TODO'], author: 'David', dept: '照明事业部 (LBU)', downloads: '5.6k', favorites: 891, version: '3.0.0', updatedAt: '2026-06-08 08:30', icon: 'ph-duotone ph-files', gradient: 'from-orange-500 to-amber-400',
+      { id: '5', name: '会议纪要提炼', desc: '将杂乱的会议语音转写文本提取为：核心决议、待办事项(Owner+DDL)以及讨论细节。', category: '办公效率', author: 'David', dept: '产品经理', downloads: '5.6k', favorites: 891, version: '3.0.0', updatedAt: '2026-06-08 08:30', icon: 'ph-duotone ph-files', gradient: 'from-orange-500 to-amber-400',
         history: [
           { version: '3.0.0', date: '2026-06-08 08:30', notes: ['支持多人发言角色识别', '待办事项自动关联 Owner 与 DDL'] },
           { version: '2.5.0', date: '2026-05-18 16:30', notes: ['新增讨论细节分层输出'] },
           { version: '2.0.0', date: '2026-05-01 10:00', notes: ['重构提炼引擎'] },
         ] },
-      { id: '6', name: 'SQL 慢查询优化', desc: '输入慢查询 SQL 与表结构，自动分析 explain 结果并给出索引建议。', category: '开发工具', tags: ['DBA', 'MySQL', '调优'], author: 'You', dept: '数字平台 (DP)', downloads: '920', favorites: 156, version: '1.0.2', updatedAt: '2026-06-05 17:00', icon: 'ph-duotone ph-lightning', gradient: 'from-violet-600 to-fuchsia-500',
+      { id: '6', name: 'SQL 慢查询优化', desc: '输入慢查询 SQL 与表结构，自动分析 explain 结果并给出索引建议。', category: '开发工具', author: 'You', dept: 'Java开发工程师', downloads: '920', favorites: 156, version: '1.0.2', updatedAt: '2026-06-05 17:00', icon: 'ph-duotone ph-lightning', gradient: 'from-violet-600 to-fuchsia-500',
         history: [
           { version: '1.0.2', date: '2026-06-05 17:00', notes: ['修复 explain 结果解析异常'] },
           { version: '1.0.0', date: '2026-05-28 09:30', notes: ['初始版本发布'] },
@@ -1285,7 +1343,7 @@
 
         const departments = ORG_DEPTS;
         const departmentOptions = ORG_DEPTS;
-        const selectedDept = ref('所有部门');
+        const selectedDept = ref('全部岗位');
         // 默认最多下载：广场优先露出热门技能；关闭态直接显示当前排序规则
         const sortOptions = ['最多下载', '最多收藏', '最新时间'];
         const selectedSort = ref('最多下载');
@@ -1429,7 +1487,6 @@
   "description": "深度代码审查专家",
   "author": "Alex",
   "category": "开发工具",
-  "tags": ["Code Review", "BugFix", "Vue3"],
   "main": "skill.md",
   "config": {
     "depth": 3,
@@ -1640,7 +1697,7 @@ app.get('/api/users', async (req, res) => {
 
         // Form State
         const form = ref({
-          name: '', category: '', desc: '', tags: '',
+          name: '', category: '', desc: '',
           icon: 'ph-duotone ph-code', gradient: 'from-blue-600 to-cyan-500'
         });
         const isSubmitting = ref(false);
@@ -1666,30 +1723,37 @@ app.get('/api/users', async (req, res) => {
           simulatedUploaded.value = true;
         };
 
-        // Mine Skills：已发布 / 已下架 / 发布失败（自动检测）
+        // Mine Skills：检测中 / 已发布 / 已下架 / 发布失败（异步自动检测）
         const mySkillDrafts = reactive([
           {
             id: 'my-1', name: '智能代码审查专家', desc: '深度分析 PR/MR 代码，找出潜在的 Bug、性能瓶颈以及不符合规范的写法，并给出修改建议。',
-            category: '开发工具', tags: ['Code Review', 'BugFix', 'Vue3'], author: 'You', dept: '数字平台 (DP)',
+            category: '开发工具', author: 'You', dept: '前端开发工程师',
             version: '1.2.0', icon: 'ph-duotone ph-code', gradient: 'from-blue-600 to-cyan-500',
             status: '已发布', downloads: '1.2k', favorites: 328, updatedAt: '2026-06-16 14:30',
+            pendingVersionDetect: true, pendingVersion: '1.2.1', pendingChangelog: '修复边界场景误报',
+          },
+          {
+            id: 'my-6', name: '周报结构整理助手', desc: '汇总本周提交与会议纪要，输出结构化周报草稿。',
+            category: '办公效率', author: 'You', dept: '前端开发工程师',
+            version: '1.0.0', icon: 'ph-duotone ph-notepad', gradient: 'from-amber-600 to-orange-400',
+            status: '检测中', favorites: 0, submitTime: '2026-08-06 15:20', updatedAt: '2026-08-06 15:20',
           },
           {
             id: 'my-3', name: 'SQL 慢查询优化', desc: '输入慢查询 SQL 与表结构，自动分析 explain 结果并给出索引建议。',
-            category: '开发工具', tags: ['DBA', 'MySQL', '调优'], author: 'You', dept: '数字平台 (DP)',
+            category: '开发工具', author: 'You', dept: 'Java开发工程师',
             version: '1.0.2', icon: 'ph-duotone ph-lightning', gradient: 'from-violet-600 to-fuchsia-500',
             status: '已发布', downloads: '920', favorites: 156, updatedAt: '2026-06-05 17:00',
           },
           {
             id: 'my-4', name: '竞品价格监控器', desc: '定时抓取竞品价格变动，生成对比报告并推送钉钉通知。',
-            category: '数据分析', tags: ['监控', '竞品', '价格'], author: 'You', dept: '数字平台 (DP)',
+            category: '数据分析', author: 'You', dept: '运营专员',
             version: '1.0.0', icon: 'ph-duotone ph-chart-bar', gradient: 'from-rose-600 to-pink-400',
             status: '发布失败', favorites: 0, submitTime: '2026-06-12 10:00', updatedAt: '2026-06-12 15:20',
             failReason: '自动检测未通过：skill.json 缺少 compatibility 字段说明；安全检测命中未声明的外链风险。',
           },
           {
             id: 'my-5', name: '竞品分析报告生成器', desc: '输入竞品链接，自动抓取并生成结构化的竞品分析报告。',
-            category: '数据分析', tags: ['竞品', '报告', '分析'], author: 'You', dept: '数字平台 (DP)',
+            category: '数据分析', author: 'You', dept: '运营专员',
             version: '1.0.0', icon: 'ph-duotone ph-files', gradient: 'from-sky-600 to-cyan-400',
             status: '发布失败', favorites: 0, submitTime: '2026-06-17 14:30', updatedAt: '2026-06-17 14:31',
             failReason: '自动检测未通过：兼容性声明不完整，且安全扫描命中可疑命令模式。',
@@ -1700,21 +1764,21 @@ app.get('/api/users', async (req, res) => {
         const myDownloads = ref([
           {
             id: 'dl-1', name: 'Shopify 竞品提取器', desc: '抓取 Shopify 竞品站点的关键商品描述、SKU 和定价策略，结构化输出。',
-            category: '数据分析', tags: ['Crawler', 'Shopify', 'JSON'], author: 'Leo', dept: '数字平台 (DP)',
+            category: '数据分析', author: 'Leo', dept: '运营专员',
             version: '1.0.5', latestVersion: '1.1.0', favorites: 186, downloads: '850',
             icon: 'ph-duotone ph-database', gradient: 'from-emerald-600 to-teal-400',
             downloadState: 'hasUpdate', downloadedAt: '2026-06-12 16:20', updatedAt: '2026-06-12 16:20',
           },
           {
             id: 'dl-2', name: '多语种本地化翻译', desc: '专为软件 UI/UX 文本设计的翻译技能，保持占位符不变，支持 12 种主流语言。',
-            category: '内容创作', tags: ['i18n', '翻译', '工具'], author: 'Maria', dept: '支持平台 (SP)',
+            category: '内容创作', author: 'Maria', dept: '平面设计师',
             version: '1.1.0', favorites: 274, downloads: '2.1k',
             icon: 'ph-duotone ph-translate', gradient: 'from-indigo-600 to-blue-500',
             downloadState: 'latest', downloadedAt: '2026-06-10 11:45', updatedAt: '2026-06-10 11:45',
           },
           {
             id: 'dl-3', name: 'PDF 合同要素抽取', desc: '上传采购/销售合同 PDF，自动抽取金额、账期、违约条款等关键要素并生成核对清单。',
-            category: '办公效率', tags: ['合同', 'PDF', '抽取'], author: '陈晨', dept: '质量平台 (QP)',
+            category: '办公效率', author: '陈晨', dept: '测试工程师',
             version: '1.2.0', favorites: 96, downloads: '430',
             icon: 'ph-duotone ph-shield-check', gradient: 'from-green-600 to-emerald-400',
             downloadState: 'unpublished', downloadedAt: '2026-06-08 08:30', updatedAt: '2026-06-08 08:30',
@@ -1722,21 +1786,19 @@ app.get('/api/users', async (req, res) => {
           },
           {
             id: 'dl-4', name: '小红书爆款文案器', desc: '输入简短的产品卖点，一键生成符合小红书语境的带 Emoji 爆款排版文案。',
-            category: '内容创作', tags: ['文案', '社媒', '营销'], author: 'Sarah', dept: '营销中心 (MC)',
+            category: '内容创作', author: 'Sarah', dept: '运营专员',
             version: '1.9.0', latestVersion: '2.0.1', favorites: 512, downloads: '3.4k',
             icon: 'ph-duotone ph-pen-nib', gradient: 'from-pink-600 to-rose-400',
             downloadState: 'hasUpdate', downloadedAt: '2026-05-30 09:00', updatedAt: '2026-06-14 09:15',
           },
         ]);
 
-        // 与广场一致：搜索匹配名称/描述/标签/分类
+        // 与广场一致：搜索匹配名称/描述
         const matchesMineQuery = (s) => {
           if (!mineSearchQuery.value) return true;
           const q = mineSearchQuery.value.toLowerCase();
           return s.name.toLowerCase().includes(q)
-            || String(s.desc || '').toLowerCase().includes(q)
-            || String(s.category || '').toLowerCase().includes(q)
-            || (s.tags || []).some(tag => String(tag).toLowerCase().includes(q));
+            || String(s.desc || '').toLowerCase().includes(q);
         };
 
         const myPublishedSkills = computed(() => mySkillDrafts.filter(matchesMineQuery));
@@ -1754,16 +1816,17 @@ app.get('/api/users', async (req, res) => {
         }
 
         // Methods
-        const CURRENT_USER_DEPT = '数字平台 (DP)';
+        const CURRENT_USER_DEPT = '前端开发工程师';
 
         const filteredSkills = computed(() => {
           const list = skills.value.filter(s => {
             if (s.unlisted) return false; // 已下架的技能不在广场露出
             const matchCat = activeCategory.value === '全部' || s.category === activeCategory.value;
-            const matchDept = selectedDept.value === '所有部门' || s.dept === selectedDept.value;
-            const matchSearch = s.name.toLowerCase().includes(searchQuery.value.toLowerCase()) || 
-                                s.desc.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-                                s.tags.some(t => t.toLowerCase().includes(searchQuery.value.toLowerCase()));
+            const matchDept = selectedDept.value === '全部岗位' || s.dept === selectedDept.value;
+            const q = searchQuery.value.toLowerCase();
+            const matchSearch = !q
+              || s.name.toLowerCase().includes(q)
+              || s.desc.toLowerCase().includes(q);
             return matchCat && matchSearch && matchDept;
           });
           return [...list].sort((a, b) => {
@@ -1801,11 +1864,26 @@ app.get('/api/users', async (req, res) => {
         const isOwnSkill = (skill) => !!skill && skill.author === 'You';
         const resolveOwnRecord = (skill) => mySkillDrafts.find(s => s.id === skill.id || s.name === skill.name) || skill;
 
+        const syncDetailTabsForSkill = (skill) => {
+          if (!skill) return;
+          tabs.value.forEach(tb => {
+            if (tb.view === 'detail' && tb.skillData && (tb.skillData.id === skill.id || tb.skillData.name === skill.name)) {
+              tb.skillData = skill;
+              tb.title = skill.name;
+              if (skill.status === '检测中') tb.mode = 'ownerDetecting';
+              else if (skill.status === '发布失败') tb.mode = 'ownerFailed';
+              else if (skill.status === '已下架') tb.mode = 'ownerUnpublished';
+              else tb.mode = 'view';
+            }
+          });
+        };
+
         const openDetailView = (skill, options = {}) => {
           closeCardMenu();
           let mode = options.mode || 'view';
           if (!options.mode) {
             if (skill.downloadState) mode = 'downloaded';
+            else if (skill.status === '检测中') mode = 'ownerDetecting';
             else if (skill.status === '发布失败') mode = 'ownerFailed';
             else if (skill.status === '已下架') mode = 'ownerUnpublished';
           }
@@ -1854,7 +1932,7 @@ app.get('/api/users', async (req, res) => {
             });
           }
           activeTabId.value = tabId;
-          form.value = { name: '', category: '', desc: '', tags: '', icon: 'ph-duotone ph-code', gradient: 'from-blue-600 to-cyan-500' };
+          form.value = { name: '', category: '', desc: '', icon: 'ph-duotone ph-code', gradient: 'from-blue-600 to-cyan-500' };
           clearUploadedFile();
           takeCreateSnapshot();
         };
@@ -1879,7 +1957,6 @@ app.get('/api/users', async (req, res) => {
             name: skill.name,
             category: skill.category,
             desc: skill.desc,
-            tags: (skill.tags || []).join(', '),
             icon: skill.icon || 'ph-duotone ph-code',
             gradient: skill.gradient || 'from-blue-600 to-cyan-500'
           };
@@ -1895,6 +1972,10 @@ app.get('/api/users', async (req, res) => {
 
         const unpublishSkill = (skill) => {
           closeCardMenu();
+          if (skill.status === '检测中' || skill.pendingVersionDetect) {
+            showToast('检测进行中，暂不可下架', 'error');
+            return;
+          }
           actionConfirm.value = { show: true, type: 'unpublish', skill };
         };
 
@@ -1975,9 +2056,13 @@ app.get('/api/users', async (req, res) => {
           document.removeEventListener('click', onDocumentClick);
         });
 
-        // 已发布 → 更新版本（自动检测通过后即时生效）
+        // 已发布 → 更新版本（提交后异步检测；线上旧版保持）
         const openUpdateVersion = (skill) => {
           closeCardMenu();
+          if (skill.status === '检测中' || skill.pendingVersionDetect) {
+            showToast('检测进行中，请稍后再更新版本', 'error');
+            return;
+          }
           createMode.value = 'updateVersion';
           editingSkillId.value = skill.id;
           updateVersionData.value = {
@@ -1999,7 +2084,6 @@ app.get('/api/users', async (req, res) => {
             name: skill.name,
             category: skill.category,
             desc: skill.desc,
-            tags: (skill.tags || []).join(', '),
             icon: skill.icon || 'ph-duotone ph-code',
             gradient: skill.gradient || 'from-blue-600 to-cyan-500'
           };
@@ -2085,7 +2169,6 @@ app.get('/api/users', async (req, res) => {
               name: skill.name,
               desc: skill.desc,
               category: skill.category,
-              tags: skill.tags || [],
               author: skill.author,
               dept: skill.dept || '',
               version: newVersion,
@@ -2194,10 +2277,79 @@ app.get('/api/users', async (req, res) => {
           return html;
         };
 
-        // 自动检测在后台执行；前端不展示过程，仅根据结果决定发布成功/失败
+        // 自动检测在后台异步执行；提交后先进入「检测中」，延时后翻转结果
+        const DETECT_DELAY_MS = 2800;
         const runAutoDetect = () => {
-          // 原型默认检测通过；失败态用「我的技能」里演示数据展示
+          // 原型默认检测通过；失败态用「我的技能」里演示数据 / 名称含「失败」演示
           return { ok: true, reason: '' };
+        };
+
+        const scheduleDetectResolve = (skillId, kind, payload = {}) => {
+          setTimeout(() => {
+            const target = mySkillDrafts.find(s => s.id === skillId);
+            if (!target) return;
+            const detect = runAutoDetect();
+            const updatedAt = nowDateTime();
+
+            if (kind === 'updateVersion') {
+              if (target.pendingVersion !== payload.version) return; // 已被更新的提交覆盖则忽略
+              if (!detect.ok) {
+                target.pendingVersionDetect = false;
+                target.pendingVersion = null;
+                target.pendingChangelog = null;
+                target.lastUpdateFailReason = detect.reason || '自动检测未通过';
+                syncDetailTabsForSkill(target);
+                showToast(`版本更新失败，仍保留 v${target.version}：${target.lastUpdateFailReason}`, 'error');
+                return;
+              }
+              const newVersion = payload.version;
+              target.version = newVersion;
+              target.updatedAt = updatedAt;
+              target.failReason = null;
+              target.lastUpdateFailReason = null;
+              target.pendingVersionDetect = false;
+              target.pendingVersion = null;
+              target.pendingChangelog = null;
+              if (payload.desc) target.desc = payload.desc;
+              if (payload.icon) target.icon = payload.icon;
+              if (payload.gradient) target.gradient = payload.gradient;
+              upsertMarketSkill(target, {
+                version: newVersion,
+                changelog: payload.changelog || `更新至 v${newVersion}`,
+                updatedAt,
+              });
+              syncDownloadsHasUpdate(target.name, target.id, newVersion);
+              syncDetailTabsForSkill(target);
+              showToast(`新版本 v${newVersion} 已发布到 Skill 广场。`);
+              return;
+            }
+
+            // 新发布 / 重新发布
+            if (target.status !== '检测中') return;
+            if (!detect.ok) {
+              target.status = '发布失败';
+              target.failReason = detect.reason || '自动检测未通过';
+              target.updatedAt = updatedAt;
+              syncDetailTabsForSkill(target);
+              showToast(`发布失败：${target.failReason}`, 'error');
+              return;
+            }
+            if (!target.version || String(target.version).startsWith('0.')) {
+              target.version = '1.0.0';
+            }
+            target.status = '已发布';
+            target.failReason = null;
+            target.updatedAt = updatedAt;
+            target.downloads = target.downloads || '0';
+            upsertMarketSkill(target, {
+              version: target.version,
+              changelog: kind === 'create' ? '初始版本发布' : '重新发布',
+              updatedAt,
+            });
+            syncDownloadsHasUpdate(target.name, target.id, target.version);
+            syncDetailTabsForSkill(target);
+            showToast('检测通过，技能已发布到 Skill 广场。');
+          }, DETECT_DELAY_MS);
         };
 
         const upsertMarketSkill = (skill, { version, changelog, updatedAt }) => {
@@ -2209,7 +2361,6 @@ app.get('/api/users', async (req, res) => {
               name: skill.name,
               desc: skill.desc,
               category: skill.category,
-              tags: skill.tags || [],
               author: skill.author,
               dept: skill.dept,
               version,
@@ -2225,7 +2376,6 @@ app.get('/api/users', async (req, res) => {
             market.unlisted = false; // 重新发布即恢复广场可见，保留原版本历史
             market.desc = skill.desc;
             market.category = skill.category;
-            market.tags = skill.tags || market.tags;
             market.icon = skill.icon;
             market.gradient = skill.gradient;
             market.version = version;
@@ -2264,8 +2414,16 @@ app.get('/api/users', async (req, res) => {
             showToast('请先上传技能文件！', 'error');
             return;
           }
+          if (createMode.value !== 'updateVersion' && !form.value.name.trim()) {
+            showToast('请填写技能名称！', 'error');
+            return;
+          }
           if (createMode.value !== 'updateVersion' && !form.value.category) {
             showToast('请选择分类！', 'error');
+            return;
+          }
+          if (createMode.value !== 'updateVersion' && !form.value.desc.trim()) {
+            showToast('请填写技能描述！', 'error');
             return;
           }
           if (createMode.value === 'updateVersion' && !updateVersionData.value.version.trim()) {
@@ -2276,131 +2434,83 @@ app.get('/api/users', async (req, res) => {
             showToast('请填写更新说明！', 'error');
             return;
           }
-          isSubmitting.value = true;
-          setTimeout(() => {
-            isSubmitting.value = false;
 
-            const detect = runAutoDetect();
+          const submittedAt = nowDateTime();
 
-            if (createMode.value === 'updateVersion') {
-              const target = mySkillDrafts.find(s => s.id === editingSkillId.value);
-              if (!target) {
-                goMineSkills();
-                return;
-              }
-              const oldVersion = target.version;
-              const newVersion = updateVersionData.value.version;
-              if (!detect.ok) {
-                showToast(`版本更新失败，仍保留 v${oldVersion}：${detect.reason}`, 'error');
-                goMineSkills();
-                return;
-              }
-              const updatedAt = nowDateTime();
-              target.version = newVersion;
-              target.updatedAt = updatedAt;
-              target.failReason = null;
-              target.desc = form.value.desc || target.desc;
-              target.tags = form.value.tags ? form.value.tags.split(',').map(x => x.trim()).filter(Boolean) : target.tags;
-              target.icon = form.value.icon || target.icon;
-              target.gradient = form.value.gradient || target.gradient;
-              upsertMarketSkill(target, {
-                version: newVersion,
-                changelog: updateVersionData.value.changelog || `更新至 v${newVersion}`,
-                updatedAt,
-              });
-              syncDownloadsHasUpdate(target.name, target.id, newVersion);
-              showToast(`新版本 v${newVersion} 已发布到 Skill 广场。`);
+          if (createMode.value === 'updateVersion') {
+            const target = mySkillDrafts.find(s => s.id === editingSkillId.value);
+            if (!target) {
               goMineSkills();
               return;
             }
-
-            // create / editDraft / republish
-            const tags = form.value.tags ? form.value.tags.split(',').map(t => t.trim()).filter(Boolean) : ['New'];
-            const updatedAt = nowDateTime();
-
-            if (createMode.value === 'editDraft') {
-              const target = mySkillDrafts.find(s => s.id === editingSkillId.value);
-              if (!target) {
-                goMineSkills();
-                return;
-              }
-              target.name = form.value.name;
-              target.desc = form.value.desc;
-              target.category = form.value.category;
-              target.tags = tags;
-              target.icon = form.value.icon;
-              target.gradient = form.value.gradient;
-              target.submitTime = updatedAt;
-
-              if (!detect.ok) {
-                target.status = '发布失败';
-                target.failReason = detect.reason;
-                target.updatedAt = updatedAt;
-                showToast(`发布失败：${detect.reason}`, 'error');
-                goMineSkills();
-                return;
-              }
-
-              // 重新发布：保留已有正式版本；异常 0.x 升为 1.0.0
-              if (!target.version || String(target.version).startsWith('0.')) {
-                target.version = '1.0.0';
-              }
-              target.status = '已发布';
-              target.failReason = null;
-              target.updatedAt = updatedAt;
-              upsertMarketSkill(target, {
-                version: target.version,
-                changelog: '初始版本发布',
-                updatedAt,
-              });
-              syncDownloadsHasUpdate(target.name, target.id, target.version);
-              showToast('检测通过，技能已发布到 Skill 广场。');
-              goMineSkills();
+            if (target.pendingVersionDetect || target.status === '检测中') {
+              showToast('检测进行中，请稍后再提交', 'error');
               return;
             }
-
-            // create new
-            const newId = Date.now().toString();
-            const newSkill = {
-              id: newId,
-              name: form.value.name,
-              desc: form.value.desc,
-              category: form.value.category,
-              tags,
-              author: 'You',
-              dept: '数字平台 (DP)',
-              version: '1.0.0',
-              icon: form.value.icon,
-              gradient: form.value.gradient,
-              favorites: 0,
-              submitTime: updatedAt,
-            };
-            if (!detect.ok) {
-              Object.assign(newSkill, {
-                status: '发布失败',
-                failReason: detect.reason,
-                updatedAt,
-              });
-              mySkillDrafts.unshift(newSkill);
-              showToast(`发布失败：${detect.reason}`, 'error');
-              goMineSkills();
-              return;
-            }
-            Object.assign(newSkill, {
-              status: '已发布',
-              failReason: null,
-              updatedAt,
-              downloads: '0',
+            const newVersion = formatVersion(updateVersionData.value.version);
+            target.pendingVersionDetect = true;
+            target.pendingVersion = newVersion;
+            target.pendingChangelog = updateVersionData.value.changelog;
+            target.submitTime = submittedAt;
+            scheduleDetectResolve(target.id, 'updateVersion', {
+              version: newVersion,
+              changelog: updateVersionData.value.changelog,
+              desc: form.value.desc || target.desc,
+              icon: form.value.icon || target.icon,
+              gradient: form.value.gradient || target.gradient,
             });
-            mySkillDrafts.unshift(newSkill);
-            upsertMarketSkill(newSkill, {
-              version: '1.0.0',
-              changelog: '初始版本发布',
-              updatedAt,
-            });
-            showToast('检测通过，技能已发布到 Skill 广场。');
+            showToast('已提交检测，可在我的技能查看进度');
             goMineSkills();
-          }, 1500);
+            return;
+          }
+
+          if (createMode.value === 'editDraft') {
+            const target = mySkillDrafts.find(s => s.id === editingSkillId.value);
+            if (!target) {
+              goMineSkills();
+              return;
+            }
+            target.name = form.value.name;
+            target.desc = form.value.desc;
+            target.category = form.value.category;
+            target.icon = form.value.icon;
+            target.gradient = form.value.gradient;
+            target.submitTime = submittedAt;
+            target.updatedAt = submittedAt;
+            target.status = '检测中';
+            target.failReason = null;
+            // 重新发布进入检测：广场先不可见
+            const market = skills.value.find(s => s.id === target.id || s.name === target.name);
+            if (market) market.unlisted = true;
+            scheduleDetectResolve(target.id, 'republish');
+            showToast('已提交检测，可在我的技能查看进度');
+            goMineSkills();
+            return;
+          }
+
+          // create new → 立即「检测中」，稍后异步翻转
+          const newId = Date.now().toString();
+          const newSkill = {
+            id: newId,
+            name: form.value.name,
+            desc: form.value.desc,
+            category: form.value.category,
+            author: 'You',
+            dept: CURRENT_USER_DEPT,
+            version: '1.0.0',
+            icon: form.value.icon,
+            gradient: form.value.gradient,
+            favorites: 0,
+            downloads: '0',
+            status: '检测中',
+            failReason: null,
+            submitTime: submittedAt,
+            updatedAt: submittedAt,
+          };
+          mySkillDrafts.unshift(newSkill);
+          scheduleDetectResolve(newId, 'create');
+          showToast('已提交检测，可在我的技能查看进度');
+          goMineSkills();
         };
 
         return {
