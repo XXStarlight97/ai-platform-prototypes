@@ -56,6 +56,8 @@ if (typeof tailwind !== 'undefined') {
 .bbox-overlay { position:absolute; border:2px solid #ef4444; border-radius:3px; background:rgba(239,68,68,.12); pointer-events:none; animation:bbox-pulse 2s ease-in-out infinite; }
 .bbox-overlay.amber { border-color:#f59e0b; background:rgba(245,158,11,.12); }
 .bbox-overlay.blue { border-color:#3b82f6; background:rgba(59,130,246,.12); animation:none; }
+.bbox-overlay.is-muted { opacity:.22; animation:none; }
+.bbox-overlay.is-active { opacity:1; box-shadow:0 0 0 3px rgba(255,255,255,.18), 0 0 16px rgba(245,158,11,.35); }
 @keyframes bbox-pulse { 0%,100% { box-shadow:0 0 0 0 rgba(239,68,68,.4); } 50% { box-shadow:0 0 0 6px rgba(239,68,68,0); } }
 .media-type-badge { background:rgba(255,255,255,0.08); color:rgba(255,255,255,0.72); border:1px solid rgba(255,255,255,0.12); border-radius:4px; padding:1px 6px; font-size:10px; font-weight:500; white-space:nowrap; }
 .media-type-badge.video { background:rgba(168,85,247,0.15); color:#c084fc; border-color:rgba(168,85,247,0.28); }
@@ -157,11 +159,11 @@ if (typeof tailwind !== 'undefined') {
 .mv-risk-pill.medium { color:#fbbf24; border-color:rgba(245,158,11,0.28); background:rgba(245,158,11,0.10); }
 .mv-risk-pill.low { color:#60a5fa; border-color:rgba(59,130,246,0.28); background:rgba(59,130,246,0.10); }
 .mv-risk-pill.pass { color:#4ade80; border-color:rgba(34,197,94,0.28); background:rgba(34,197,94,0.10); }
-.mv-right-actions { padding:10px 16px; border-bottom:1px solid rgba(255,255,255,0.06); display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+.mv-right-actions { padding:10px 16px; border-bottom:1px solid rgba(255,255,255,0.06); display:flex; align-items:center; gap:12px; flex-wrap:wrap; flex-shrink:0; position:sticky; top:0; z-index:5; background:#16161e; }
 .mv-right-body { flex:1; min-height:0; overflow:auto; padding:0; }
-.mv-mat-table { width:100%; text-align:left; border-collapse:collapse; }
-.mv-mat-table thead tr { border-bottom:1px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.03); }
-.mv-mat-table th { padding:12px 14px; font-size:12px; font-weight:500; color:rgba(255,255,255,0.45); white-space:nowrap; }
+.mv-mat-table { width:100%; text-align:left; border-collapse:separate; border-spacing:0; }
+.mv-mat-table thead tr { background:#1a1a22; }
+.mv-mat-table th { padding:12px 14px; font-size:12px; font-weight:500; color:rgba(255,255,255,0.45); white-space:nowrap; position:sticky; top:0; z-index:4; background:#1a1a22; box-shadow:inset 0 -1px 0 rgba(255,255,255,0.08); }
 .mv-mat-table td { padding:12px 14px; border-bottom:1px solid rgba(255,255,255,0.06); vertical-align:middle; font-size:13px; }
 .mv-mat-table tbody tr { transition:background .15s; }
 .mv-mat-table tbody tr:hover { background:rgba(255,255,255,0.03); }
@@ -274,7 +276,7 @@ if (typeof tailwind !== 'undefined') {
                   <th class="text-left px-4 py-3 text-text-tertiary font-medium text-[12px]">审核进度</th>
                   <th class="text-left px-4 py-3 text-text-tertiary font-medium text-[12px]">审核结果</th>
                   <th class="text-left px-4 py-3 text-text-tertiary font-medium text-[12px]">审核时间</th>
-                  <th class="text-left px-4 py-3 text-text-tertiary font-medium text-[12px] w-[72px]">操作人</th>
+                  <th class="text-left px-4 py-3 text-text-tertiary font-medium text-[12px] w-[72px]">创建者</th>
                   <th class="text-left px-6 py-3 text-text-tertiary font-medium text-[12px]">操作</th>
                 </tr>
               </thead>
@@ -302,7 +304,7 @@ if (typeof tailwind !== 'undefined') {
                             :key="mat.id || (mat.name + '-' + mi)"
                             type="button"
                             class="task-thumb-item"
-                            :title="mat.name + ' · ' + (mat.rechecking ? '复审中' : auditResultLabel(mat.auditStatus || 'pass'))"
+                            :title="mat.name + ' · ' + (mat.rechecking ? '重新审核中' : auditResultLabel(mat.auditStatus || 'pass'))"
                             @click="openTaskDetailAtMaterial(task, mat)"
                           >
                             <img :src="mat.thumb" :alt="mat.name">
@@ -353,10 +355,11 @@ if (typeof tailwind !== 'undefined') {
 
 
       <template v-else>
+        <div class="flex-1 min-h-0 flex flex-col gap-3">
         <div class="filter-toolbar shrink-0 bg-bg-elevated/90 border border-border-default rounded-[14px] shadow-lg shadow-black/50 ring-1 ring-white/5 px-5 py-3 flex items-center gap-4 flex-nowrap">
           <div class="filter-inline">
-            <span class="filter-label-inline">任务名称</span>
-            <input type="text" v-model="materialCatalogSearchDraft" @keyup.enter="submitMaterialCatalogQuery" placeholder="请输入" class="filter-control w-[180px] placeholder-text-tertiary">
+            <span class="filter-label-inline">关键词</span>
+            <input type="text" v-model="materialCatalogSearchDraft" @keyup.enter="submitMaterialCatalogQuery" placeholder="搜索文件名或任务名称" class="filter-control w-[220px] placeholder-text-tertiary">
           </div>
           <div class="filter-inline">
             <span class="filter-label-inline">素材类型</span>
@@ -393,7 +396,7 @@ if (typeof tailwind !== 'undefined') {
           <div class="mv-right-actions">
             <label class="flex items-center gap-2 text-[13px] text-text-secondary cursor-pointer select-none">
               <input type="checkbox" class="accent-primary" :checked="isCatalogAllSelected" :indeterminate.prop="isCatalogPartiallySelected" @change="toggleSelectAllCatalog">
-              全选
+              全选本页
             </label>
             <span class="text-[13px] text-text-tertiary">共 {{ expandedTaskMaterials.length }} 个 · 已选 {{ selectedCatalogIds.length }} 个</span>
             <div class="flex-1 min-w-[8px]"></div>
@@ -404,27 +407,25 @@ if (typeof tailwind !== 'undefined') {
             <table class="mv-mat-table min-w-[1280px]">
               <thead>
                 <tr>
-                  <th class="w-[48px]">
-                    <input type="checkbox" class="accent-primary" :checked="isCatalogAllSelected" :indeterminate.prop="isCatalogPartiallySelected" @change="toggleSelectAllCatalog" title="全选">
-                  </th>
+                  <th class="w-[48px]"></th>
                   <th class="w-[104px]">预览</th>
                   <th class="min-w-[160px]">文件名</th>
                   <th class="w-[88px]">素材类型</th>
                   <th class="w-[132px]">审核结果</th>
                   <th class="min-w-[148px]">风险命中</th>
                   <th class="min-w-[220px]">主要命中项</th>
-                  <th class="min-w-[160px]">来源</th>
+                  <th class="min-w-[160px]">所属任务</th>
                   <th class="w-[148px]">审核时间</th>
                 </tr>
               </thead>
               <tbody>
-                <tr v-if="expandedTaskMaterials.length === 0">
+                <tr v-if="paginatedCatalogMaterials.length === 0">
                   <td colspan="9" class="py-20 text-center text-text-tertiary text-[13px]">
                     <i class="ph-duotone ph-images text-[32px] opacity-30 block mb-2"></i>
                     暂无素材，试试调整搜索或时间筛选
                   </td>
                 </tr>
-                <tr v-for="item in expandedTaskMaterials" :key="item.id" :class="{'is-selected': selectedCatalogIds.includes(item.id)}">
+                <tr v-for="item in paginatedCatalogMaterials" :key="item.id" :class="{'is-selected': selectedCatalogIds.includes(item.id)}">
                   <td>
                     <input type="checkbox" class="accent-primary" :checked="selectedCatalogIds.includes(item.id)" @change="toggleCatalogSelect(item)">
                   </td>
@@ -438,15 +439,14 @@ if (typeof tailwind !== 'undefined') {
                   <td>
                     <div class="flex items-center gap-2 min-w-0">
                       <span class="font-medium text-text-primary text-[13px] truncate" :title="item.name">{{ item.name }}</span>
-                      <span v-if="item.rechecking" class="rechecking-badge shrink-0">复审中</span>
+                      <span v-if="item.rechecking" class="rechecking-badge shrink-0">重新审核中</span>
                     </div>
                   </td>
                   <td>
                     <span class="media-type-badge" :class="item.mediaType==='video'?'video':''">{{ mediaTypeLabel(item.mediaType) }}</span>
                   </td>
                   <td>
-                    <span v-if="item.rechecking" class="rechecking-badge">复审中</span>
-                    <span v-else :class="auditResultBadgeClass(item.auditStatus)">{{ auditResultLabel(item.auditStatus) }}</span>
+                    <span :class="auditResultBadgeClass(item.auditStatus)">{{ auditResultLabel(item.auditStatus) }}</span>
                   </td>
                   <td class="text-[12px] leading-relaxed whitespace-nowrap">
                     <template v-if="!item.highCount && !item.mediumCount && !item.lowCount"><span class="text-text-tertiary">无</span></template>
@@ -458,14 +458,30 @@ if (typeof tailwind !== 'undefined') {
                     <span class="line-clamp-2" :title="item.primaryHit || ''">{{ item.primaryHit || '—' }}</span>
                   </td>
                   <td class="text-[12px] text-text-secondary max-w-[220px]">
-                    <span class="line-clamp-2" :title="item.sourceLabel">{{ item.sourceLabel || '—' }}</span>
+                    <span class="line-clamp-2" :title="item.taskName || item.sourceLabel">{{ item.taskName || item.sourceLabel || '—' }}</span>
                   </td>
                   <td class="text-[12px] text-text-secondary whitespace-nowrap">{{ item.auditTime || '—' }}</td>
                 </tr>
               </tbody>
             </table>
           </div>
+          <div class="list-table-footer px-5 py-3 border-t border-border-light flex items-center justify-end shrink-0 text-[12px] text-text-tertiary gap-3">
+            <button @click="goMaterialCatalogPage(materialCatalogPage - 1)" :disabled="materialCatalogPage <= 1" class="w-7 h-7 rounded-md border border-border-default flex items-center justify-center transition-colors" :class="materialCatalogPage <= 1 ? 'opacity-40 cursor-not-allowed' : 'hover:bg-white/5 hover:text-text-primary'"><i class="ph ph-caret-left text-sm"></i></button>
+            <button class="min-w-[28px] h-7 px-2 rounded-md bg-primary/15 text-primary font-medium">{{ materialCatalogPage }}</button>
+            <button @click="goMaterialCatalogPage(materialCatalogPage + 1)" :disabled="materialCatalogPage >= materialCatalogTotalPages" class="w-7 h-7 rounded-md border border-border-default flex items-center justify-center transition-colors" :class="materialCatalogPage >= materialCatalogTotalPages ? 'opacity-40 cursor-not-allowed' : 'hover:bg-white/5 hover:text-text-primary'"><i class="ph ph-caret-right text-sm"></i></button>
+            <div class="custom-select w-[88px]" :class="{'is-open': openDropdownKey==='catalogPageSize'}" @click.stop>
+              <button type="button" @click="toggleDropdown('catalogPageSize', $event)" class="custom-select-trigger sm" :class="{'is-open': openDropdownKey==='catalogPageSize'}">
+                <span class="truncate flex-1 text-left">{{ dropdownLabel(catalogPageSizeOptions, materialCatalogPageSize) }}</span>
+              </button>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span>跳至</span>
+              <input type="text" v-model="materialCatalogGotoPage" @keyup.enter="gotoMaterialCatalogPage" class="w-10 h-7 bg-black/20 border border-border-default rounded-md text-center text-[12px] text-text-primary outline-none focus:border-primary/50 transition-all">
+              <span>页</span>
+            </div>
+          </div>
         </section>
+        </div>
       </template>
     </template>
 
@@ -524,7 +540,7 @@ if (typeof tailwind !== 'undefined') {
                 <td>
                   <div class="flex items-center gap-2 flex-nowrap min-w-0">
                     <span class="font-medium text-text-primary text-[12px] truncate">{{ mat.name }}</span>
-                    <span v-if="mat.rechecking" class="rechecking-badge shrink-0">复审中</span>
+                    <span v-if="mat.rechecking" class="rechecking-badge shrink-0">重新审核中</span>
                   </div>
                 </td>
                 <td class="cell-nowrap"><span class="media-type-badge" :class="mat.mediaType==='video'?'video':''">{{ mediaTypeLabel(mat.mediaType) }}</span></td>
@@ -551,8 +567,8 @@ if (typeof tailwind !== 'undefined') {
         <button v-if="activeTaskUsableCount > 0" @click="downloadActiveTaskUsableMaterials" class="h-[36px] px-4 rounded-lg bg-primary/15 border border-primary/30 text-[13px] text-primary hover:bg-primary/25 transition-all">
           下载可用素材（{{ activeTaskUsableCount }}）
         </button>
-        <button v-if="!['auditing','reAuditing','failed','terminated'].includes(activeTaskStatus)" @click="openAddMaterialsDialog" class="h-[36px] px-4 rounded-lg bg-primary hover:bg-primary-hover text-bg-base text-[13px] font-semibold transition-all shadow-[0_0_12px_rgba(245,158,11,0.2)]">添加素材复审</button>
-        <button v-if="!['auditing','reAuditing','failed','terminated'].includes(activeTaskStatus)" @click="confirmReAudit('all')" class="h-[36px] px-4 rounded-lg border border-border-default text-[13px] text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all">重新审核全部</button>
+        <button v-if="canManageActiveTask && !['auditing','reAuditing','failed','terminated'].includes(activeTaskStatus)" @click="openAddMaterialsDialog" class="h-[36px] px-4 rounded-lg bg-primary hover:bg-primary-hover text-bg-base text-[13px] font-semibold transition-all shadow-[0_0_12px_rgba(245,158,11,0.2)]">添加素材复审</button>
+        <button v-if="canManageActiveTask && !['auditing','reAuditing','failed','terminated'].includes(activeTaskStatus)" @click="confirmReAudit('all')" class="h-[36px] px-4 rounded-lg border border-border-default text-[13px] text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all">重新审核全部</button>
         <button @click="closeCurrentTaskTab" class="h-[36px] px-4 rounded-lg border border-border-default text-[13px] text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all">取消</button>
       </div>
     </div>
@@ -587,7 +603,7 @@ if (typeof tailwind !== 'undefined') {
                 <th class="px-4 py-3.5 text-text-tertiary text-[12px] w-[64px]">预览</th>
                 <th class="px-4 py-3.5 text-text-tertiary text-[12px] min-w-[180px]">文件名</th>
                 <th class="px-4 py-3.5 text-text-tertiary text-[12px] w-[88px]">素材类型</th>
-                <th class="px-4 py-3.5 text-text-tertiary text-[12px] min-w-[120px]">审核状态</th>
+                <th class="px-4 py-3.5 text-text-tertiary text-[12px] min-w-[120px]">审核进度</th>
                 <th class="px-4 py-3.5 text-text-tertiary text-[12px] min-w-[220px]">说明</th>
               </tr>
             </thead>
@@ -604,7 +620,7 @@ if (typeof tailwind !== 'undefined') {
         </div>
       </div>
       <div class="px-6 py-4 border-t border-border-light flex items-center justify-end gap-3 shrink-0">
-        <button @click="confirmReAudit('all')" class="h-[36px] px-4 rounded-lg border border-border-default text-[13px] text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all">重新审核</button>
+        <button v-if="canManageActiveTask" @click="confirmReAudit('all')" class="h-[36px] px-4 rounded-lg border border-border-default text-[13px] text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all">重新审核</button>
         <button @click="closeCurrentTaskTab" class="h-[36px] px-4 rounded-lg border border-border-default text-[13px] text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all">取消</button>
       </div>
     </div>
@@ -635,7 +651,7 @@ if (typeof tailwind !== 'undefined') {
                 <th class="px-4 py-3.5 text-text-tertiary text-[12px] w-[64px]">预览</th>
                 <th class="px-4 py-3.5 text-text-tertiary text-[12px] min-w-[180px]">文件名</th>
                 <th class="px-4 py-3.5 text-text-tertiary text-[12px] w-[88px]">素材类型</th>
-                <th class="px-4 py-3.5 text-text-tertiary text-[12px] min-w-[120px]">审核状态</th>
+                <th class="px-4 py-3.5 text-text-tertiary text-[12px] min-w-[120px]">审核进度</th>
                 <th class="px-4 py-3.5 text-text-tertiary text-[12px] min-w-[220px]">说明</th>
               </tr>
             </thead>
@@ -652,7 +668,7 @@ if (typeof tailwind !== 'undefined') {
         </div>
       </div>
       <div class="px-6 py-4 border-t border-border-light flex items-center justify-end gap-3 shrink-0">
-        <button @click="confirmReAudit('retry')" class="h-[36px] px-4 rounded-lg border border-border-default text-[13px] text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all">重试审核</button>
+        <button v-if="canManageActiveTask" @click="confirmReAudit('retry')" class="h-[36px] px-4 rounded-lg border border-border-default text-[13px] text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all">重试审核</button>
         <button @click="closeCurrentTaskTab" class="h-[36px] px-4 rounded-lg border border-border-default text-[13px] text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all">取消</button>
       </div>
     </div>
@@ -671,7 +687,7 @@ if (typeof tailwind !== 'undefined') {
                     关键帧 · {{ activeVideoRisk.timeRange || '命中时刻' }}
                   </div>
                   <div v-else class="video-play-overlay rounded-lg"><div class="w-14 h-14 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center"><i class="ph-fill ph-play text-white text-2xl ml-1"></i></div></div>
-                  <div v-for="(risk,ri) in displayMaterial.risks" :key="ri" v-show="activeRiskIndex===null||activeRiskIndex===ri" class="bbox-overlay" :class="risk.level==='medium'?'amber':risk.level==='low'?'blue':''" :style="{left:(risk.bbox?.x||20)+'%',top:(risk.bbox?.y||20)+'%',width:(risk.bbox?.w||30)+'%',height:(risk.bbox?.h||25)+'%'}"></div>
+                  <div v-for="(risk,ri) in displayMaterial.risks" v-show="!risk.misreported" :key="ri" class="bbox-overlay" :class="[risk.level==='medium'?'amber':risk.level==='low'?'blue':'', activeRiskIndex===null?'':activeRiskIndex===ri?'is-active':'is-muted']" :style="{left:(risk.bbox?.x||20)+'%',top:(risk.bbox?.y||20)+'%',width:(risk.bbox?.w||30)+'%',height:(risk.bbox?.h||25)+'%'}"></div>
                 </div>
                 <div class="mt-4 w-full max-w-[560px] mx-auto">
                   <div class="flex items-center justify-between text-[11px] text-text-tertiary mb-1.5 px-1">
@@ -680,15 +696,15 @@ if (typeof tailwind !== 'undefined') {
                     <span>{{ displayMaterial.duration || '00:15' }}</span>
                   </div>
                   <div class="video-timeline">
-                    <div v-for="(risk,ri) in displayMaterial.risks" :key="'tm-'+ri" @click="selectVideoRisk(ri)" class="video-timeline-marker" :class="[risk.level==='high'?'bg-red-500':risk.level==='medium'?'bg-amber-500':'bg-blue-500', activeRiskIndex===ri?'active':'']" :style="{left:(risk.timePercent||((ri+1)*15))+'%'}" :title="(risk.timeRange || '') + ' · ' + risk.pointName"></div>
+                    <div v-for="(risk,ri) in displayMaterial.risks" v-show="!risk.misreported" :key="'tm-'+ri" @click="selectVideoRisk(ri)" class="video-timeline-marker" :class="[risk.level==='high'?'bg-red-500':risk.level==='medium'?'bg-amber-500':'bg-blue-500', activeRiskIndex===ri?'active':'']" :style="{left:(risk.timePercent||((ri+1)*15))+'%'}" :title="(risk.timeRange || '') + ' · ' + risk.pointName"></div>
                   </div>
                   <p class="text-[11px] text-text-tertiary text-center mt-2">点击时间轴打点切换命中关键帧</p>
                 </div>
               </template>
               <template v-else>
                 <img :src="displayMaterial.thumb" class="max-w-full max-h-[calc(100vh-280px)] object-contain rounded-lg shadow-2xl">
-                <div v-for="(risk,ri) in displayMaterial.risks" :key="ri" v-show="activeRiskIndex===null||activeRiskIndex===ri" class="bbox-overlay" :class="risk.level==='medium'?'amber':risk.level==='low'?'blue':''" :style="{left:risk.bbox.x+'%',top:risk.bbox.y+'%',width:risk.bbox.w+'%',height:risk.bbox.h+'%'}"></div>
-                <div v-for="(risk,ri) in displayMaterial.risks" :key="'dot-'+ri" @click="activeRiskIndex=ri" class="absolute w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold cursor-pointer transition-all hover:scale-110 shadow-lg" :class="risk.level==='high'?'bg-red-500 text-white':risk.level==='medium'?'bg-amber-500 text-black':'bg-blue-500 text-white'" :style="{left:(risk.bbox.x+risk.bbox.w/2)+'%',top:(risk.bbox.y+risk.bbox.h/2)+'%'}">{{ ri+1 }}</div>
+                <div v-for="(risk,ri) in displayMaterial.risks" v-show="!risk.misreported" :key="ri" class="bbox-overlay" :class="[risk.level==='medium'?'amber':risk.level==='low'?'blue':'', activeRiskIndex===null?'':activeRiskIndex===ri?'is-active':'is-muted']" :style="{left:risk.bbox.x+'%',top:risk.bbox.y+'%',width:risk.bbox.w+'%',height:risk.bbox.h+'%'}"></div>
+                <div v-for="(risk,ri) in displayMaterial.risks" v-show="!risk.misreported" :key="'dot-'+ri" @click="activeRiskIndex=activeRiskIndex===ri?null:ri" class="absolute w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold cursor-pointer transition-all hover:scale-110 shadow-lg" :class="[risk.level==='high'?'bg-red-500 text-white':risk.level==='medium'?'bg-amber-500 text-black':'bg-blue-500 text-white', activeRiskIndex!==null&&activeRiskIndex!==ri?'opacity-30':'opacity-100']" :style="{left:(risk.bbox.x+risk.bbox.w/2)+'%',top:(risk.bbox.y+risk.bbox.h/2)+'%'}">{{ ri+1 }}</div>
               </template>
             </div>
             <button @click="nextMaterial" :disabled="detailIdx===auditMaterials.length-1" class="absolute right-4 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full border border-border-default bg-black/40 hover:bg-white/10 flex items-center justify-center text-text-secondary transition-colors z-10" :class="detailIdx===auditMaterials.length-1 ? 'opacity-30 cursor-not-allowed':'hover:text-text-primary'"><i class="ph ph-caret-right"></i></button>
@@ -697,7 +713,7 @@ if (typeof tailwind !== 'undefined') {
             <div class="flex items-center gap-2 max-w-full">
               <span class="text-[14px] font-medium text-text-primary truncate">{{ displayMaterial.name }}</span>
               <span class="media-type-badge shrink-0" :class="displayMaterial.mediaType==='video'?'video':''">{{ mediaTypeLabel(displayMaterial.mediaType) }}</span>
-              <span v-if="currentMaterial.rechecking" class="rechecking-badge shrink-0">复审中</span>
+              <span v-if="currentMaterial.rechecking" class="rechecking-badge shrink-0">重新审核中</span>
             </div>
             <span class="text-[12px] text-text-tertiary">{{ detailIdx+1 }} / {{ auditMaterials.length }}</span>
           </div>
@@ -705,14 +721,14 @@ if (typeof tailwind !== 'undefined') {
         <div class="w-[460px] shrink-0 flex flex-col overflow-hidden">
           <div class="px-5 py-3 border-b border-border-light shrink-0 text-[13px] leading-relaxed">
             <span class="text-text-tertiary">风险命中：</span>
-            <template v-if="displayMaterial.risks.length === 0"><span class="text-green-400">无</span></template>
+            <template v-if="!displayMaterialRiskCounts.high && !displayMaterialRiskCounts.medium && !displayMaterialRiskCounts.low"><span class="text-green-400">无</span></template>
             <template v-else>
               <span v-if="displayMaterialRiskCounts.high > 0" class="text-red-400">高风险{{ displayMaterialRiskCounts.high }}个</span><span v-if="displayMaterialRiskCounts.high > 0 && (displayMaterialRiskCounts.medium > 0 || displayMaterialRiskCounts.low > 0)">，</span><span v-if="displayMaterialRiskCounts.medium > 0" class="text-amber-400">中风险{{ displayMaterialRiskCounts.medium }}个</span><span v-if="displayMaterialRiskCounts.medium > 0 && displayMaterialRiskCounts.low > 0">，</span><span v-if="displayMaterialRiskCounts.low > 0" class="text-blue-400">低风险{{ displayMaterialRiskCounts.low }}个</span>
             </template>
           </div>
           <div class="flex-1 overflow-auto p-4 space-y-3">
           <div v-if="displayMaterial.risks.length===0" class="text-center py-12 text-text-tertiary text-[13px]"><i class="ph ph-check-circle text-2xl text-green-400 block mb-2"></i>未发现明显风险</div>
-          <div v-for="(risk,i) in displayMaterial.risks" :key="i" @click="activeRiskIndex=i" class="rounded-xl border p-4 cursor-pointer transition-all" :class="riskCardClass(risk,i)">
+          <div v-for="(risk,i) in displayMaterial.risks" :key="i" @click="activeRiskIndex=activeRiskIndex===i?null:i" class="rounded-xl border p-4 cursor-pointer transition-all" :class="riskCardClass(risk,i)">
             <div class="flex items-center gap-2 mb-3">
               <span class="text-[12px] font-mono font-semibold text-primary shrink-0">{{ risk.pointCode }}</span>
               <span :class="riskBadgeClass(risk.level)">{{ riskLevelLabel(risk.level) }}</span>
@@ -729,14 +745,14 @@ if (typeof tailwind !== 'undefined') {
             </div>
             <div class="space-y-2 text-[12px] mb-3">
               <p class="text-text-primary leading-relaxed"><span class="text-text-tertiary">发现问题：</span><span class="font-medium">{{ risk.problem }}</span></p>
-              <p v-if="risk.timeRange" class="text-text-primary leading-relaxed"><span class="text-text-tertiary">命中时间点：</span>{{ risk.timeRange }}</p>
+              <p v-if="risk.timeRange" class="text-text-primary leading-relaxed"><span class="text-text-tertiary">视频命中时间：</span>{{ risk.timeRange }}</p>
               <p class="text-text-primary leading-relaxed"><span class="text-text-tertiary">命中位置：</span>{{ risk.hitLocation }}</p>
               <p class="text-text-primary leading-relaxed"><span class="text-text-tertiary">命中依据：</span>{{ risk.hitBasis }}</p>
             </div>
             <div class="p-3 rounded-lg bg-black/20 border border-border-light">
               <p class="text-[12px] text-text-secondary leading-relaxed"><span class="text-text-tertiary">建议处理：</span>{{ risk.suggestion }}</p>
             </div>
-            <div class="flex items-center gap-2 mt-3" v-if="!risk.confirmed && !risk.misreported">
+            <div class="flex items-center gap-2 mt-3" v-if="canManageActiveTask && !risk.confirmed && !risk.misreported">
               <button @click.stop="confirmRiskHit(i)" class="h-[28px] px-3 rounded-md bg-amber-500/15 border border-amber-500/30 text-[11px] text-amber-300 hover:bg-amber-500/25 transition-all">确认</button>
               <button @click.stop="openMisreportDialog(i)" class="h-[28px] px-3 rounded-md border border-border-default text-[11px] text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all">反馈误判</button>
             </div>
@@ -772,6 +788,9 @@ if (typeof tailwind !== 'undefined') {
       <template v-else-if="openDropdownKey==='taskPageSize'">
         <button v-for="opt in taskPageSizeOptions" :key="opt.value" type="button" @click="selectPageSize(opt.value)" class="custom-select-option" :class="{'is-active': taskPageSize===opt.value}">{{ opt.label }}</button>
       </template>
+      <template v-else-if="openDropdownKey==='catalogPageSize'">
+        <button v-for="opt in catalogPageSizeOptions" :key="opt.value" type="button" @click="selectCatalogPageSize(opt.value)" class="custom-select-option" :class="{'is-active': materialCatalogPageSize===opt.value}">{{ opt.label }}</button>
+      </template>
       <template v-else-if="openDropdownKey==='channel'">
         <button type="button" @click="selectChannel('')" class="custom-select-option" :class="{'is-active': !formData.channelPlacement}">选择渠道，会额外开展对应的安全区审查</button>
         <button v-for="ch in safeAreaChannelOptions" :key="ch.value" type="button" @click="selectChannel(ch.value)" class="custom-select-option" :class="{'is-active': formData.channelPlacement===ch.value}">{{ ch.label }}</button>
@@ -788,20 +807,21 @@ if (typeof tailwind !== 'undefined') {
       <template v-else-if="openDropdownKey==='catalogTime'">
         <button v-for="opt in timeRangeOptions" :key="'ctime-'+opt.value" type="button" @click="selectDropdownValue('materialCatalogTimeDraft', opt.value, 'catalogTime')" class="custom-select-option" :class="{'is-active': materialCatalogTimeDraft===opt.value}">{{ opt.label }}</button>
       </template>
-      <template v-else-if="openDropdownKey==='libraryType'">
-        <button v-for="opt in libraryTypeOptions" :key="opt.value || 'all'" type="button" @click="selectDropdownValue('libraryTypeFilter', opt.value, 'libraryType')" class="custom-select-option" :class="{'is-active': libraryTypeFilter===opt.value}">{{ opt.label }}</button>
-      </template>
-      <template v-else-if="openDropdownKey==='librarySource'">
-        <button v-for="opt in librarySourceOptions" :key="opt.value || 'all'" type="button" @click="selectDropdownValue('librarySourceFilter', opt.value, 'librarySource')" class="custom-select-option" :class="{'is-active': librarySourceFilter===opt.value}">{{ opt.label }}</button>
-      </template>
       <template v-else-if="openDropdownKey==='libraryMedia'">
         <button v-for="opt in libraryMediaOptions" :key="'lm-'+opt.value" type="button" @click="selectDropdownValue('libraryMediaFilter', opt.value, 'libraryMedia')" class="custom-select-option" :class="{'is-active': libraryMediaFilter===opt.value}">{{ opt.label }}</button>
+      </template>
+      <template v-else-if="openDropdownKey==='libraryCreator'">
+        <div class="px-2 pt-2 pb-1" @click.stop>
+          <input type="text" v-model="libraryCreatorQuery" placeholder="搜索创建者" class="w-full h-[28px] bg-black/20 border border-border-default rounded-md px-2 text-[12px] outline-none focus:border-primary/50 placeholder-text-tertiary" @keydown.stop>
+        </div>
+        <button v-for="opt in filteredLibraryCreatorOptions" :key="'lc-'+opt.value" type="button" @click="selectDropdownValue('libraryCreatorFilter', opt.value, 'libraryCreator')" class="custom-select-option" :class="{'is-active': libraryCreatorFilter===opt.value}">{{ opt.label }}</button>
+        <div v-if="filteredLibraryCreatorOptions.length===0" class="px-3 py-2 text-[12px] text-text-tertiary">无匹配创建者</div>
       </template>
       <template v-else-if="openDropdownKey==='libraryAudit'">
         <button v-for="opt in libraryAuditOptions" :key="'la-'+opt.value" type="button" @click="selectDropdownValue('libraryAuditFilter', opt.value, 'libraryAudit')" class="custom-select-option" :class="{'is-active': libraryAuditFilter===opt.value}">{{ opt.label }}</button>
       </template>
-      <template v-else-if="openDropdownKey==='libraryGroup'">
-        <button v-for="opt in libraryGroupOptions" :key="'lg-'+opt.value" type="button" @click="selectDropdownValue('libraryGroupFilter', opt.value, 'libraryGroup')" class="custom-select-option" :class="{'is-active': libraryGroupFilter===opt.value}">{{ opt.label }}</button>
+      <template v-else-if="openDropdownKey==='libraryTime'">
+        <button v-for="opt in libraryTimeOptions" :key="'lt-'+opt.value" type="button" @click="selectDropdownValue('libraryTimeFilter', opt.value, 'libraryTime')" class="custom-select-option" :class="{'is-active': libraryTimeFilter===opt.value}">{{ opt.label }}</button>
       </template>
     </div>
   </teleport>
@@ -826,7 +846,7 @@ if (typeof tailwind !== 'undefined') {
             </div>
             <button @click="openLibraryModal('replace')" class="shrink-0 w-[120px] rounded-lg border border-border-default text-[13px] text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all flex flex-col items-center justify-center gap-2">
               <i class="ph ph-images text-xl"></i>
-              <span>从素材库选择</span>
+              <span>从素材库中选择</span>
             </button>
           </div>
           <div v-if="replacePendingFiles.length > 0">
@@ -973,7 +993,7 @@ if (typeof tailwind !== 'undefined') {
               </div>
               <button @click="openLibraryModal" class="shrink-0 w-[120px] rounded-lg border border-border-default text-[13px] text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all flex flex-col items-center justify-center gap-2">
                 <i class="ph ph-images text-xl"></i>
-                <span>从素材库选择</span>
+                <span>从素材库中选择</span>
               </button>
             </div>
             <div v-if="uploadedFiles.length > 0" ref="uploadListSectionRef">
@@ -1077,35 +1097,32 @@ if (typeof tailwind !== 'undefined') {
     <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="libraryModalOpen=false"></div>
     <div class="relative bg-bg-elevated border border-border-default rounded-2xl w-[860px] max-h-[85vh] flex flex-col shadow-2xl shadow-black/50 overflow-hidden">
       <div class="px-6 py-4 border-b border-border-light flex items-center justify-between shrink-0">
-        <div>
-          <h3 class="text-[15px] font-semibold text-text-primary">从素材库选择</h3>
-          <p class="text-[12px] text-text-tertiary mt-0.5">支持按来源、类型、审核状态与分组筛选</p>
-        </div>
+        <h3 class="text-[15px] font-semibold text-text-primary">从素材库中选择</h3>
         <button @click="libraryModalOpen=false" class="w-7 h-7 rounded-lg hover:bg-white/10 flex items-center justify-center text-text-secondary hover:text-text-primary transition-colors"><i class="ph ph-x"></i></button>
       </div>
       <div class="px-6 py-3 border-b border-border-light flex items-center gap-2.5 flex-wrap shrink-0">
         <div class="relative flex-1 min-w-[200px] max-w-[260px]">
           <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary text-sm"></i>
-          <input type="text" v-model="librarySearch" placeholder="搜索名称 / SKU / 商品名" class="w-full h-[32px] bg-black/20 border border-border-default rounded-lg pl-9 pr-3 text-[13px] outline-none focus:border-primary/50 transition-all placeholder-text-tertiary">
-        </div>
-        <div class="custom-select w-[110px]" :class="{'is-open': openDropdownKey==='librarySource'}" @click.stop>
-          <button type="button" @click="toggleDropdown('librarySource', $event)" class="custom-select-trigger" :class="{'is-open': openDropdownKey==='librarySource', 'is-placeholder': !librarySourceFilter}">
-            <span class="truncate flex-1 text-left">{{ dropdownLabel(librarySourceOptions, librarySourceFilter, '全部来源') }}</span>
-          </button>
+          <input type="text" v-model="librarySearch" placeholder="搜索文件名" class="w-full h-[32px] bg-black/20 border border-border-default rounded-lg pl-9 pr-3 text-[13px] outline-none focus:border-primary/50 transition-all placeholder-text-tertiary">
         </div>
         <div class="custom-select w-[100px]" :class="{'is-open': openDropdownKey==='libraryMedia'}" @click.stop>
           <button type="button" @click="toggleDropdown('libraryMedia', $event)" class="custom-select-trigger" :class="{'is-open': openDropdownKey==='libraryMedia', 'is-placeholder': !libraryMediaFilter}">
             <span class="truncate flex-1 text-left">{{ dropdownLabel(libraryMediaOptions, libraryMediaFilter, '全部类型') }}</span>
           </button>
         </div>
-        <div class="custom-select w-[110px]" :class="{'is-open': openDropdownKey==='libraryAudit'}" @click.stop>
-          <button type="button" @click="toggleDropdown('libraryAudit', $event)" class="custom-select-trigger" :class="{'is-open': openDropdownKey==='libraryAudit', 'is-placeholder': !libraryAuditFilter}">
-            <span class="truncate flex-1 text-left">{{ dropdownLabel(libraryAuditOptions, libraryAuditFilter, '审核状态') }}</span>
+        <div class="custom-select w-[110px]" :class="{'is-open': openDropdownKey==='libraryCreator'}" @click.stop>
+          <button type="button" @click="toggleDropdown('libraryCreator', $event)" class="custom-select-trigger" :class="{'is-open': openDropdownKey==='libraryCreator', 'is-placeholder': !libraryCreatorFilter}">
+            <span class="truncate flex-1 text-left">{{ dropdownLabel(libraryCreatorOptions, libraryCreatorFilter, '全部创建者') }}</span>
           </button>
         </div>
-        <div class="custom-select w-[130px]" :class="{'is-open': openDropdownKey==='libraryGroup'}" @click.stop>
-          <button type="button" @click="toggleDropdown('libraryGroup', $event)" class="custom-select-trigger" :class="{'is-open': openDropdownKey==='libraryGroup', 'is-placeholder': !libraryGroupFilter}">
-            <span class="truncate flex-1 text-left">{{ dropdownLabel(libraryGroupOptions, libraryGroupFilter, '全部分组') }}</span>
+        <div class="custom-select w-[110px]" :class="{'is-open': openDropdownKey==='libraryAudit'}" @click.stop>
+          <button type="button" @click="toggleDropdown('libraryAudit', $event)" class="custom-select-trigger" :class="{'is-open': openDropdownKey==='libraryAudit', 'is-placeholder': !libraryAuditFilter}">
+            <span class="truncate flex-1 text-left">{{ dropdownLabel(libraryAuditOptions, libraryAuditFilter, '全部审核进度') }}</span>
+          </button>
+        </div>
+        <div class="custom-select w-[110px]" :class="{'is-open': openDropdownKey==='libraryTime'}" @click.stop>
+          <button type="button" @click="toggleDropdown('libraryTime', $event)" class="custom-select-trigger" :class="{'is-open': openDropdownKey==='libraryTime', 'is-placeholder': !libraryTimeFilter || libraryTimeFilter==='all'}">
+            <span class="truncate flex-1 text-left">{{ dropdownLabel(libraryTimeOptions, libraryTimeFilter, '创建时间') }}</span>
           </button>
         </div>
       </div>
@@ -1113,20 +1130,18 @@ if (typeof tailwind !== 'undefined') {
         <div v-if="filteredLibraryAssets.length===0" class="py-16 text-center text-text-tertiary text-[13px]">无匹配素材</div>
         <div v-else class="grid grid-cols-4 gap-3">
           <div v-for="asset in filteredLibraryAssets" :key="asset.id" @click="toggleLibrarySelect(asset)" class="relative border rounded-xl p-2 cursor-pointer transition-all" :class="isLibrarySelected(asset) ? 'border-primary bg-primary/10' : 'border-border-default hover:border-primary/30 bg-black/20'">
-            <div class="w-full aspect-square rounded-lg overflow-hidden bg-bg-elevated mb-2 relative">
+            <div class="w-full aspect-[4/3] rounded-lg overflow-hidden bg-bg-elevated mb-2 relative">
               <img :src="asset.thumb" class="w-full h-full object-cover">
-              <div v-if="asset.mediaType==='video'" class="absolute inset-0 flex items-center justify-center bg-black/35"><i class="ph-fill ph-play text-white text-sm"></i></div>
+              <span v-if="asset.mediaType==='video' && asset.duration" class="absolute right-1.5 bottom-1.5 px-1.5 py-0.5 rounded bg-black/75 text-[10px] font-medium text-white">{{ libraryDurationText(asset.duration) }}</span>
               <div v-if="isLibrarySelected(asset)" class="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-primary flex items-center justify-center text-bg-base"><i class="ph-bold ph-check text-[10px]"></i></div>
-              <span class="absolute top-1.5 left-1.5 text-[10px] px-1.5 py-0.5 rounded" :class="asset.audit==='passed' ? 'bg-green-500/20 text-green-300 border border-green-500/30' : asset.audit==='risk' ? 'bg-red-500/20 text-red-300 border border-red-500/30' : 'bg-white/10 text-text-tertiary border border-white/15'">{{ libraryAuditLabel(asset.audit) }}</span>
             </div>
             <div class="text-[12px] font-medium text-text-primary truncate">{{ asset.name }}</div>
-            <div class="text-[10px] text-text-tertiary mt-0.5 truncate">{{ asset.sku || '—' }} · {{ asset.productName || '—' }}</div>
-            <div class="text-[10px] text-text-tertiary mt-0.5 truncate">{{ librarySourceLabel(asset.source) }} · {{ asset.groupName || '未分组' }}</div>
+            <div class="text-[10px] mt-0.5 truncate" :class="asset.audit==='failed' ? 'text-red-400' : 'text-sky-400'">{{ asset.creator }} · {{ libraryAuditLabel(asset.audit) }}</div>
           </div>
         </div>
       </div>
       <div class="px-6 py-4 border-t border-border-light flex items-center justify-between shrink-0">
-        <span class="text-[13px] text-text-secondary">{{ libraryModalMode === 'replace' ? (selectedLibraryAssets.length ? '已选择 1 个素材' : '请选择 1 个素材') : `已选择 ${selectedLibraryAssets.length} 个素材` }}</span>
+        <span class="text-[13px] text-text-secondary">已选择 {{ selectedLibraryAssets.length }} 个素材</span>
         <div class="flex gap-3">
           <button @click="libraryModalOpen=false" class="h-[36px] px-5 rounded-lg border border-border-default text-[13px] text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all">取消</button>
           <button @click="confirmLibrarySelection" :disabled="selectedLibraryAssets.length===0" class="h-[36px] px-5 rounded-lg text-[13px] font-semibold transition-all" :class="selectedLibraryAssets.length>0?'bg-primary hover:bg-primary-hover text-bg-base':'bg-white/5 text-text-tertiary cursor-not-allowed'">确认添加</button>
@@ -1185,26 +1200,35 @@ if (typeof tailwind !== 'undefined') {
       <button type="button" class="material-lightbox-close" @click="closeMaterialLightbox" title="关闭"><i class="ph ph-x text-lg"></i></button>
       <div class="flex-1 relative flex items-center justify-center p-8 pr-4 bg-black/30 min-w-0">
         <button type="button" class="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/10 border border-white/15 text-white hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed" :disabled="!canLightboxPrev" @click="lightboxPrev"><i class="ph ph-caret-left text-xl"></i></button>
-        <div class="max-w-[90%] max-h-full rounded-xl overflow-hidden border border-white/10 bg-black/40 relative">
-          <img :src="lightboxMaterial.thumb" class="max-h-[56vh] max-w-full object-contain block">
-          <div v-if="lightboxMaterial.mediaType==='video'" class="absolute inset-0 flex items-center justify-center bg-black/30"><i class="ph-fill ph-play text-white text-4xl"></i></div>
+        <div class="max-w-[90%] max-h-full">
+          <div class="rounded-xl overflow-hidden border border-white/10 bg-black/40 relative">
+            <img :src="catalogVideoPreviewSrc" class="max-h-[56vh] max-w-full object-contain block">
+            <div v-if="lightboxMaterial.mediaType==='video' && catalogActiveRiskIndex===null" class="absolute inset-0 flex items-center justify-center bg-black/30"><i class="ph-fill ph-play text-white text-4xl"></i></div>
+            <div v-if="lightboxMaterial.mediaType==='video' && catalogActiveRisk" class="absolute top-3 left-3 px-2 py-1 rounded-md bg-black/70 border border-white/15 text-[11px] text-white/90">关键帧 · {{ catalogActiveRisk.timeRange || '命中时刻' }}</div>
+            <div v-for="(risk,ri) in (lightboxMaterial.risks || [])" v-show="!risk.misreported" :key="'lb-box-'+ri" class="bbox-overlay" :class="[risk.level==='medium'?'amber':risk.level==='low'?'blue':'', catalogActiveRiskIndex===null?'':catalogActiveRiskIndex===ri?'is-active':'is-muted']" :style="{left:(risk.bbox?.x||20)+'%',top:(risk.bbox?.y||20)+'%',width:(risk.bbox?.w||30)+'%',height:(risk.bbox?.h||25)+'%'}"></div>
+          </div>
+          <div v-if="lightboxMaterial.mediaType==='video'" class="mt-4 w-full">
+            <div class="flex items-center justify-between text-[11px] text-text-tertiary mb-1.5"><span>00:00</span><span v-if="catalogActiveRisk?.timeRange" class="text-primary">{{ catalogActiveRisk.timeRange }}</span><span>{{ lightboxMaterial.duration || '00:15' }}</span></div>
+            <div class="video-timeline">
+              <div v-for="(risk,ri) in (lightboxMaterial.risks || [])" v-show="!risk.misreported" :key="'lb-time-'+ri" @click="selectCatalogRisk(ri)" class="video-timeline-marker" :class="[risk.level==='high'?'bg-red-500':risk.level==='medium'?'bg-amber-500':'bg-blue-500', catalogActiveRiskIndex===ri?'active':'']" :style="{left:(risk.timePercent||((ri+1)*15))+'%'}" :title="(risk.timeRange || '') + ' · ' + risk.pointName"></div>
+            </div>
+            <p class="text-[11px] text-text-tertiary text-center mt-2">点击时间轴命中点查看对应关键帧</p>
+          </div>
         </div>
         <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/10 border border-white/15 text-white hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed" :disabled="!canLightboxNext" @click="lightboxNext"><i class="ph ph-caret-right text-xl"></i></button>
       </div>
       <div class="w-[380px] shrink-0 border-l border-white/10 bg-bg-elevated flex flex-col">
         <div class="flex-1 overflow-y-auto p-5 pt-12 space-y-4">
-          <div>
-            <span v-if="lightboxMaterial.rechecking" class="rechecking-badge">复审中</span>
-            <span v-else :class="auditResultBadgeClass(lightboxMaterial.auditStatus)">{{ auditResultLabel(lightboxMaterial.auditStatus) }}</span>
+          <div class="flex items-center gap-2">
+            <span :class="auditResultBadgeClass(lightboxMaterial.auditStatus)">{{ auditResultLabel(lightboxMaterial.auditStatus) }}</span>
+            <span v-if="lightboxMaterial.rechecking" class="rechecking-badge">重新审核中</span>
           </div>
           <div>
             <h3 class="text-[15px] font-semibold text-text-primary leading-snug break-all">{{ lightboxMaterial.name }}</h3>
             <p class="text-[12px] text-text-tertiary mt-2">素材类型：{{ lightboxMaterial.mediaType==='video' ? '视频' : '图片' }}</p>
-            <p class="text-[12px] text-text-tertiary mt-1">来源：{{ lightboxMaterial.sourceLabel || lightboxMaterial.taskName || '—' }}</p>
+            <p class="text-[12px] text-text-tertiary mt-1">所属任务：{{ lightboxMaterial.taskName || lightboxMaterial.sourceLabel || '每日自动审核' }}</p>
             <p class="text-[12px] text-text-tertiary mt-1">渠道：{{ lightboxMaterial.channelLabel || '通用' }}</p>
             <p class="text-[12px] text-text-tertiary mt-1">审核时间：{{ lightboxMaterial.auditTime || '—' }}</p>
-            <p class="text-[12px] text-text-tertiary mt-1">SKU：{{ lightboxMaterial.sku || '—' }}</p>
-            <p class="text-[12px] text-text-tertiary mt-1">商品名称：{{ lightboxMaterial.productName || '—' }}</p>
           </div>
           <div class="text-[13px] leading-relaxed">
             <span class="text-text-tertiary">风险命中：</span>
@@ -1215,22 +1239,30 @@ if (typeof tailwind !== 'undefined') {
           </div>
           <div class="space-y-3">
             <div v-if="!(lightboxMaterial.risks || []).length" class="text-center py-8 text-text-tertiary text-[13px]"><i class="ph ph-check-circle text-2xl text-green-400 block mb-2"></i>未发现明显风险</div>
-            <div v-for="(risk,i) in (lightboxMaterial.risks || [])" :key="'lb-risk-'+i" class="rounded-xl border p-3" :class="catalogRiskCardClass(risk)">
+            <div v-for="(risk,i) in (lightboxMaterial.risks || [])" :key="'lb-risk-'+i" @click="selectCatalogRisk(i)" class="rounded-xl border p-3 cursor-pointer transition-all" :class="catalogRiskCardClass(risk, i)">
               <div class="flex items-center gap-2 mb-2">
                 <span class="text-[12px] font-mono font-semibold text-primary shrink-0">{{ risk.pointCode }}</span>
                 <span :class="riskBadgeClass(risk.level)">{{ riskLevelLabel(risk.level) }}</span>
                 <span v-if="risk.confirmed" class="text-[10px] text-amber-300 ml-auto shrink-0">已确认</span>
                 <span v-else-if="risk.misreported" class="text-[10px] text-text-tertiary ml-auto shrink-0">已反馈误判</span>
               </div>
-              <p class="text-[12px] text-text-primary leading-relaxed mb-1"><span class="text-text-tertiary">审核点：</span>{{ risk.pointName }}</p>
-              <p class="text-[12px] text-text-primary leading-relaxed mb-1"><span class="text-text-tertiary">发现问题：</span>{{ risk.problem }}</p>
-              <p v-if="risk.suggestion" class="text-[12px] text-text-secondary leading-relaxed"><span class="text-text-tertiary">建议处理：</span>{{ risk.suggestion }}</p>
-              <div class="flex items-center gap-2 mt-3" v-if="!risk.confirmed && !risk.misreported">
+              <div class="space-y-1.5 text-[12px]">
+                <p class="text-text-primary leading-relaxed"><span class="text-text-tertiary">审核规则类型：</span>{{ risk.ruleCategory || '—' }}</p>
+                <p class="text-text-primary leading-relaxed"><span class="text-text-tertiary">审核点：</span>{{ risk.pointName || '—' }}</p>
+                <p class="text-text-secondary leading-relaxed"><span class="text-text-tertiary">审核规则：</span>{{ risk.ruleText || '—' }}</p>
+                <p class="text-text-primary leading-relaxed"><span class="text-text-tertiary">发现问题：</span>{{ risk.problem || '—' }}</p>
+                <p class="text-text-secondary leading-relaxed"><span class="text-text-tertiary">命中位置：</span>{{ risk.hitLocation || '—' }}</p>
+                <p v-if="lightboxMaterial.mediaType==='video'" class="text-text-secondary leading-relaxed"><span class="text-text-tertiary">视频命中时间：</span>{{ risk.timeRange || '—' }}</p>
+                <p class="text-text-secondary leading-relaxed"><span class="text-text-tertiary">命中依据：</span>{{ risk.hitBasis || '—' }}</p>
+                <p class="text-text-secondary leading-relaxed"><span class="text-text-tertiary">建议处理：</span>{{ risk.suggestion || '—' }}</p>
+              </div>
+              <div class="flex items-center gap-2 mt-3" v-if="canManageCatalogItem(lightboxMaterial) && !risk.confirmed && !risk.misreported">
                 <button @click="confirmCatalogRiskHit(i)" class="h-[28px] px-3 rounded-md bg-amber-500/15 border border-amber-500/30 text-[11px] text-amber-300 hover:bg-amber-500/25 transition-all">确认</button>
                 <button @click="openCatalogMisreportDialog(i)" class="h-[28px] px-3 rounded-md border border-border-default text-[11px] text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all">反馈误判</button>
               </div>
               <div v-else-if="risk.confirmed" class="mt-2 text-[12px] text-amber-300/90">已确认为真实风险</div>
-              <div v-else class="mt-2 text-[12px] text-text-tertiary">已反馈误判<span v-if="risk.misreportReason">：{{ risk.misreportReason }}</span></div>
+              <div v-else-if="risk.misreported" class="mt-2 text-[12px] text-text-tertiary">已反馈误判<span v-if="risk.misreportReason">：{{ risk.misreportReason }}</span></div>
+              <div v-else class="mt-2 text-[12px] text-text-tertiary">待人工确认</div>
             </div>
           </div>
         </div>
@@ -1312,6 +1344,11 @@ createApp({
       { value:20, label:'20 / 页' },
       { value:30, label:'30 / 页' }
     ];
+    const catalogPageSizeOptions = [
+      { value:20, label:'20 / 页' },
+      { value:50, label:'50 / 页' },
+      { value:100, label:'100 / 页' }
+    ];
     const uploadMediaOptions = [
       { value:'', label:'全部类型' },
       { value:'image', label:'图片' },
@@ -1329,6 +1366,23 @@ createApp({
       { value:'image', label:'图片' },
       { value:'video', label:'视频' }
     ];
+    const libraryCreatorOptions = [
+      { value:'', label:'全部创建者' },
+      { value:'管晓', label:'管晓' },
+      { value:'李设计', label:'李设计' },
+      { value:'赵运营', label:'赵运营' }
+    ];
+    const filteredLibraryCreatorOptions = computed(() => {
+      const q = libraryCreatorQuery.value.trim().toLowerCase();
+      if (!q) return libraryCreatorOptions;
+      return libraryCreatorOptions.filter(opt => !opt.value || opt.label.toLowerCase().includes(q));
+    });
+    const libraryTimeOptions = [
+      { value:'all', label:'全部时间' },
+      { value:'today', label:'今天' },
+      { value:'7d', label:'近 7 天' },
+      { value:'30d', label:'近 30 天' }
+    ];
     const librarySourceOptions = [
       { value:'', label:'全部来源' },
       { value:'image_gen', label:'图像生成' },
@@ -1337,10 +1391,9 @@ createApp({
       { value:'upload', label:'本地上传' }
     ];
     const libraryAuditOptions = [
-      { value:'', label:'全部状态' },
-      { value:'none', label:'未审核' },
-      { value:'passed', label:'已通过' },
-      { value:'risk', label:'有风险' }
+      { value:'', label:'全部审核进度' },
+      { value:'pending', label:'待审核' },
+      { value:'failed', label:'审核失败' }
     ];
     const libraryGroupOptions = [
       { value:'', label:'全部分组' },
@@ -1362,13 +1415,13 @@ createApp({
         { value:'tiktok', label:'TikTok' },
         { value:'youtube', label:'YouTube' },
         { value:'pinterest', label:'Pinterest' },
-        { value:'prime-video', label:'Prime Video' },
+        { value:'prime-video', label:'Amazon' },
         { value:'other', label:'其他渠道' }
       ]
     ];
     const homeViewMode = ref('tasks');
     const taskTimeFilter = ref('30d');
-    // 素材视图：任务名称 + 素材类型 + 审核结果 + 审核时间（点查询生效；无审核进度）
+    // 素材视图：文件名或任务名称 + 素材类型 + 审核结果 + 审核时间（点查询生效）
     const materialCatalogSearchDraft = ref('');
     const materialCatalogMediaDraft = ref('');
     const materialCatalogResultDraft = ref('');
@@ -1378,8 +1431,12 @@ createApp({
     const materialCatalogResultFilter = ref('');
     const materialCatalogTimeFilter = ref('30d');
     const selectedCatalogIds = ref([]);
+    const materialCatalogPage = ref(1);
+    const materialCatalogPageSize = ref(20);
+    const materialCatalogGotoPage = ref('');
     const materialLightboxOpen = ref(false);
     const lightboxMaterialId = ref(null);
+    const catalogActiveRiskIndex = ref(null);
     const PROTO_TODAY = new Date('2026-07-20T12:00:00');
     function positionDropdownMenu(trigger, key) {
       if (!trigger) return {};
@@ -1413,14 +1470,17 @@ createApp({
       if (openDropdownKey.value === key) {
         openDropdownKey.value = null;
         dropdownMenuStyle.value = {};
+        libraryCreatorQuery.value = '';
         return;
       }
+      libraryCreatorQuery.value = '';
       openDropdownKey.value = key;
       dropdownMenuStyle.value = positionDropdownMenu(event?.currentTarget, key);
     }
     function closeAllDropdowns() {
       openDropdownKey.value = null;
       dropdownMenuStyle.value = {};
+      libraryCreatorQuery.value = '';
     }
     function dropdownLabel(options, value, placeholder = '请选择') {
       if (value === '' || value === null || value === undefined) return placeholder;
@@ -1435,8 +1495,9 @@ createApp({
       else if (refName === 'libraryTypeFilter') libraryTypeFilter.value = value;
       else if (refName === 'librarySourceFilter') librarySourceFilter.value = value;
       else if (refName === 'libraryMediaFilter') libraryMediaFilter.value = value;
+      else if (refName === 'libraryCreatorFilter') libraryCreatorFilter.value = value;
       else if (refName === 'libraryAuditFilter') libraryAuditFilter.value = value;
-      else if (refName === 'libraryGroupFilter') libraryGroupFilter.value = value;
+      else if (refName === 'libraryTimeFilter') libraryTimeFilter.value = value;
       else if (refName === 'materialCatalogMediaDraft') materialCatalogMediaDraft.value = value;
       else if (refName === 'materialCatalogResultDraft') materialCatalogResultDraft.value = value;
       else if (refName === 'materialCatalogTimeDraft') materialCatalogTimeDraft.value = value;
@@ -1449,6 +1510,11 @@ createApp({
     function selectPageSize(value) {
       taskPageSize.value = value;
       onTaskPageSizeChange();
+      closeAllDropdowns();
+    }
+    function selectCatalogPageSize(value) {
+      materialCatalogPageSize.value = value;
+      materialCatalogPage.value = 1;
       closeAllDropdowns();
     }
     function taskDetailTabTitle(taskId) {
@@ -1467,7 +1533,7 @@ createApp({
       const mat = auditMaterials.value[detailIdx.value];
       if (mat?.mediaType === 'video' && mat.risks?.length) activeRiskIndex.value = 0;
     }
-    function openMaterialDetailTab(mat, historySnapshot = null) {
+    function openMaterialDetailTab(mat, historySnapshot = null, options = {}) {
       const taskId = activeTaskId.value || 'draft';
       const historyKey = historySnapshot ? `-hist-${historySnapshot.round || historySnapshot.versionLabel || 'old'}` : '';
       const tabId = `mat-${taskId}-${mat.id}${historyKey}`;
@@ -1476,11 +1542,12 @@ createApp({
       const idx = auditMaterials.value.findIndex(m => m.id === mat.id);
       const title = materialDetailTabTitle(idx);
       if (!tab) {
-        tab = { id:tabId, title, icon:'ph ph-image', closable:true, view:'detail', taskId, matId:mat.id, historySnapshot:snapshotCopy };
+        tab = { id:tabId, title, icon:'ph ph-image', closable:true, view:'detail', taskId, matId:mat.id, historySnapshot:snapshotCopy, fromHomePreview: !!options.fromHomePreview };
         navTabs.value.push(tab);
       } else {
         tab.title = title;
         tab.historySnapshot = snapshotCopy;
+        tab.fromHomePreview = !!options.fromHomePreview;
       }
       activeTabId.value = tabId;
       restoreMaterialDetailTab(tab);
@@ -1509,7 +1576,7 @@ createApp({
       { value:'tiktok', label:'TikTok' },
       { value:'youtube', label:'YouTube' },
       { value:'pinterest', label:'Pinterest' },
-      { value:'prime-video', label:'Prime Video' }
+      { value:'prime-video', label:'Amazon' }
     ];
     const activeTaskName = ref('');
     const activeTaskStatus = ref('');
@@ -1626,8 +1693,10 @@ createApp({
     const libraryTypeFilter = ref('');
     const librarySourceFilter = ref('');
     const libraryMediaFilter = ref('');
+    const libraryCreatorFilter = ref('');
+    const libraryCreatorQuery = ref('');
     const libraryAuditFilter = ref('');
-    const libraryGroupFilter = ref('');
+    const libraryTimeFilter = ref('all');
     const selectedLibraryAssets = ref([]);
     const historyViewSnapshot = ref(null);
 
@@ -1640,6 +1709,9 @@ createApp({
       ASSET_BASE + 'social_01.jpg',    // 社媒竖图
       ASSET_BASE + 'pp_07.jpg'         // 包装/细节图
     ];
+
+    const currentUserName = '张三';
+    const currentUserDirectReports = ['李四'];
 
     const mockTasks = ref([
       { id:11, name:'H202650 夏季大促 50 张素材批量审核', sku:'H202650', totalCount:50, usableCount:38, taskStatus:'done', auditResult:'high', creator:'张三', auditTime:'2026-07-07 12:30', channel:'amazon' },
@@ -1725,7 +1797,7 @@ createApp({
     }
 
     const auditMaterials = ref([
-      { id:'mat-1', mediaType:'image', name:'main_01.png', auditTime:'2026-07-07 11:46', rechecking:false, thumb:placeholderThumbs[0], auditStatus:'high', processStatus:'needFix', highCount:1, mediumCount:2, lowCount:0, primaryHit:'高风险 · 图库水印 · OCR 识别到 Getty Images，置信度 96%',
+      { id:'mat-1', mediaType:'image', name:'main_01.png', auditTime:'2026-07-07 11:46', rechecking:true, thumb:placeholderThumbs[0], auditStatus:'high', processStatus:'needFix', highCount:1, mediumCount:2, lowCount:0, primaryHit:'高风险 · 图库水印 · OCR 识别到 Getty Images，置信度 96%',
         risks:[
           { level:'high', ruleCategory:'内容安全类', pointCode:'AIGC-02', pointName:'残留图库 / 生成工具水印', ruleText:'判定素材中是否残留第三方图库水印、AI 生成工具水印或其他可识别的版权来源标识。', problem:'右下角残留 Getty Images 水印文字', hitLocation:'图片右下角', hitBasis:'OCR 识别到图库水印文字，置信度 96%', suggestion:'替换为无水印素材或重新生成背景后复检。', bbox:{x:70,y:80,w:22,h:12}, confirmed:false, misreported:false, misreportReason:'' },
           { level:'medium', ruleCategory:'内容安全类', pointCode:'IP-04', pointName:'第三方品牌 Logo / 品牌名 / 商标元素', ruleText:'判定素材中是否出现非本品牌 Logo、品牌名、商标元素；如 AI 生成疑似品牌变体、假 Logo、近似品牌文字，也属于疑似风险。', problem:'背景左下区域出现疑似 Apple 字样', hitLocation:'图片左下区域', hitBasis:'OCR 识别到品牌关键词，相似度 76%', suggestion:'人工确认是否真实出现品牌标识；如无授权建议替换背景元素。', bbox:{x:10,y:65,w:18,h:10}, confirmed:false, misreported:false, misreportReason:'' },
@@ -1760,8 +1832,32 @@ createApp({
       if (!risks.length) return false;
       return risks.some(r => !r.confirmed && !r.misreported);
     }
+    function normalizeRisk(risk) {
+      if (!risk) return risk;
+      risk.pointName = risk.pointName || risk.pointName;
+      risk.pointName = risk.pointName;
+      risk.pointCode = risk.pointCode || risk.pointCode;
+      risk.pointCode = risk.pointCode;
+      risk.ruleCategory = risk.ruleCategory || risk.ruleCategory;
+      risk.ruleCategory = risk.ruleCategory;
+      risk.ruleText = risk.ruleText || risk.ruleText;
+      risk.ruleText = risk.ruleText;
+      risk.hitLocation = risk.hitLocation || risk.hitLocation;
+      risk.hitLocation = risk.hitLocation;
+      risk.hitBasis = risk.hitBasis || risk.hitBasis;
+      risk.hitBasis = risk.hitBasis;
+      risk.timeRange = risk.timeRange || risk.timeRange;
+      risk.timeRange = risk.timeRange;
+      risk.timePercent = risk.timePercent ?? risk.timePercent;
+      risk.timePercent = risk.timePercent;
+      risk.misreported = !!(risk.misreported || risk.misreported);
+      risk.misreported = risk.misreported;
+      risk.misreportReason = risk.misreportReason || risk.misreportReason || '';
+      risk.misreportReason = risk.misreportReason;
+      return risk;
+    }
     function effectiveRisks(risks) {
-      return (risks || []).filter(r => !r.misreported);
+      return (risks || []).filter(r => !r.misreported && !r.misreported);
     }
     function materialIsUsable(mat) {
       if (!mat) return false;
@@ -1778,12 +1874,11 @@ createApp({
       else if (mat.lowCount > 0) mat.auditStatus = 'low';
       else mat.auditStatus = 'pass';
       if (!active.length) {
-        mat.primaryHit = '未命中当前规则范围内的高、中、低风险项。';
+        mat.primaryHit = '—';
         return;
       }
       const top = active.find(r => r.level === 'high') || active.find(r => r.level === 'medium') || active[0];
-      const levelPrefix = { high:'高风险', medium:'中风险', low:'低风险' }[top.level] || '风险';
-      mat.primaryHit = `${levelPrefix} · ${top.pointName || top.pointCode} · ${top.problem || top.hitBasis || ''}`;
+      mat.primaryHit = `${top.pointName || top.pointName || top.pointCode || '风险项'}：${top.problem || top.hitBasis || top.hitBasis || '发现问题'}`;
     }
     function countUnhandledRiskItems(materials) {
       let count = 0;
@@ -1854,13 +1949,20 @@ createApp({
       { name:'pp_03.jpg', mediaType:'image', thumb:placeholderThumbs[5], fileStatus:'pending', auditStatus:'', detail:'审核已终止，尚未完成' }
     ];
 
+    function decorateMaterialSnapshot(list) {
+      (list || []).forEach(mat => {
+        (mat.risks || []).forEach(normalizeRisk);
+        if (mat.risks) recalculateMaterialAuditStatus(mat);
+      });
+      return list;
+    }
     function getTaskMaterialSnapshot(taskId) {
       const task = mockTasks.value.find(t => t.id === taskId);
-      if (task?.materialsSnapshot?.length) return cloneMaterials(task.materialsSnapshot);
+      if (task?.materialsSnapshot?.length) return decorateMaterialSnapshot(cloneMaterials(task.materialsSnapshot));
       if (taskId === 11) {
         const risky = fullMaterialsSnapshot.filter(m => m.auditStatus !== 'pass');
         const passed = fullMaterialsSnapshot.find(m => m.auditStatus === 'pass') || fullMaterialsSnapshot[0];
-        return Array.from({ length: 50 }, (_, i) => {
+        return decorateMaterialSnapshot(Array.from({ length: 50 }, (_, i) => {
           const source = i < 38 ? passed : risky[(i - 38) % risky.length];
           const mat = cloneMaterials([source])[0];
           mat.id = `mat-50-${i + 1}`;
@@ -1876,13 +1978,13 @@ createApp({
             mat.risks = [];
           }
           return mat;
-        });
+        }));
       }
-      if (taskId === 3) return cloneMaterials(lowRiskTaskMaterials);
-      if (taskId === 6 || taskId === 9) return cloneMaterials(purePassMaterials);
-      if (taskId === 4) return cloneMaterials(mediumOnlyMaterials);
-      if (taskId === 10) return cloneMaterials(mediumOnlyMaterials);
-      return cloneMaterials(fullMaterialsSnapshot);
+      if (taskId === 3) return decorateMaterialSnapshot(cloneMaterials(lowRiskTaskMaterials));
+      if (taskId === 6 || taskId === 9) return decorateMaterialSnapshot(cloneMaterials(purePassMaterials));
+      if (taskId === 4) return decorateMaterialSnapshot(cloneMaterials(mediumOnlyMaterials));
+      if (taskId === 10) return decorateMaterialSnapshot(cloneMaterials(mediumOnlyMaterials));
+      return decorateMaterialSnapshot(cloneMaterials(fullMaterialsSnapshot));
     }
     function aggregateAuditResult(materials) {
       if (!materials?.length) return '';
@@ -1958,34 +2060,32 @@ createApp({
     });
 
     const mockLibraryAssets = [
-      { id:1, name:'LMP-001_Main_White.jpg', sku:'H123456', productName:'落地灯', type:'主图', mediaType:'image', size:'2.4 MB', thumb:placeholderThumbs[0], source:'adaptation', audit:'passed', groupId:'g3', groupName:'落地灯场景参考' },
-      { id:2, name:'TikTok_Ad_15s.mp4', sku:'H345678', productName:'', type:'短视频', mediaType:'video', size:'8.6 MB', thumb:placeholderThumbs[4], source:'upload', audit:'none', groupId:'g1', groupName:'Prime Day 备选' },
-      { id:3, name:'Banner_Summer_Sale.jpg', sku:'', productName:'', type:'Banner', mediaType:'image', size:'3.1 MB', thumb:placeholderThumbs[2], source:'image_gen', audit:'risk', groupId:'', groupName:'' },
-      { id:4, name:'Brand_Intro_30s.mov', sku:'H789012', productName:'智能台灯', type:'品牌视频', mediaType:'video', size:'12.4 MB', thumb:placeholderThumbs[1], source:'video_gen', audit:'passed', groupId:'g2', groupName:'A+ 模块素材' },
-      { id:5, name:'Govee_客厅场景_01.jpg', sku:'GV-H8131', productName:'落地灯', type:'主图', mediaType:'image', size:'1.8 MB', thumb:placeholderThumbs[3], source:'image_gen', audit:'none', groupId:'g3', groupName:'落地灯场景参考' },
-      { id:6, name:'SDC_Banner_OptionA.png', sku:'', productName:'', type:'Banner', mediaType:'image', size:'2.1 MB', thumb:placeholderThumbs[5], source:'adaptation', audit:'passed', groupId:'g1', groupName:'Prime Day 备选' },
-      { id:7, name:'FAN-200_Hero.jpg', sku:'FAN-200', productName:'风扇', type:'主图', mediaType:'image', size:'2.0 MB', thumb:placeholderThumbs[0], source:'upload', audit:'none', groupId:'', groupName:'' },
-      { id:8, name:'Prime_Cut_12s.mp4', sku:'H555111', productName:'落地灯', type:'短视频', mediaType:'video', size:'6.2 MB', thumb:placeholderThumbs[4], source:'adaptation', audit:'risk', groupId:'g1', groupName:'Prime Day 备选' }
+      { id:1, name:'夏日客厅_生成待审.png', mediaType:'image', creator:'管晓', createdAt:'2026-07-20 11:45', audit:'pending', thumb:placeholderThumbs[0] },
+      { id:2, name:'露营场景_待审.jpg', mediaType:'image', creator:'赵运营', createdAt:'2026-07-20 08:55', audit:'pending', thumb:placeholderThumbs[3] },
+      { id:3, name:'Brand_KV_审核失败.png', mediaType:'image', creator:'李设计', createdAt:'2026-07-18 16:20', audit:'failed', thumb:placeholderThumbs[2] },
+      { id:4, name:'镜头生成_失败重试.mp4', mediaType:'video', duration:18, creator:'李设计', createdAt:'2026-07-20 19:40', audit:'failed', thumb:placeholderThumbs[4] },
+      { id:5, name:'落地灯动态_待审.mp4', mediaType:'video', duration:42, creator:'管晓', createdAt:'2026-07-19 09:32', audit:'pending', thumb:placeholderThumbs[1] },
+      { id:6, name:'A+_模块草稿_待审.jpg', mediaType:'image', creator:'管晓', createdAt:'2026-07-17 13:12', audit:'pending', thumb:placeholderThumbs[5] }
     ];
 
-    function librarySourceLabel(v) {
-      return ({ image_gen:'图像生成', video_gen:'镜头生成', adaptation:'素材适配', upload:'本地上传' })[v] || '—';
-    }
+    function libraryDurationText(sec=0){ const m=Math.floor(sec/60),s=sec%60; return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`; }
+    function librarySourceLabel(v){ return v || '—'; }
     function libraryAuditLabel(v) {
-      return ({ none:'未审核', passed:'已通过', risk:'有风险' })[v] || '—';
+      return ({ pending:'待审核', failed:'审核失败' })[v] || '—';
     }
 
     const filteredLibraryAssets = computed(() => mockLibraryAssets.filter(asset => {
       const q = librarySearch.value.trim().toLowerCase();
-      if (q) {
-        const hay = `${asset.name} ${asset.sku || ''} ${asset.productName || ''}`.toLowerCase();
-        if (!hay.includes(q)) return false;
-      }
-      if (librarySourceFilter.value && asset.source !== librarySourceFilter.value) return false;
+      if (q && !asset.name.toLowerCase().includes(q)) return false;
       if (libraryMediaFilter.value && asset.mediaType !== libraryMediaFilter.value) return false;
+      if (libraryCreatorFilter.value && asset.creator !== libraryCreatorFilter.value) return false;
       if (libraryAuditFilter.value && asset.audit !== libraryAuditFilter.value) return false;
-      if (libraryGroupFilter.value && asset.groupId !== libraryGroupFilter.value) return false;
-      if (libraryTypeFilter.value && asset.type !== libraryTypeFilter.value) return false;
+      if (libraryTimeFilter.value && libraryTimeFilter.value !== 'all') {
+        if (libraryTimeFilter.value === 'today') {
+          const d = parseAuditDate(asset.createdAt);
+          if (!d || d.toDateString() !== PROTO_TODAY.toDateString()) return false;
+        } else if (!withinTimeRange(asset.createdAt, libraryTimeFilter.value)) return false;
+      }
       return true;
     }));
 
@@ -2074,13 +2174,14 @@ createApp({
       });
     }
     function openTaskDetailAtMaterial(task, mat) {
-      openTaskDetail(task);
-      nextTick(() => {
-        if (!mat || ['failed','terminated','auditing','reAuditing'].includes(task.taskStatus)) return;
-        const hit = auditMaterials.value.find(m => m.id === mat.id)
-          || auditMaterials.value.find(m => m.name === mat.name);
-        if (hit) viewDetail(hit);
-      });
+      if (!mat || ['failed','terminated','auditing','reAuditing'].includes(task.taskStatus)) {
+        openTaskDetail(task);
+        return;
+      }
+      loadTaskContext(task);
+      const hit = auditMaterials.value.find(m => m.id === mat.id)
+        || auditMaterials.value.find(m => m.name === mat.name);
+      if (hit) openMaterialDetailTab(hit, null, { fromHomePreview: true });
     }
     const activeTaskUsableCount = computed(() => auditMaterials.value.filter(materialIsUsable).length);
 
@@ -2176,6 +2277,12 @@ createApp({
       const type = reAuditMode.value;
       auditRound.value += 1;
       activeTaskStatus.value = type === 'retry' ? 'auditing' : 'reAuditing';
+      const task = mockTasks.value.find(t => t.id === activeTaskId.value);
+      if (task) task.taskStatus = activeTaskStatus.value;
+      if (type === 'all') {
+        auditMaterials.value.forEach(mat => { mat.rechecking = true; });
+        if (task) task.materialsSnapshot = cloneMaterials(auditMaterials.value);
+      }
       auditProgressPhase.value = 'running';
       startAuditing();
     }
@@ -2437,8 +2544,20 @@ createApp({
     function isRuleLong(text) { return (text || '').length > 72; }
     function toggleRuleExpand(i) { expandedRules.value[i] = !expandedRules.value[i]; }
 
+    function canManageTask(task) {
+      if (!task) return false;
+      return task.creator === currentUserName || currentUserDirectReports.includes(task.creator);
+    }
+    const canManageActiveTask = computed(() => {
+      const task = mockTasks.value.find(t => t.id === activeTaskId.value);
+      return canManageTask(task);
+    });
+    function canManageCatalogItem(item) {
+      if (!item || !item.taskId) return false;
+      return canManageTask(mockTasks.value.find(t => t.id === item.taskId));
+    }
     function canDeleteTask(task) {
-      return task && ['failed', 'terminated'].includes(task.taskStatus);
+      return canManageTask(task) && ['failed', 'terminated'].includes(task.taskStatus);
     }
     function deleteConfirmMessage(task) {
       if (!task) return '';
@@ -2496,29 +2615,35 @@ createApp({
       showToast(`已开始下载 ${n} 个可用素材`);
     }
 
-    const catalogItemCache = {};
-    function cloneRisksForCatalog(risks) {
-      return JSON.parse(JSON.stringify(risks || []));
+    function attachCatalogDisplayAliases(item) {
+      item.mediaType = item.mediaType || item.mediaType || 'image';
+      item.mediaType = item.mediaType;
+      item.auditTime = item.auditTime || item.auditTime || '';
+      item.auditTime = item.auditTime;
+      item.sourceLabel = item.sourceLabel || item.taskName || '';
+      (item.risks || []).forEach(normalizeRisk);
+      return item;
     }
     function buildCatalogItemFromMaterial(task, mat, index) {
       const id = `cat-t${task.id}-m${mat.id || index}`;
-      if (catalogItemCache[id]) return catalogItemCache[id];
+      const mediaType = mat.mediaType || mat.mediaType || 'image';
+      const auditTime = mat.auditTime || mat.auditTime || task.auditTime || '';
       const item = {
         id,
         materialId: mat.id,
         name: mat.name,
-        mediaType: mat.mediaType || 'image',
+        mediaType,
+        mediaType: mediaType,
         duration: mat.duration || '',
         thumb: mat.thumb,
         taskId: task.id,
         taskName: task.name,
         sourceType: 'task',
         sourceLabel: task.name,
-        sku: task.sku || '',
-        productName: inferProductName(task.name, task.sku),
         channel: task.channel || '',
-        channelLabel: channelLabelOf(task.channel || ''),
-        auditTime: mat.auditTime || task.auditTime || '',
+        channelLabel: channelLabelOf(task.channel || '') || '通用',
+        auditTime,
+        auditTime: auditTime,
         auditStatus: mat.auditStatus || 'pass',
         usable: materialIsUsable(mat),
         rechecking: !!mat.rechecking,
@@ -2526,34 +2651,33 @@ createApp({
         mediumCount: mat.mediumCount || 0,
         lowCount: mat.lowCount || 0,
         primaryHit: mat.primaryHit || '',
-        risks: cloneRisksForCatalog(mat.risks)
+        risks: mat.risks || []
       };
-      if (!item.primaryHit && item.risks.length) {
-        recalculateMaterialAuditStatus(item);
-      }
-      catalogItemCache[id] = reactive(item);
-      return catalogItemCache[id];
+      attachCatalogDisplayAliases(item);
+      recalculateMaterialAuditStatus(item);
+      return reactive(item);
     }
     function buildAutoCatalogItem(mat, index) {
       const id = `cat-auto-${mat.id || index}`;
-      if (catalogItemCache[id]) return catalogItemCache[id];
       if (!Array.isArray(mat.risks)) mat.risks = [];
-      const item = reactive({
+      const mediaType = mat.mediaType || mat.mediaType || 'image';
+      const auditTime = mat.auditTime || mat.auditTime || '';
+      const item = {
         id,
         materialId: mat.id,
         name: mat.name,
-        mediaType: mat.mediaType || 'image',
+        mediaType,
+        mediaType: mediaType,
         duration: mat.duration || '',
         thumb: mat.thumb,
         taskId: null,
-        taskName: '',
+        taskName: '每日自动审核',
         sourceType: 'auto',
-        sourceLabel: mat.sourceLabel || 'AI生成 · 自动化检测',
-        sku: mat.sku || '',
-        productName: mat.productName || '',
+        sourceLabel: '每日自动审核',
         channel: mat.channel || '',
         channelLabel: channelLabelOf(mat.channel || '') || '通用',
-        auditTime: mat.auditTime || '',
+        auditTime,
+        auditTime: auditTime,
         auditStatus: mat.auditStatus || 'pass',
         usable: materialIsUsable(mat),
         rechecking: false,
@@ -2562,9 +2686,10 @@ createApp({
         lowCount: mat.lowCount || 0,
         primaryHit: mat.primaryHit || '',
         risks: mat.risks
-      });
-      catalogItemCache[id] = item;
-      return item;
+      };
+      attachCatalogDisplayAliases(item);
+      recalculateMaterialAuditStatus(item);
+      return reactive(item);
     }
     const autoDetectMaterials = ref([
       { id:'auto1', name:'gen_living_room_v3.png', mediaType:'image', thumb:placeholderThumbs[0], auditTime:'2026-07-22 10:18', auditStatus:'pass', highCount:0, mediumCount:0, lowCount:0, primaryHit:'未命中当前规则范围内的高、中、低风险项。', sourceLabel:'AI生成 · 自动化检测', sku:'', productName:'', risks:[] },
@@ -2579,50 +2704,65 @@ createApp({
       { id:'auto4', name:'img_gen_batch_14.webp', mediaType:'image', thumb:placeholderThumbs[3], auditTime:'2026-07-19 14:33', auditStatus:'pass', highCount:0, mediumCount:0, lowCount:0, primaryHit:'未命中当前规则范围内的高、中、低风险项。', sourceLabel:'图像生成 · 自动化检测', sku:'', productName:'', risks:[] }
     ]);
     const expandedTaskMaterials = computed(() => {
-      const q = materialCatalogSearch.value.trim();
+      const q = materialCatalogSearch.value.trim().toLowerCase();
       const time = materialCatalogTimeFilter.value;
       const media = materialCatalogMediaFilter.value;
       const result = materialCatalogResultFilter.value;
       const matchMedia = (item) => !media || (item.mediaType || 'image') === media;
       const matchResult = (item) => !result || (item.auditStatus || 'pass') === result;
+      const matchKeyword = (item) => !q || (item.name || '').toLowerCase().includes(q) || (item.taskName || '').toLowerCase().includes(q);
       const items = [];
       mockTasks.value.forEach(task => {
-        if (task.taskStatus !== 'done') return;
-        if (q && !task.name.includes(q)) return;
+        if (!['done', 'pendingAction', 'reAuditing'].includes(task.taskStatus)) return;
         getTaskMaterialSnapshot(task.id).forEach((mat, i) => {
           const item = buildCatalogItemFromMaterial(task, mat, i);
+          if (!matchKeyword(item)) return;
           if (!withinTimeRange(item.auditTime, time)) return;
           if (!matchMedia(item)) return;
           if (!matchResult(item)) return;
           items.push(item);
         });
       });
-      // 任务名称只筛任务侧：有搜索词时不附带自动化素材
-      if (!q) {
-        autoDetectMaterials.value.forEach((mat, i) => {
-          const item = buildAutoCatalogItem(mat, i);
-          if (!withinTimeRange(item.auditTime, time)) return;
-          if (!matchMedia(item)) return;
-          if (!matchResult(item)) return;
-          items.push(item);
-        });
-      }
+      autoDetectMaterials.value.forEach((mat, i) => {
+        const item = buildAutoCatalogItem(mat, i);
+        if (!matchKeyword(item)) return;
+        if (!withinTimeRange(item.auditTime, time)) return;
+        if (!matchMedia(item)) return;
+        if (!matchResult(item)) return;
+        items.push(item);
+      });
       return items.sort((a, b) => (b.auditTime || '').localeCompare(a.auditTime || ''));
     });
-    const catalogSelectableIds = computed(() => expandedTaskMaterials.value.map(i => i.id));
+    const materialCatalogTotalPages = computed(() => Math.max(1, Math.ceil(expandedTaskMaterials.value.length / materialCatalogPageSize.value)));
+    const paginatedCatalogMaterials = computed(() => {
+      const start = (materialCatalogPage.value - 1) * materialCatalogPageSize.value;
+      return expandedTaskMaterials.value.slice(start, start + materialCatalogPageSize.value);
+    });
+    const catalogSelectableIds = computed(() => paginatedCatalogMaterials.value.map(i => i.id));
+    const catalogCurrentPageSelectedCount = computed(() => catalogSelectableIds.value.filter(id => selectedCatalogIds.value.includes(id)).length);
     const isCatalogAllSelected = computed(() => catalogSelectableIds.value.length > 0 && catalogSelectableIds.value.every(id => selectedCatalogIds.value.includes(id)));
-    const isCatalogPartiallySelected = computed(() => selectedCatalogIds.value.length > 0 && !isCatalogAllSelected.value);
+    const isCatalogPartiallySelected = computed(() => catalogCurrentPageSelectedCount.value > 0 && !isCatalogAllSelected.value);
     const lightboxMaterial = computed(() => {
       if (!lightboxMaterialId.value) return null;
-      return expandedTaskMaterials.value.find(i => i.id === lightboxMaterialId.value) || null;
+      return paginatedCatalogMaterials.value.find(i => i.id === lightboxMaterialId.value) || null;
     });
-    const lightboxIndexInFiltered = computed(() => expandedTaskMaterials.value.findIndex(i => i.id === lightboxMaterialId.value));
+    const lightboxIndexInFiltered = computed(() => paginatedCatalogMaterials.value.findIndex(i => i.id === lightboxMaterialId.value));
     const canLightboxPrev = computed(() => lightboxIndexInFiltered.value > 0);
-    const canLightboxNext = computed(() => lightboxIndexInFiltered.value >= 0 && lightboxIndexInFiltered.value < expandedTaskMaterials.value.length - 1);
+    const canLightboxNext = computed(() => lightboxIndexInFiltered.value >= 0 && lightboxIndexInFiltered.value < paginatedCatalogMaterials.value.length - 1);
+    const catalogActiveRisk = computed(() => {
+      const idx = catalogActiveRiskIndex.value;
+      if (idx === null || !lightboxMaterial.value?.risks?.[idx]) return null;
+      return lightboxMaterial.value.risks[idx];
+    });
+    const catalogVideoPreviewSrc = computed(() => catalogActiveRisk.value?.frameThumb || lightboxMaterial.value?.thumb || '');
 
     watch(expandedTaskMaterials, () => {
-      selectedCatalogIds.value = selectedCatalogIds.value.filter(id => catalogSelectableIds.value.includes(id));
-      if (lightboxMaterialId.value && !expandedTaskMaterials.value.some(i => i.id === lightboxMaterialId.value)) {
+      const availableIds = expandedTaskMaterials.value.map(item => item.id);
+      selectedCatalogIds.value = selectedCatalogIds.value.filter(id => availableIds.includes(id));
+      if (materialCatalogPage.value > materialCatalogTotalPages.value) materialCatalogPage.value = materialCatalogTotalPages.value;
+    });
+    watch(paginatedCatalogMaterials, () => {
+      if (lightboxMaterialId.value && !paginatedCatalogMaterials.value.some(i => i.id === lightboxMaterialId.value)) {
         closeMaterialLightbox();
       }
     });
@@ -2637,6 +2777,7 @@ createApp({
       materialCatalogMediaFilter.value = materialCatalogMediaDraft.value || '';
       materialCatalogResultFilter.value = materialCatalogResultDraft.value || '';
       materialCatalogTimeFilter.value = materialCatalogTimeDraft.value || 'all';
+      materialCatalogPage.value = 1;
       clearCatalogSelection();
       closeAllDropdowns();
     }
@@ -2655,10 +2796,21 @@ createApp({
     }
     function toggleSelectAllCatalog() {
       if (isCatalogAllSelected.value) {
-        selectedCatalogIds.value = [];
+        selectedCatalogIds.value = selectedCatalogIds.value.filter(id => !catalogSelectableIds.value.includes(id));
         return;
       }
-      selectedCatalogIds.value = [...catalogSelectableIds.value];
+      selectedCatalogIds.value = [...new Set([...selectedCatalogIds.value, ...catalogSelectableIds.value])];
+    }
+    function goMaterialCatalogPage(page) {
+      materialCatalogPage.value = Math.min(materialCatalogTotalPages.value, Math.max(1, Number(page) || 1));
+      catalogActiveRiskIndex.value = null;
+    }
+    function gotoMaterialCatalogPage() {
+      goMaterialCatalogPage(materialCatalogGotoPage.value);
+      materialCatalogGotoPage.value = '';
+    }
+    function selectCatalogRisk(index) {
+      catalogActiveRiskIndex.value = catalogActiveRiskIndex.value === index ? null : index;
     }
     function clearCatalogSelection() {
       selectedCatalogIds.value = [];
@@ -2674,21 +2826,29 @@ createApp({
     function openMaterialLightbox(item) {
       if (!item) return;
       lightboxMaterialId.value = item.id;
+      catalogActiveRiskIndex.value = null;
       materialLightboxOpen.value = true;
     }
     function closeMaterialLightbox() {
       materialLightboxOpen.value = false;
       lightboxMaterialId.value = null;
+      catalogActiveRiskIndex.value = null;
     }
     function lightboxPrev() {
       if (!canLightboxPrev.value) return;
-      const prev = expandedTaskMaterials.value[lightboxIndexInFiltered.value - 1];
-      if (prev) lightboxMaterialId.value = prev.id;
+      const prev = paginatedCatalogMaterials.value[lightboxIndexInFiltered.value - 1];
+      if (prev) {
+        lightboxMaterialId.value = prev.id;
+        catalogActiveRiskIndex.value = null;
+      }
     }
     function lightboxNext() {
       if (!canLightboxNext.value) return;
-      const next = expandedTaskMaterials.value[lightboxIndexInFiltered.value + 1];
-      if (next) lightboxMaterialId.value = next.id;
+      const next = paginatedCatalogMaterials.value[lightboxIndexInFiltered.value + 1];
+      if (next) {
+        lightboxMaterialId.value = next.id;
+        catalogActiveRiskIndex.value = null;
+      }
     }
     function openDeleteConfirm(task) {
       if (!canDeleteTask(task)) return;
@@ -2733,6 +2893,10 @@ createApp({
       const closing = navTabs.value.find(t => t.id === id);
       navTabs.value = navTabs.value.filter(t => t.id !== id);
       if (activeTabId.value === id) {
+        if (closing?.fromHomePreview) {
+          activeTabId.value = HOME_TAB_ID;
+          return;
+        }
         if (closing?.taskId) {
           const taskTab = navTabs.value.find(t => t.id === 'task-' + closing.taskId);
           if (taskTab) {
@@ -2965,6 +3129,7 @@ createApp({
           auditMaterials.value = uploadedFiles.value.map((f, i) => fileToPassMaterial(f, i));
         }
       }
+      if (wasReAuditing) auditMaterials.value.forEach(mat => { mat.rechecking = false; });
       if (materialStats.value.high > 0) activeAuditResult.value = 'high';
       else if (materialStats.value.medium > 0) activeAuditResult.value = 'medium';
       else if (materialStats.value.low > 0) activeAuditResult.value = 'low';
@@ -3076,6 +3241,7 @@ createApp({
     }
 
     function confirmReAudit(type) {
+      if (!canManageActiveTask.value) return;
       saveReAuditSnapshot();
       reAuditMode.value = type;
       replaceTarget.value = null;
@@ -3096,6 +3262,7 @@ createApp({
       auditProgressModalOpen.value = true;
     }
     function openAddMaterialsDialog() {
+      if (!canManageActiveTask.value) return;
       replaceTarget.value = null;
       reAuditMode.value = 'append';
       replacePendingFiles.value = [];
@@ -3151,6 +3318,7 @@ createApp({
     }
 
     function confirmRiskHit(riskIdx) {
+      if (!canManageActiveTask.value) return;
       const mat = currentMaterial.value;
       const risk = mat.risks[riskIdx];
       risk.confirmed = true;
@@ -3158,9 +3326,10 @@ createApp({
       tryCompleteTaskIfAllHandled();
     }
     const misreportContext = ref('task'); // task | catalog
-    function catalogRiskCardClass(risk) {
+    function catalogRiskCardClass(risk, index) {
       if (risk.confirmed) return 'border-green-500/30 bg-green-500/[0.03] opacity-90';
       if (risk.misreported) return 'border-slate-500/30 bg-slate-500/[0.03] opacity-80';
+      if (catalogActiveRiskIndex.value === index) return risk.level === 'high' ? 'border-red-500/50 bg-red-500/[0.08]' : risk.level === 'medium' ? 'border-amber-500/50 bg-amber-500/[0.08]' : 'border-blue-500/50 bg-blue-500/[0.06]';
       return risk.level === 'high' ? 'border-red-500/30 bg-red-500/[0.04]' : risk.level === 'medium' ? 'border-amber-500/30 bg-amber-500/[0.04]' : 'border-blue-500/30 bg-blue-500/[0.03]';
     }
     function syncCatalogItemAfterRiskChange(item) {
@@ -3170,24 +3339,41 @@ createApp({
       if (item.sourceType === 'auto') {
         const auto = autoDetectMaterials.value.find(m => m.id === item.materialId);
         if (auto) {
+          auto.risks = JSON.parse(JSON.stringify(item.risks || []));
           auto.auditStatus = item.auditStatus;
           auto.highCount = item.highCount;
           auto.mediumCount = item.mediumCount;
           auto.lowCount = item.lowCount;
           auto.primaryHit = item.primaryHit;
         }
+        return;
       }
+      const task = mockTasks.value.find(t => t.id === item.taskId);
+      if (!task) return;
+      if (!task.materialsSnapshot?.length) task.materialsSnapshot = getTaskMaterialSnapshot(task.id);
+      const syncMaterial = (mat) => {
+        if (!mat || (mat.id !== item.materialId && mat.name !== item.name)) return false;
+        mat.risks = JSON.parse(JSON.stringify(item.risks || []));
+        recalculateMaterialAuditStatus(mat);
+        mat.processStatus = materialHasUnhandledRisks(mat) ? 'unhandled' : 'handled';
+        return true;
+      };
+      task.materialsSnapshot.forEach(syncMaterial);
+      if (activeTaskId.value === item.taskId) auditMaterials.value.forEach(syncMaterial);
+      task.auditResult = aggregateAuditResult(task.materialsSnapshot);
+      task.usableCount = task.materialsSnapshot.filter(materialIsUsable).length;
+      task.resultText = auditResultLabel(task.auditResult);
     }
     function confirmCatalogRiskHit(riskIdx) {
       const item = lightboxMaterial.value;
-      if (!item?.risks?.[riskIdx]) return;
+      if (!canManageCatalogItem(item) || !item?.risks?.[riskIdx]) return;
       item.risks[riskIdx].confirmed = true;
       syncCatalogItemAfterRiskChange(item);
       showToast('已确认该风险点');
     }
     function openCatalogMisreportDialog(riskIdx) {
       const item = lightboxMaterial.value;
-      if (!item?.risks?.[riskIdx]) return;
+      if (!canManageCatalogItem(item) || !item?.risks?.[riskIdx]) return;
       misreportContext.value = 'catalog';
       misreportTargetIdx.value = riskIdx;
       misreportTarget.value = item.risks[riskIdx];
@@ -3195,6 +3381,7 @@ createApp({
       showMisreportDialog.value = true;
     }
     function openMisreportDialog(riskIdx) {
+      if (!canManageActiveTask.value) return;
       misreportContext.value = 'task';
       misreportTargetIdx.value = riskIdx;
       misreportTarget.value = currentMaterial.value.risks[riskIdx];
@@ -3207,6 +3394,8 @@ createApp({
         const risk = item?.risks?.[misreportTargetIdx.value];
         if (!risk) return;
         risk.misreported = true;
+        risk.misreported = true;
+        risk.misreportReason = misreportForm.value.notes;
         risk.misreportReason = misreportForm.value.notes;
         syncCatalogItemAfterRiskChange(item);
         showMisreportDialog.value = false;
@@ -3218,6 +3407,8 @@ createApp({
       const mat = currentMaterial.value;
       const risk = mat.risks[misreportTargetIdx.value];
       risk.misreported = true;
+      risk.misreported = true;
+      risk.misreportReason = misreportForm.value.notes;
       risk.misreportReason = misreportForm.value.notes;
       recalculateMaterialAuditStatus(mat);
       syncMaterialProcessStatus(mat);
@@ -3230,11 +3421,11 @@ createApp({
     function openLibraryModal(mode = 'create') {
       libraryModalMode.value = mode;
       librarySearch.value = '';
-      libraryTypeFilter.value = '';
-      librarySourceFilter.value = '';
       libraryMediaFilter.value = '';
+      libraryCreatorFilter.value = '';
+      libraryCreatorQuery.value = '';
       libraryAuditFilter.value = '';
-      libraryGroupFilter.value = '';
+      libraryTimeFilter.value = 'all';
       selectedLibraryAssets.value = [];
       libraryModalOpen.value = true;
     }
@@ -3264,9 +3455,9 @@ createApp({
       currentPage, navTabs, activeTabId, isHomeTab, switchTab, closeTab, closeCurrentTaskTab,
       homeViewMode, timeRangeOptions, materialChannelFilterOptions,
       formData, uploadedFiles, safeAreaChannelOptions, selectedChannelLabel,
-      openDropdownKey, dropdownMenuStyle, uploadListSectionRef, taskStatusOptions, taskResultOptions, catalogMediaOptions, taskPageSizeOptions, uploadMediaOptions, libraryTypeOptions,
-      libraryMediaOptions, librarySourceOptions, libraryAuditOptions, libraryGroupOptions, librarySourceLabel, libraryAuditLabel,
-      toggleDropdown, closeAllDropdowns, isFilterDropdown, dropdownLabel, selectDropdownValue, selectChannel, selectPageSize, openMaterialDetailTab,
+      openDropdownKey, dropdownMenuStyle, uploadListSectionRef, taskStatusOptions, taskResultOptions, catalogMediaOptions, taskPageSizeOptions, catalogPageSizeOptions, uploadMediaOptions, libraryTypeOptions,
+      libraryMediaOptions, libraryCreatorOptions, libraryTimeOptions, librarySourceOptions, libraryAuditOptions, libraryGroupOptions, librarySourceLabel, libraryAuditLabel, libraryDurationText,
+      toggleDropdown, closeAllDropdowns, isFilterDropdown, dropdownLabel, selectDropdownValue, selectChannel, selectPageSize, selectCatalogPageSize, openMaterialDetailTab,
       uploadFileSearch, uploadMediaFilter, useCompactUploadList, uploadFileStats, filteredUploadedFiles,
       clearUploadedFiles, removeUploadedFile, simulateBulkFileUpload,
       taskSearchDraft, taskStatusDraft, taskResultDraft, taskTimeDraft,
@@ -3277,19 +3468,20 @@ createApp({
       isTaskExpanded, toggleTaskExpand, getTaskPreviewMaterials, thumbCornerClass, openTaskDetailAtMaterial,
       materialCatalogSearchDraft, materialCatalogMediaDraft, materialCatalogResultDraft, materialCatalogTimeDraft,
       materialCatalogSearch, materialCatalogMediaFilter, materialCatalogResultFilter, materialCatalogTimeFilter,
-      selectedCatalogIds, expandedTaskMaterials,
+      selectedCatalogIds, expandedTaskMaterials, paginatedCatalogMaterials,
+      materialCatalogPage, materialCatalogPageSize, materialCatalogTotalPages, materialCatalogGotoPage,
       isCatalogAllSelected, isCatalogPartiallySelected, submitMaterialCatalogQuery, resetMaterialCatalogFilters, clearMaterialCatalogDraft,
-      toggleCatalogSelect, toggleSelectAllCatalog, clearCatalogSelection,
+      toggleCatalogSelect, toggleSelectAllCatalog, clearCatalogSelection, goMaterialCatalogPage, gotoMaterialCatalogPage,
       downloadSelectedCatalog, downloadSingleCatalogMaterial,
-      materialLightboxOpen, lightboxMaterial, canLightboxPrev, canLightboxNext,
+      materialLightboxOpen, lightboxMaterial, canLightboxPrev, canLightboxNext, catalogActiveRiskIndex, catalogActiveRisk, catalogVideoPreviewSrc,
       openMaterialLightbox, closeMaterialLightbox, lightboxPrev, lightboxNext,
-      catalogRiskCardClass, confirmCatalogRiskHit, openCatalogMisreportDialog,
+      selectCatalogRisk, catalogRiskCardClass, confirmCatalogRiskHit, openCatalogMisreportDialog,
       materialIsUsable, effectiveRisks,
       activeTaskName, activeTaskStatus, activeTaskId, activeTaskAuditTime, activeFailureReason, failedMaterials, activeAuditResult,
       terminatedMaterials, activeTerminateNote, terminatedProgressLabel,
       terminateConfirmDialogOpen, openTerminateConfirm, closeTerminateConfirm, confirmTerminateAudit,
       terminateConfirmTitle, terminateConfirmMessage, terminateConfirmHint, terminateConfirmCancelLabel, terminateConfirmOkLabel,
-      deleteConfirmDialogOpen, deleteTargetTask, deleteConfirmMessage, canDeleteTask, openDeleteConfirm, closeDeleteConfirm, confirmDeleteTask,
+      deleteConfirmDialogOpen, deleteTargetTask, deleteConfirmMessage, canManageTask, canManageActiveTask, canManageCatalogItem, canDeleteTask, openDeleteConfirm, closeDeleteConfirm, confirmDeleteTask,
       toastMessage, toastTone,
       terminatedFileStatusLabel, terminatedFileStatusClass, terminatedFileStatusDot, terminatedFileDetail,
       auditCompleted, auditRound, auditIsComplete, auditProgressTitle,
@@ -3303,7 +3495,7 @@ createApp({
       replaceDialogOpen, replaceTarget, replacePendingFiles, reAuditMode,
       createTaskModalOpen, cancelCreateTask, startAuditingFromModal,
       simulateReplaceFileUpload, startReplaceAuditingFromModal, closeReplaceDialog, openAddMaterialsDialog,
-      libraryModalOpen, libraryModalMode, librarySearch, libraryTypeFilter, librarySourceFilter, libraryMediaFilter, libraryAuditFilter, libraryGroupFilter, filteredLibraryAssets, selectedLibraryAssets,
+      libraryModalOpen, libraryModalMode, librarySearch, libraryMediaFilter, libraryCreatorFilter, libraryCreatorQuery, filteredLibraryCreatorOptions, libraryAuditFilter, libraryTimeFilter, filteredLibraryAssets, selectedLibraryAssets,
       historyViewSnapshot, isHistoryDetailView, displayMaterial, displayMaterialRiskCounts,
       backFromDetail,
       taskStatusLabel, taskStatusDotClass, taskStatusTextClass, auditResultLabel, auditResultBadgeClass,

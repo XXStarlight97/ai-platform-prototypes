@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>素材管理 v7 · 三库字段与权限 - 智岩 AI 平台</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="assets/vendor/vue.global.prod.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/@phosphor-icons/web"></script>
+<script>
+if (typeof Vue === 'undefined') {
+  document.write('<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"><\\/script>');
+}
+</script>
+<script>
+tailwind.config={darkMode:'class',theme:{extend:{fontFamily:{sans:['Noto Sans SC','PingFang SC','sans-serif']},colors:{primary:{DEFAULT:'#f6b94b',hover:'#ffc966'},ink:'#090b10',panel:'#12151d',line:'rgba(255,255,255,.09)',muted:'rgba(255,255,255,.54)'}}}}
+</script>
+<style>
+*{box-sizing:border-box} [v-cloak]{display:none} ::-webkit-scrollbar{width:6px;height:6px} ::-webkit-scrollbar-thumb{background:#ffffff24;border-radius:9px}
+body{background:#080a0f}.glass{background:linear-gradient(145deg,rgba(25,29,40,.88),rgba(12,14,20,.82));backdrop-filter:blur(22px)}
+.field{background:#090b11;border:1px solid rgba(255,255,255,.1);outline:none}.field:focus{border-color:#f6b94b88}
+.modal-head{height:3.5rem;padding:0 1.5rem;border-bottom:1px solid rgba(255,255,255,.09);display:flex;align-items:center;justify-content:space-between}
+.modal-close{width:2rem;height:2rem;border-radius:.5rem;display:grid;place-items:center;color:rgba(255,255,255,.55);font-size:18px;line-height:1;font-weight:600}
+.modal-close:hover{background:rgba(255,255,255,.08);color:#fff}
+.fade-enter-active,.fade-leave-active{transition:opacity .18s ease}.fade-enter-from,.fade-leave-to{opacity:0}
+.tip{position:relative}.tip:hover:after{content:attr(data-tip);position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%);white-space:nowrap;background:#252a35;border:1px solid #ffffff1a;color:#eee;padding:5px 8px;border-radius:6px;font-size:11px;z-index:80}
+.filter-chip{position:relative;z-index:20}
+.filter-chip-btn{height:36px;padding:0 28px 0 12px;border-radius:8px;border:1px solid rgba(255,255,255,.12);background:#2a2a2e;color:rgba(255,255,255,.88);font-size:12px;display:inline-flex;align-items:center;gap:4px;cursor:pointer;position:relative;max-width:220px}
+.filter-chip-btn::after{content:'';position:absolute;right:10px;top:50%;width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-top:5px solid rgba(255,255,255,.45);transform:translateY(-20%)}
+.filter-chip.is-open .filter-chip-btn{border-color:rgba(246,185,75,.7);box-shadow:0 0 0 1px rgba(246,185,75,.25)}
+.filter-chip.is-open .filter-chip-btn::after{transform:translateY(-70%) rotate(180deg)}
+.filter-chip.is-active .filter-chip-btn{border-color:rgba(246,185,75,.45);background:rgba(246,185,75,.08)}
+.filter-chip-btn .chip-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.filter-chip-menu{position:absolute;top:calc(100% + 6px);left:0;min-width:100%;width:max-content;max-width:260px;padding:4px;border-radius:10px;background:#1f1f23;border:1px solid rgba(255,255,255,.08);box-shadow:0 12px 28px rgba(0,0,0,.55);z-index:40}
+.filter-chip-option{width:100%;text-align:left;padding:8px 10px;border-radius:6px;font-size:12px;color:rgba(255,255,255,.9);background:transparent;border:none;cursor:pointer}
+.filter-chip-option:hover,.filter-chip-option.is-active{background:rgba(255,255,255,.08)}
+.card-menu{background:#1f1f23;box-shadow:0 12px 28px rgba(0,0,0,.55)}
+</style>
+</head>
+<body class="text-white/90 h-screen overflow-hidden">
+<div id="app" class="h-full flex flex-col relative" v-cloak>
+  <div class="fixed inset-0 pointer-events-none overflow-hidden">
+    <div class="absolute -top-40 -left-40 w-[620px] h-[620px] rounded-full bg-blue-600/[.08] blur-[120px]"></div>
+    <div class="absolute -bottom-52 right-0 w-[700px] h-[700px] rounded-full bg-amber-500/[.07] blur-[140px]"></div>
+  </div>
+
+  <header class="h-12 shrink-0 border-b border-line bg-black/20 backdrop-blur-xl flex items-center justify-between px-4 relative z-10">
+    <div class="flex items-center gap-4">
+      <div class="flex items-center gap-2.5 pr-4 border-r border-line">
+        <div class="w-7 h-7 rounded-lg bg-primary text-ink grid place-items-center shadow-[0_0_24px_#f6b94b35]"><i class="ph-fill ph-cube"></i></div>
+        <b class="text-[14px] tracking-wide">智岩 AI</b>
+      </div>
+      <div class="px-3 h-7 rounded-md border border-primary/20 bg-primary/10 flex items-center gap-2 text-[12px]"><i class="ph-duotone ph-folders text-primary"></i>素材管理</div>
+    </div>
+    <div class="flex items-center gap-3 text-[12px] text-white/45"><span>设计团队 · 管晓</span><div class="w-7 h-7 rounded-full bg-gradient-to-br from-sky-500 to-indigo-600 grid place-items-center text-white font-semibold">管</div></div>
+  </header>
+
+  <main class="relative z-[1] flex-1 min-h-0 p-3">
+    <section class="h-full glass border border-line rounded-2xl overflow-hidden flex shadow-2xl">
+      <aside class="w-[244px] shrink-0 border-r border-line bg-black/10 flex flex-col">
+        <div class="p-4 pb-3">
+          <div class="text-[10px] text-white/30 tracking-[.2em] uppercase px-2 mb-2">素材库</div>
+          <button @click="setNav('original')" :class="navClass('original')" class="w-full h-10 px-3 rounded-lg flex items-center gap-3 text-[13px]"><i class="ph-duotone ph-archive text-lg"></i>原素材库</button>
+          <button @click="setNav('generated')" :class="navClass('generated')" class="w-full h-10 px-3 rounded-lg flex items-center gap-3 text-[13px] mt-1"><i class="ph-duotone ph-sparkle text-lg"></i>生成素材库</button>
+          <button @click="setNav('usable')" :class="navClass('usable')" class="w-full h-10 px-3 rounded-lg flex items-center gap-3 text-[13px] mt-1"><i class="ph-duotone ph-seal-check text-lg"></i>可用素材库</button>
+        </div>
+        <div class="border-t border-line p-4 pt-3 flex-1 overflow-y-auto">
+          <div class="flex items-center justify-between h-8 px-2 mb-1">
+            <span class="text-[10px] text-white/30 tracking-[.2em] uppercase">我的分组</span>
+            <button @click="openGroupEdit('create')" class="w-6 h-6 rounded hover:bg-white/10 text-white/45 hover:text-white" title="新建分组"><i class="ph-bold ph-plus"></i></button>
+          </div>
+          <div v-if="!groups.length" class="px-2 py-5 text-center text-[11px] text-white/30">暂无分组<br><button @click="openGroupEdit('create')" class="text-primary mt-2">新建分组</button></div>
+          <div v-for="g in groups" :key="g.id" class="relative group">
+            <button @click="setNav(g.id)" :class="navClass(g.id)" class="w-full h-9 px-3 pr-10 rounded-lg flex items-center gap-2 text-[12px]">
+              <i class="ph-fill ph-folder text-white/30"></i><span class="truncate">{{g.name}}</span>
+            </button>
+            <div class="absolute right-2 top-1.5 hidden group-hover:flex bg-[#1d212c] rounded">
+              <button @click.stop="openGroupEdit('rename',g)" class="w-6 h-6 hover:text-primary" title="重命名"><i class="ph ph-pencil-simple"></i></button>
+              <button @click.stop="askDeleteGroup(g)" class="w-6 h-6 hover:text-red-400" title="删除"><i class="ph ph-trash"></i></button>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <section class="flex-1 min-w-0 flex flex-col">
+        <div class="px-6 pt-5 pb-4 border-b border-line bg-black/[.06]">
+          <div class="flex items-start justify-between gap-4 mb-4">
+            <div class="flex items-baseline gap-2"><h1 class="text-xl font-semibold">{{pageTitle}}</h1><span class="text-[12px] text-white/35">{{filteredAssets.length}} 项</span></div>
+            <button v-if="canUpload" @click="startUpload" class="h-9 px-4 rounded-lg bg-primary hover:bg-primary-hover text-ink font-semibold text-[12px] flex items-center gap-2 shrink-0"><i class="ph-bold ph-upload-simple"></i>上传素材</button>
+          </div>
+          <div class="flex flex-wrap gap-2 items-center">
+            <div class="relative w-[200px]"><i class="ph ph-magnifying-glass absolute left-3 top-2.5 text-white/30"></i><input v-model="filters.search" class="field w-full h-9 rounded-lg pl-9 pr-3 text-[12px]" placeholder="搜索文件名"></div>
+            <div class="filter-chip" :class="{'is-open': openFilterKey==='media', 'is-active': filters.media!=='all'}" @click.stop>
+              <button type="button" class="filter-chip-btn" @click="toggleFilter('media')"><span class="chip-label">{{ filterChipLabel('media') }}</span></button>
+              <div v-if="openFilterKey==='media'" class="filter-chip-menu">
+                <button v-for="opt in mediaFilterOptions" :key="opt.value" type="button" class="filter-chip-option" :class="{'is-active': filters.media===opt.value}" @click="pickFilter('media', opt.value)">{{ opt.label }}</button>
+              </div>
+            </div>
+            <div class="filter-chip" :class="{'is-open': openFilterKey==='time', 'is-active': filters.time!=='all'}" @click.stop>
+              <button type="button" class="filter-chip-btn" @click="toggleFilter('time')"><span class="chip-label">{{ filterChipLabel('time') }}</span></button>
+              <div v-if="openFilterKey==='time'" class="filter-chip-menu">
+                <button v-for="opt in timeFilterOptions" :key="opt.value" type="button" class="filter-chip-option" :class="{'is-active': filters.time===opt.value}" @click="pickFilter('time', opt.value)">{{ opt.label }}</button>
+              </div>
+            </div>
+            <template v-if="activeNav==='generated'">
+              <div class="filter-chip" :class="{'is-open': openFilterKey==='auditProgress', 'is-active': filters.auditProgress!=='all'}" @click.stop>
+                <button type="button" class="filter-chip-btn" @click="toggleFilter('auditProgress')"><span class="chip-label">{{ filterChipLabel('auditProgress') }}</span></button>
+                <div v-if="openFilterKey==='auditProgress'" class="filter-chip-menu">
+                  <button v-for="opt in auditProgressOptions" :key="opt.value" type="button" class="filter-chip-option" :class="{'is-active': filters.auditProgress===opt.value}" @click="pickFilter('auditProgress', opt.value)">{{ opt.label }}</button>
+                </div>
+              </div>
+              <div class="filter-chip" :class="{'is-open': openFilterKey==='auditResult', 'is-active': filters.auditResult!=='all'}" @click.stop>
+                <button type="button" class="filter-chip-btn" @click="toggleFilter('auditResult')"><span class="chip-label">{{ filterChipLabel('auditResult') }}</span></button>
+                <div v-if="openFilterKey==='auditResult'" class="filter-chip-menu">
+                  <button v-for="opt in auditResultOptions" :key="opt.value" type="button" class="filter-chip-option" :class="{'is-active': filters.auditResult===opt.value}" @click="pickFilter('auditResult', opt.value)">{{ opt.label }}</button>
+                </div>
+              </div>
+            </template>
+            <template v-if="activeNav==='usable'">
+              <div class="filter-chip" :class="{'is-open': openFilterKey==='scope', 'is-active': filters.scope!=='all'}" @click.stop>
+                <button type="button" class="filter-chip-btn" @click="toggleFilter('scope')"><span class="chip-label">{{ filterChipLabel('scope') }}</span></button>
+                <div v-if="openFilterKey==='scope'" class="filter-chip-menu">
+                  <button v-for="opt in scopeFilterOptions" :key="opt.value" type="button" class="filter-chip-option" :class="{'is-active': filters.scope===opt.value}" @click="pickFilter('scope', opt.value)">{{ opt.label }}</button>
+                </div>
+              </div>
+              <div class="filter-chip" :class="{'is-open': openFilterKey==='channel', 'is-active': filters.channel!=='all'}" @click.stop>
+                <button type="button" class="filter-chip-btn" @click="toggleFilter('channel')"><span class="chip-label">{{ filterChipLabel('channel') }}</span></button>
+                <div v-if="openFilterKey==='channel'" class="filter-chip-menu">
+                  <button v-for="opt in channelFilterOptions" :key="opt.value" type="button" class="filter-chip-option" :class="{'is-active': filters.channel===opt.value}" @click="pickFilter('channel', opt.value)">{{ opt.label }}</button>
+                </div>
+              </div>
+            </template>
+            <div v-if="isGroupPage" class="filter-chip" :class="{'is-open': openFilterKey==='library', 'is-active': filters.library!=='all'}" @click.stop>
+              <button type="button" class="filter-chip-btn" @click="toggleFilter('library')"><span class="chip-label">{{ filterChipLabel('library') }}</span></button>
+              <div v-if="openFilterKey==='library'" class="filter-chip-menu">
+                <button v-for="opt in libraryFilterOptions" :key="opt.value" type="button" class="filter-chip-option" :class="{'is-active': filters.library===opt.value}" @click="pickFilter('library', opt.value)">{{ opt.label }}</button>
+              </div>
+            </div>
+            <button v-if="hasFilters" @click="resetFilters" class="h-9 px-2 text-[11px] text-white/40 hover:text-white">清空筛选</button>
+          </div>
+        </div>
+
+        <div ref="scrollArea" class="flex-1 overflow-y-auto p-6">
+          <div v-if="!filteredAssets.length" class="h-full min-h-[300px] grid place-items-center">
+            <div class="text-center"><div class="w-16 h-16 mx-auto rounded-2xl border border-line bg-white/[.025] grid place-items-center mb-4"><i class="ph-duotone ph-folder-dashed text-3xl text-white/20"></i></div><div class="text-[14px]">{{emptyState.title}}</div><p class="text-[11px] text-white/35 mt-1 max-w-sm">{{emptyState.desc}}</p><button v-if="emptyState.action" @click="startUpload" class="mt-4 h-8 px-4 rounded-lg bg-primary/10 border border-primary/20 text-primary text-[12px]">{{emptyState.action}}</button></div>
+          </div>
+          <div v-else class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+            <article v-for="a in filteredAssets" :key="a.id" @click="cardClick(a,$event)" class="group rounded-xl border bg-black/20 cursor-pointer hover:-translate-y-0.5 hover:shadow-xl transition-all overflow-visible" :class="a.selected?'border-primary ring-1 ring-primary':'border-line hover:border-white/20'">
+              <div class="aspect-[4/3] relative overflow-hidden bg-[#090b10] rounded-t-xl">
+                <img v-if="a.url" :src="a.url" :alt="a.name" class="w-full h-full object-cover group-hover:scale-[1.025] transition duration-500">
+                <div v-else class="w-full h-full grid place-items-center" :class="a.placeholder"><i class="ph-duotone text-[42px] text-white/25" :class="a.media==='video'?'ph-film-strip':'ph-image'"></i></div>
+                <button @click.stop="selectAsset(a)" class="absolute left-2 top-2 z-10 w-5 h-5 rounded border grid place-items-center shadow-sm transition-all" :class="a.selected?'opacity-100 bg-primary border-primary text-ink':(selectedCount>0?'opacity-100':'opacity-0 group-hover:opacity-100')+' bg-black/60 border-white/50'" :title="a.selected?'取消选择':'选择素材'"><i v-if="a.selected" class="ph-bold ph-check text-[11px]"></i></button>
+                <button @click.stop="toggleCardMenu(a,$event)" class="absolute right-2 top-2 z-10 w-7 h-7 rounded-md border border-white/15 bg-black/60 text-white/70 hover:text-white hover:bg-black/80 transition-all" :class="menuAssetId===a.id?'opacity-100':'opacity-0 group-hover:opacity-100'"><i class="ph-bold ph-dots-three"></i></button>
+                <span v-if="a.media==='video'" class="absolute right-2 bottom-2 px-1.5 py-0.5 rounded bg-black/75 text-[10px] font-medium">{{durationText(a.duration)}}</span>
+              </div>
+              <div class="px-3 py-2 flex items-center gap-1.5 rounded-b-xl bg-black/20 min-h-[52px]">
+                <div class="min-w-0 flex-1">
+                  <span class="text-[12px] truncate block" :title="a.name">{{a.name}}</span>
+                  <span v-if="cardMeta(a)" class="text-[10px] truncate block mt-0.5" :class="cardMetaClass(a)">{{cardMeta(a)}}</span>
+                  <span v-if="cardExtra(a)" class="text-[10px] text-white/40 truncate block mt-0.5">{{cardExtra(a)}}</span>
+                </div>
+                <button @click.stop="runAction('download',a)" class="w-7 h-7 rounded-md text-white/45 hover:text-white hover:bg-white/10 shrink-0" title="下载"><i class="ph-bold ph-download-simple"></i></button>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <!-- 详情 -->
+  <transition name="fade">
+    <div v-if="detail.open&&detail.asset" class="fixed inset-0 z-50 bg-[#080a0f] flex flex-col">
+      <header class="h-14 shrink-0 border-b border-line px-4 flex items-center justify-between bg-[#0e1118]">
+        <div class="flex items-center gap-3 min-w-0"><button @click="closeDetail" class="w-8 h-8 rounded-lg hover:bg-white/10"><i class="ph-bold ph-x"></i></button><div class="w-px h-5 bg-line"></div><div class="truncate text-[13px] font-medium">{{detail.asset.name}}</div><span class="text-[11px] text-white/30 shrink-0">{{detailIndex+1}} / {{detailList.length}}</span></div>
+        <div class="flex items-center gap-1">
+          <button v-for="item in assetActions(detail.asset,false)" :key="item.key" @click="runAction(item.key,detail.asset)" class="tip w-9 h-9 rounded-lg hover:bg-white/10 text-white/55 hover:text-white" :class="item.key==='delete'?'hover:text-red-400':''" :data-tip="item.label"><i class="ph text-lg" :class="item.icon"></i></button>
+        </div>
+      </header>
+      <div class="flex-1 min-h-0 flex">
+        <div class="flex-1 min-w-0 relative grid place-items-center bg-[radial-gradient(circle_at_center,#1a1e28,#080a0f_70%)] p-10">
+          <button @click="prevAsset" :disabled="detailIndex<=0" class="absolute left-5 z-10 w-10 h-10 rounded-full border border-line bg-black/40 hover:bg-white/10 disabled:opacity-20"><i class="ph-bold ph-caret-left"></i></button>
+          <img v-if="detail.asset.media==='image'&&detail.asset.url" :src="detail.asset.url" class="max-w-full max-h-[calc(100vh-9rem)] object-contain rounded-lg shadow-2xl">
+          <div v-else class="w-[min(58vw,800px)] aspect-video rounded-2xl border border-line grid place-items-center" :class="detail.asset.placeholder"><div class="text-center text-white/30"><i class="ph-duotone text-6xl" :class="detail.asset.media==='video'?'ph-film-strip':'ph-image'"></i><div class="text-xs mt-3">{{detail.asset.media==='video'?'视频预览':'图片预览'}}</div></div></div>
+          <button @click="nextAsset" :disabled="detailIndex>=detailList.length-1" class="absolute right-5 z-10 w-10 h-10 rounded-full border border-line bg-black/40 hover:bg-white/10 disabled:opacity-20"><i class="ph-bold ph-caret-right"></i></button>
+        </div>
+        <aside class="w-[390px] shrink-0 border-l border-line bg-[#10131a] overflow-y-auto">
+          <div class="p-6 border-b border-line">
+            <div v-if="detail.editName" class="flex items-center gap-2"><input v-model="detail.nameBase" @keyup.enter="saveName" class="field flex-1 h-9 rounded-lg px-3 text-[12px]"><span class="text-xs text-white/35">{{detail.ext}}</span><button @click="saveName" class="h-9 px-3 rounded-lg bg-primary text-ink text-[12px]">保存</button></div>
+            <h2 v-else class="text-[16px] font-semibold break-all leading-relaxed">{{detail.asset.name}}</h2>
+          </div>
+          <section class="m-4 rounded-xl border border-line bg-black/15 overflow-hidden">
+            <div class="h-10 px-4 border-b border-line flex items-center gap-2 text-[12px] font-medium"><i class="ph-duotone ph-info text-primary"></i>基本信息</div>
+            <div class="px-4 py-1 divide-y divide-white/[.045] text-[12px]">
+              <div class="py-2.5 flex gap-4"><span class="w-20 shrink-0 text-white/35">媒体类型</span><span class="ml-auto">{{detail.asset.media==='image'?'图片':'视频'}}</span></div>
+              <div class="py-2.5 flex gap-4"><span class="w-20 shrink-0 text-white/35">格式</span><span class="ml-auto">{{detail.asset.format}}</span></div>
+              <div class="py-2.5 flex gap-4"><span class="w-20 shrink-0 text-white/35">{{detail.asset.media==='image'?'尺寸':'时长'}}</span><span class="ml-auto">{{detail.asset.media==='image'?(detail.asset.width+' × '+detail.asset.height):durationText(detail.asset.duration)}}</span></div>
+              <div class="py-2.5 flex gap-4"><span class="w-20 shrink-0 text-white/35">文件大小</span><span class="ml-auto">{{detail.asset.size}}</span></div>
+              <div class="py-2.5 flex gap-4"><span class="w-20 shrink-0 text-white/35">{{activeLib(detail.asset)==='original'?'上传时间':'创建时间'}}</span><span class="ml-auto">{{detail.asset.createdAt}}</span></div>
+              <div v-if="activeLib(detail.asset)!=='original'" class="py-2.5 flex gap-4"><span class="w-20 shrink-0 text-white/35">创建者</span><span class="ml-auto">{{detail.asset.creator}}</span></div>
+              <div v-if="activeLib(detail.asset)==='original'" class="py-2.5 flex gap-4"><span class="w-20 shrink-0 text-white/35">素材来源</span><span class="ml-auto">{{originText(detail.asset.origin)}}</span></div>
+              <div v-if="groupNames(detail.asset).length" class="py-2.5 flex gap-4"><span class="w-20 shrink-0 text-white/35">所属分组</span><span class="ml-auto text-right">{{groupNames(detail.asset).join('、')}}</span></div>
+            </div>
+          </section>
+          <section v-if="activeLib(detail.asset)!=='original'" class="m-4 rounded-xl border border-line bg-black/15 overflow-hidden">
+            <div class="h-10 px-4 border-b border-line flex items-center gap-2 text-[12px] font-medium"><i class="ph-duotone ph-stack text-primary"></i>素材信息</div>
+            <div class="px-4 py-1 divide-y divide-white/[.045] text-[12px]">
+              <div class="py-2.5 flex gap-4"><span class="w-20 shrink-0 text-white/35">素材来源</span><span class="ml-auto">{{originText(detail.asset.origin)}}</span></div>
+              <div v-if="detail.asset.sourceAssets?.length" class="py-2.5">
+                <div class="text-white/35 mb-2">来源素材</div>
+                <div class="flex flex-wrap gap-2 justify-end">
+                  <button v-for="s in detail.asset.sourceAssets" :key="s.name" @click="previewSource(s)" class="w-14 h-14 rounded-lg overflow-hidden border border-white/10 hover:border-primary/50">
+                    <img v-if="s.url" :src="s.url" class="w-full h-full object-cover">
+                    <div v-else class="w-full h-full bg-white/5 grid place-items-center text-[9px] text-white/40">预览</div>
+                  </button>
+                </div>
+              </div>
+              <template v-if="activeLib(detail.asset)==='generated'">
+                <div class="py-2.5 flex gap-4"><span class="w-20 shrink-0 text-white/35">审核进度</span><span class="ml-auto" :class="auditColor(detail.asset)">{{auditStatusText(detail.asset)}}</span></div>
+                <div v-if="detail.asset.auditStatus==='done'" class="py-2.5 flex gap-4"><span class="w-20 shrink-0 text-white/35">审核结果</span><span class="ml-auto" :class="auditColor(detail.asset)">{{auditResultText(detail.asset)}}</span></div>
+                <div class="py-2.5 flex gap-4"><span class="w-20 shrink-0 text-white/35">审核时间</span><span class="ml-auto">{{detail.asset.auditAt||'—'}}</span></div>
+                <div class="py-2.5"><button @click="openAuditView(detail.asset)" class="text-primary hover:underline ml-auto block">查看审核详情</button></div>
+              </template>
+              <template v-if="activeLib(detail.asset)==='usable'">
+                <div v-if="detail.asset.channels?.length" class="py-2.5 flex gap-4"><span class="w-20 shrink-0 text-white/35">适用渠道</span><span class="ml-auto">{{detail.asset.channels.join('、')}}</span></div>
+                <div v-if="detail.asset.reqType" class="py-2.5 flex gap-4"><span class="w-20 shrink-0 text-white/35">图需类型</span><span class="ml-auto">{{detail.asset.reqType}}</span></div>
+                <div v-if="detail.asset.lang" class="py-2.5 flex gap-4"><span class="w-20 shrink-0 text-white/35">语言</span><span class="ml-auto">{{detail.asset.lang}}</span></div>
+                <div class="py-2.5 flex gap-4"><span class="w-20 shrink-0 text-white/35">审核结果</span><span class="ml-auto text-emerald-400">未发现明显风险</span></div>
+                <div class="py-2.5 flex gap-4"><span class="w-20 shrink-0 text-white/35">审核时间</span><span class="ml-auto">{{detail.asset.auditAt||'—'}}</span></div>
+                <div class="py-2.5"><button @click="openAuditView(detail.asset)" class="text-primary hover:underline ml-auto block">查看审核详情</button></div>
+                <div v-if="canShare(detail.asset)&&detail.asset.sharedTo?.length" class="py-2.5 flex gap-4"><span class="w-20 shrink-0 text-white/35">已共享</span><button @click="openShareManage(detail.asset)" class="ml-auto text-primary hover:underline">{{detail.asset.sharedTo.length}} 人 ›</button></div>
+              </template>
+            </div>
+          </section>
+        </aside>
+      </div>
+    </div>
+  </transition>
+
+  <!-- 审核详情 -->
+  <div v-if="auditView.show" class="fixed inset-0 z-[60] bg-black/80 flex flex-col">
+    <header class="h-14 px-5 border-b border-line flex items-center justify-between bg-[#0e1118]">
+      <div class="text-[14px] font-medium">审核详情 · {{auditView.asset?.name}}</div>
+      <button @click="auditView.show=false" class="w-8 h-8 rounded-lg hover:bg-white/10"><i class="ph-bold ph-x"></i></button>
+    </header>
+    <div class="flex-1 flex min-h-0">
+      <div class="flex-1 grid place-items-center p-8"><img v-if="auditView.asset?.url" :src="auditView.asset.url" class="max-h-full max-w-full rounded-lg"></div>
+      <aside class="w-[360px] border-l border-line bg-[#10131a] p-5 overflow-y-auto text-[12px]">
+        <div class="mb-4">结果：<b :class="auditColor(auditView.asset)">{{auditResultText(auditView.asset)||auditStatusText(auditView.asset)}}</b></div>
+        <div v-if="auditView.asset?.risks?.length" class="space-y-3">
+          <div v-for="r in auditView.asset.risks" :key="r.id" class="p-3 rounded-lg border border-line">
+            <div class="flex justify-between"><span>{{r.point}}</span><span class="text-orange-300">{{r.level}}</span></div>
+            <p class="text-white/45 mt-1">{{r.desc}}</p>
+            <div v-if="canHandleAudit(auditView.asset)" class="flex gap-2 mt-2">
+              <button @click="handleRisk(r,'confirm')" class="h-7 px-2 rounded border border-line">确认风险</button>
+              <button @click="handleRisk(r,'false')" class="h-7 px-2 rounded border border-line">反馈误判</button>
+            </div>
+            <div v-else class="text-white/30 mt-2">只读</div>
+          </div>
+        </div>
+        <div v-else class="text-white/40">未发现明显风险项。</div>
+      </aside>
+    </div>
+  </div>
+
+  <!-- 来源预览 -->
+  <div v-if="sourcePrev.show" class="fixed inset-0 z-[70] bg-black/70 grid place-items-center" @click.self="sourcePrev.show=false">
+    <div class="bg-[#151922] border border-line rounded-2xl p-4 w-[420px]">
+      <div class="flex justify-between items-center mb-3 text-[13px]"><b>{{sourcePrev.item?.name}}</b><button @click="sourcePrev.show=false"><i class="ph-bold ph-x"></i></button></div>
+      <img v-if="sourcePrev.item?.url" :src="sourcePrev.item.url" class="w-full rounded-lg">
+      <p v-else class="text-[12px] text-white/40">预览文件仍保留，不跳转原素材库。</p>
+    </div>
+  </div>
+
+  <!-- 上传 -->
+  <div v-if="upload.show" class="fixed inset-0 z-[70] bg-black/65 grid place-items-center" @click.self="upload.show=false">
+    <div class="w-[560px] rounded-2xl border border-line bg-[#151922] overflow-hidden">
+      <div class="h-14 px-6 border-b border-line flex items-center justify-between">
+        <b class="text-[15px]">上传素材</b>
+        <button type="button" @click="upload.show=false" class="modal-close" aria-label="关闭">×</button>
+      </div>
+      <div class="p-6">
+        <div
+          class="rounded-xl border border-dashed border-white/15 bg-black/20 hover:border-primary/40 transition-colors cursor-pointer px-6 py-10 text-center"
+          @click="$refs.up.click()"
+          @dragover.prevent
+          @drop.prevent="onDropFiles"
+        >
+          <div class="w-12 h-12 mx-auto rounded-xl bg-white/[.04] grid place-items-center mb-3 text-white/35"><i class="ph-duotone ph-image text-2xl"></i></div>
+          <div class="text-[13px] text-white/80">点击上传或拖拽本地文件至此</div>
+          <p class="text-[11px] text-white/35 mt-1.5">支持 JPG、PNG、WEBP、MP4 等图片 / 视频</p>
+          <button type="button" class="mt-4 h-9 px-4 rounded-lg bg-primary text-ink text-[12px] font-semibold" @click.stop="$refs.up.click()">选择文件</button>
+        </div>
+        <input ref="up" type="file" multiple accept="image/*,video/*" class="hidden" @change="onFiles">
+        <div class="mt-3 text-[11px] text-white/45" v-if="upload.files.length">已选 {{upload.files.length}} 个文件<span class="text-white/25"> · </span><button type="button" class="text-primary hover:underline" @click="upload.files=[]">清空</button></div>
+      </div>
+      <div class="h-16 px-6 border-t border-line flex justify-end gap-2 items-center">
+        <button type="button" @click="upload.show=false" class="h-9 px-4 rounded-lg border border-line text-[12px] text-white/70">取消</button>
+        <button type="button" @click="submitUpload" class="h-9 px-5 rounded-lg bg-primary text-ink text-[12px] font-semibold">开始上传</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 分组 -->
+  <div v-if="groupModal.show" class="fixed inset-0 z-[80] bg-black/65 grid place-items-center" @click.self="groupModal.show=false">
+    <div class="w-[400px] rounded-2xl border border-line bg-[#151922] overflow-hidden">
+      <div class="h-14 px-6 border-b border-line flex items-center justify-between"><b class="text-[14px]">添加到分组</b><button @click="groupModal.show=false" class="modal-close"><i class="ph-bold ph-x"></i></button></div>
+      <div class="p-4 max-h-[300px] overflow-y-auto">
+        <label v-for="g in groups" :key="g.id" class="h-10 px-3 rounded-lg hover:bg-white/5 flex items-center gap-3 text-[12px]"><input type="checkbox" :value="g.id" v-model="groupModal.ids" class="accent-amber-400">{{g.name}}</label>
+      </div>
+      <div class="h-16 px-6 border-t border-line flex items-center justify-between"><button @click="openGroupEdit('create')" class="text-[11px] text-primary">新建分组</button><div><button @click="groupModal.show=false" class="h-9 px-3 text-[12px] text-white/40">取消</button><button @click="confirmGroups" class="h-9 px-4 rounded-lg bg-primary text-ink text-[12px] font-semibold">确认</button></div></div>
+    </div>
+  </div>
+
+  <!-- 共享 -->
+  <div v-if="shareModal.show" class="fixed inset-0 z-[85] bg-black/65 grid place-items-center" @click.self="shareModal.show=false">
+    <div class="w-[440px] rounded-2xl border border-line bg-[#151922] overflow-hidden">
+      <div class="modal-head"><b class="text-[15px]">{{shareModal.manage?'已共享名单':'共享素材'}}</b><button @click="shareModal.show=false" class="modal-close"><i class="ph-bold ph-x"></i></button></div>
+      <div class="p-5 space-y-3 text-[12px]" v-if="!shareModal.manage">
+        <input v-model="shareModal.q" class="field w-full h-9 rounded-lg px-3" placeholder="搜索其他团队成员">
+        <label v-for="p in shareCandidates" :key="p.id" class="flex items-center gap-2 h-8"><input type="checkbox" :value="p.id" v-model="shareModal.ids">{{p.name}} · {{p.team}}</label>
+        <p v-if="!shareCandidates.length" class="text-white/35">没有可共享对象</p>
+      </div>
+      <div class="p-5 space-y-2 text-[12px]" v-else>
+        <div v-for="p in shareModal.asset?.sharedTo||[]" :key="p.id" class="flex items-center justify-between h-9"><span>{{p.name}}</span><button @click="unshare(p)" class="text-red-400">取消共享</button></div>
+        <p v-if="!(shareModal.asset?.sharedTo||[]).length" class="text-white/35">暂无共享</p>
+      </div>
+      <div class="h-16 px-6 border-t border-line flex justify-end gap-2 items-center" v-if="!shareModal.manage">
+        <button @click="shareModal.show=false" class="text-[12px] text-white/40">取消</button>
+        <button @click="confirmShare" class="h-9 px-4 rounded-lg bg-primary text-ink text-[12px] font-semibold">确认共享</button>
+      </div>
+    </div>
+  </div>
+
+  <div v-if="editModal.show" class="fixed inset-0 z-[90] bg-black/65 grid place-items-center" @click.self="editModal.show=false">
+    <div class="w-[390px] rounded-2xl border border-line bg-[#151922] overflow-hidden">
+      <div class="modal-head"><b>{{editModal.title}}</b><button @click="editModal.show=false" class="modal-close"><i class="ph-bold ph-x"></i></button></div>
+      <div class="p-6"><input v-model="editModal.value" @keyup.enter="confirmEdit" class="field w-full h-10 rounded-lg px-3 text-[12px]"></div>
+      <div class="h-16 px-6 border-t border-line flex justify-end gap-2 items-center"><button @click="editModal.show=false" class="text-[12px] text-white/40">取消</button><button @click="confirmEdit" class="h-9 px-4 rounded-lg bg-primary text-ink text-[12px]">确认</button></div>
+    </div>
+  </div>
+  <div v-if="confirmModal.show" class="fixed inset-0 z-[100] bg-black/65 grid place-items-center" @click.self="confirmModal.show=false">
+    <div class="w-[420px] rounded-2xl border border-line bg-[#151922] overflow-hidden">
+      <div class="modal-head"><b>{{confirmModal.title}}</b><button @click="confirmModal.show=false" class="modal-close"><i class="ph-bold ph-x"></i></button></div>
+      <div class="px-6 pb-4 text-[12px] text-white/45 leading-relaxed">{{confirmModal.message}}</div>
+      <div class="h-16 px-6 border-t border-line flex justify-end gap-2 items-center"><button @click="confirmModal.show=false" class="text-[12px] text-white/40">取消</button><button @click="doConfirm" class="h-9 px-4 rounded-lg bg-red-500 text-white text-[12px]">确认</button></div>
+    </div>
+  </div>
+
+  <div v-if="selectedCount>0" class="fixed z-40 bottom-7 left-1/2 -translate-x-1/2 h-14 px-4 rounded-2xl border border-line bg-[#1a1e28]/95 backdrop-blur-xl shadow-2xl flex items-center gap-2">
+    <span class="text-[12px] text-white/45 mr-2">已选 <b class="text-white">{{selectedCount}}</b> 项</span>
+    <button @click="openGrouping('batch')" class="h-8 px-3 rounded-lg bg-primary text-ink text-[11px]">添加到分组</button>
+    <button v-if="activeNav==='usable'&&canShare(filteredAssets.find(a=>a.selected))" @click="openShare(null)" class="h-8 px-3 rounded-lg border border-line text-[11px]">共享</button>
+    <button @click="batchDownload" class="h-8 px-3 rounded-lg border border-line text-[11px]">下载</button>
+    <button v-if="activeNav!=='generated'" @click="askBatchDelete" class="h-8 px-3 rounded-lg border border-red-500/20 text-red-400 text-[11px]">删除</button>
+    <button @click="selectAll" class="h-8 px-2 text-[11px] text-white/50">全选</button>
+    <button @click="exitSelect" class="w-8 h-8 rounded-lg hover:bg-white/10"><i class="ph-bold ph-x"></i></button>
+  </div>
+
+  <div v-if="toast.show" class="fixed top-5 left-1/2 -translate-x-1/2 z-[120] rounded-full border border-line px-4 py-2.5 bg-[#202530] text-[12px] flex items-center gap-2"><i class="ph-fill ph-check-circle text-emerald-400"></i>{{toast.message}}</div>
+
+  <div v-if="menuAsset" @click.stop class="card-menu fixed z-[300] w-[228px] rounded-xl border border-line py-1.5" :style="menuStyle">
+    <button v-for="item in assetActions(menuAsset,true)" :key="item.key" @click="runAction(item.key,menuAsset)" class="w-full min-h-8 px-3 flex items-center gap-2.5 text-left text-[11px] hover:bg-white/[.06]" :class="item.key==='delete'?'text-red-400':'text-white/70'"><i class="ph text-[14px]" :class="item.icon"></i>{{item.label}}</button>
+  </div>
+</div>
+<script>
+try {
+if (typeof Vue === 'undefined') throw new Error('Vue 未加载，请通过本地 HTTP 服务打开原型，或检查 assets/vendor/vue.global.prod.js');
+const {createApp,ref,reactive,computed,nextTick,onMounted,onBeforeUnmount}=Vue;
+createApp({
+setup(){
+  const me='管晓', meTeam='设计';
+  const people=[{id:'wang',name:'王业务',team:'业务'},{id:'zhao',name:'赵运营',team:'运营'}];
+  const activeNav=ref('original');
+  const menuAssetId=ref(null);
+  const menuPos=reactive({top:0,left:0,openUp:true});
+  const selectMode=ref(false);
+  const scrollArea=ref(null);
+  const listScrollTop=ref(0);
+  const filters=reactive({search:'',media:'all',time:'all',auditProgress:'all',auditResult:'all',channel:'all',library:'all',scope:'all'});
+  const openFilterKey=ref(null);
+  const mediaFilterOptions=[
+    {value:'all',label:'全部媒体类型'},
+    {value:'image',label:'图片'},
+    {value:'video',label:'视频'}
+  ];
+  const timeFilterOptions=[
+    {value:'all',label:'全部创建时间'},
+    {value:'7d',label:'近 7 天'},
+    {value:'30d',label:'近 30 天'},
+    {value:'90d',label:'近 90 天'}
+  ];
+  const auditProgressOptions=[
+    {value:'all',label:'全部审核进度'},
+    {value:'pending',label:'待审核'},
+    {value:'reviewing',label:'审核中'},
+    {value:'failed',label:'审核失败'},
+    {value:'done',label:'已完成'}
+  ];
+  const auditResultOptions=[
+    {value:'all',label:'全部审核结果'},
+    {value:'clear',label:'未发现明显风险'},
+    {value:'risk',label:'存在风险'}
+  ];
+  const scopeFilterOptions=[
+    {value:'all',label:'全部素材范围'},
+    {value:'team',label:'本团队'},
+    {value:'sharedIn',label:'共享给我的'},
+    {value:'sharedOut',label:'已共享'}
+  ];
+  const channelFilterOptions=[
+    {value:'all',label:'全部适用渠道'},
+    {value:'通用',label:'通用'},
+    {value:'Amazon',label:'Amazon'},
+    {value:'TikTok Shop',label:'TikTok Shop'},
+    {value:'独立站',label:'独立站'},
+    {value:'Instagram',label:'Instagram'},
+    {value:'Facebook',label:'Facebook'},
+    {value:'TikTok',label:'TikTok'},
+    {value:'Google GDN',label:'Google GDN'},
+    {value:'Reddit',label:'Reddit'},
+    {value:'Twitter',label:'Twitter'},
+    {value:'YouTube',label:'YouTube'},
+    {value:'旗舰店',label:'旗舰店'}
+  ];
+  const libraryFilterOptions=[
+    {value:'all',label:'全部所属库'},
+    {value:'original',label:'原素材库'},
+    {value:'generated',label:'生成素材库'},
+    {value:'usable',label:'可用素材库'}
+  ];
+  const filterMeta={
+    media:{all:'全部媒体类型',prefix:'媒体类型',options:mediaFilterOptions},
+    time:{all:'全部创建时间',prefix:'创建时间',options:timeFilterOptions},
+    auditProgress:{all:'全部审核进度',prefix:'审核进度',options:auditProgressOptions},
+    auditResult:{all:'全部审核结果',prefix:'审核结果',options:auditResultOptions},
+    scope:{all:'全部素材范围',prefix:'素材范围',options:scopeFilterOptions},
+    channel:{all:'全部适用渠道',prefix:'适用渠道',options:channelFilterOptions},
+    library:{all:'全部所属库',prefix:'所属库',options:libraryFilterOptions}
+  };
+  function filterChipLabel(key){
+    const meta=filterMeta[key];
+    const val=filters[key];
+    if(val==='all') return meta.all;
+    const opt=meta.options.find(o=>o.value===val);
+    return `${meta.prefix}：${opt?opt.label:val}`;
+  }
+  function toggleFilter(key){ openFilterKey.value=openFilterKey.value===key?null:key }
+  function pickFilter(key,value){ filters[key]=value; openFilterKey.value=null }
+  function closeFilterMenus(){ openFilterKey.value=null }
+  const groups=ref([{id:'g1',name:'Prime Day 备选'},{id:'g2',name:'新品上市'},{id:'g3',name:'A+ 页面素材'}]);
+  const img=(id,sig)=>`https://images.unsplash.com/${id}?auto=format&fit=crop&w=900&q=80&sig=${sig}`;
+  const assets=ref([
+    {id:'A001',name:'客厅暖光参考.jpg',media:'image',format:'JPG',width:2400,height:1600,size:'2.1 MB',createdAt:'2026-07-22 10:08',creator:'管晓',origin:'upload',libs:['original'],groupIds:['g2'],url:img('photo-1513694203232-719a280e022f',1),selected:false},
+    {id:'A002',name:'对话引用_同事灯具.png',media:'image',format:'PNG',width:1600,height:1600,size:'1.4 MB',createdAt:'2026-07-23 16:02',creator:'管晓',origin:'upload',libs:['original'],groupIds:[],url:img('photo-1507473885765-e6ed057f782c',2),selected:false,cited:true},
+    {id:'A003',name:'夏日场景_生成01.png',media:'image',format:'PNG',width:2048,height:2048,size:'5.6 MB',createdAt:'2026-07-23 11:45',creator:'管晓',origin:'imageGen',libs:['generated','usable'],groupIds:['g1'],channels:['Amazon'],auditStatus:'done',auditResult:'clear',auditAt:'2026-07-23 18:10',url:img('photo-1586023492125-27b2c045efd7',3),sourceAssets:[{name:'客厅暖光参考.jpg',url:img('photo-1513694203232-719a280e022f',1)}],sharedTo:[{id:'wang',name:'王业务'}],selected:false},
+    {id:'A004',name:'Brand_KV_夏季提案.png',media:'image',format:'PNG',width:2560,height:1440,size:'6.2 MB',createdAt:'2026-07-21 16:20',creator:'李设计',origin:'imageGen',libs:['generated'],groupIds:[],auditStatus:'done',auditResult:'high',auditAt:'2026-07-21 19:05',risks:[{id:1,point:'版权风险',level:'高风险',desc:'画面含疑似第三方商标'}],placeholder:'bg-gradient-to-br from-rose-500/25 to-slate-900',selected:false},
+    {id:'A005',name:'落地灯动态展示.mp4',media:'video',format:'MP4',width:1080,height:1920,duration:42,size:'18.4 MB',createdAt:'2026-07-20 09:32',creator:'管晓',origin:'videoGen',libs:['generated','usable'],groupIds:['g2'],channels:['TikTok Shop'],auditStatus:'done',auditResult:'clear',auditAt:'2026-07-21 09:00',placeholder:'bg-gradient-to-br from-violet-500/25 to-indigo-950',sharedTo:[],selected:false},
+    {id:'A006',name:'A+_生活方式模块_1500.jpg',media:'image',format:'JPG',width:1500,height:1500,size:'1.9 MB',createdAt:'2026-07-19 13:12',creator:'管晓',origin:'adapt',libs:['usable'],groupIds:['g3'],channels:['Amazon'],reqType:'A+ 模块图',lang:'英语',auditAt:'2026-07-19 14:02',url:img('photo-1555041469-a586c61ea9bc',6),sourceAssets:[{name:'夏日场景_生成01.png',url:img('photo-1586023492125-27b2c045efd7',3)}],sharedTo:[],selected:false},
+    {id:'A007',name:'商城横幅_适配.png',media:'image',format:'PNG',width:2560,height:1080,size:'3.7 MB',createdAt:'2026-07-18 17:06',creator:'李设计',origin:'adapt',libs:['usable'],groupIds:['g1'],channels:['Amazon'],reqType:'Store Banner',lang:'英语',auditAt:'2026-07-18 18:00',placeholder:'bg-gradient-to-br from-sky-500/25 to-cyan-950',sharedTo:[],selected:false},
+    {id:'A009',name:'露营场景_待审.jpg',media:'image',format:'JPG',width:2048,height:1365,size:'3.3 MB',createdAt:'2026-07-23 08:55',creator:'赵运营',origin:'imageGen',libs:['generated'],groupIds:['g2'],auditStatus:'pending',url:img('photo-1504851149312-7a075b496cc7',9),selected:false},
+    {id:'A010',name:'审核上传_白底图.jpg',media:'image',format:'JPG',width:2000,height:2000,size:'2.7 MB',createdAt:'2026-07-15 12:28',creator:'管晓',origin:'upload',libs:['usable'],groupIds:[],channels:['通用'],auditAt:'2026-07-15 13:10',placeholder:'bg-gradient-to-br from-slate-200/25 to-slate-700/20',sharedTo:[],selected:false},
+    {id:'A011',name:'镜头生成_失败重试.mp4',media:'video',format:'MP4',width:1920,height:1080,duration:18,size:'9.2 MB',createdAt:'2026-07-23 19:40',creator:'李设计',origin:'videoGen',libs:['generated'],groupIds:[],auditStatus:'failed',placeholder:'bg-gradient-to-br from-amber-500/20 to-slate-900',selected:false},
+    {id:'A012',name:'业务共享_主图.jpg',media:'image',format:'JPG',width:2000,height:2000,size:'2.2 MB',createdAt:'2026-07-14 11:00',creator:'王业务',origin:'adapt',libs:['usable'],groupIds:[],channels:['独立站'],auditAt:'2026-07-14 12:00',shareIn:'self',url:img('photo-1524758631624-e2822e304c36',12),sharedTo:[],selected:false},
+    {id:'A013',name:'共享给下属_场景图.jpg',media:'image',format:'JPG',width:1800,height:1200,size:'1.8 MB',createdAt:'2026-07-13 15:22',creator:'赵运营',origin:'imageGen',libs:['usable'],groupIds:[],channels:['通用'],auditAt:'2026-07-13 16:00',shareIn:'sub',shareToName:'李四',placeholder:'bg-gradient-to-br from-emerald-500/20 to-slate-900',sharedTo:[],selected:false}
+  ]);
+  const detail=reactive({open:false,asset:null,list:[],editName:false,nameBase:'',ext:''});
+  const upload=reactive({show:false,files:[]});
+  const groupModal=reactive({show:false,mode:'single',asset:null,ids:[]});
+  const shareModal=reactive({show:false,manage:false,asset:null,q:'',ids:[]});
+  const editModal=reactive({show:false,kind:'',title:'',value:'',target:null});
+  const confirmModal=reactive({show:false,type:'',title:'',message:'',target:null});
+  const auditView=reactive({show:false,asset:null});
+  const sourcePrev=reactive({show:false,item:null});
+  const toast=reactive({show:false,message:'',timer:null});
+
+  const isGroupPage=computed(()=>groups.value.some(g=>g.id===activeNav.value));
+  const pageTitle=computed(()=>({original:'原素材库',generated:'生成素材库',usable:'可用素材库'}[activeNav.value]||groups.value.find(g=>g.id===activeNav.value)?.name||'素材管理'));
+  const canUpload=computed(()=>activeNav.value==='original');
+  const hasFilters=computed(()=>!!(filters.search||filters.media!=='all'||filters.time!=='all'||filters.auditProgress!=='all'||filters.auditResult!=='all'||filters.channel!=='all'||filters.library!=='all'||filters.scope!=='all'));
+  function inOriginalView(a){return a.libs.includes('original')&&a.creator===me}
+  function inGeneratedView(a){return a.libs.includes('generated')}
+  function inUsableView(a,scope){
+    if(!a.libs.includes('usable')) return false;
+    const team=a.creator===me||['管晓','李设计','赵运营'].includes(a.creator);
+    const mine=a.shareIn==='self';
+    const sub=a.shareIn==='sub';
+    const out=(a.sharedTo||[]).length&&(a.creator===me||a.creator==='李设计');
+    if(scope==='team') return team&&!a.shareIn;
+    if(scope==='sharedIn') return mine||sub;
+    if(scope==='sharedOut') return !!out;
+    return (team&&!a.shareIn)||mine||sub;
+  }
+  const filteredAssets=computed(()=>{
+    let list=assets.value.slice();
+    if(activeNav.value==='original') list=list.filter(inOriginalView);
+    else if(activeNav.value==='generated') list=list.filter(inGeneratedView);
+    else if(activeNav.value==='usable') list=list.filter(a=>inUsableView(a,filters.scope));
+    else if(isGroupPage.value) list=list.filter(a=>(a.groupIds||[]).includes(activeNav.value));
+    if(filters.media!=='all') list=list.filter(a=>a.media===filters.media);
+    if(activeNav.value==='generated'&&filters.auditProgress!=='all'){
+      list=list.filter(a=>a.auditStatus===filters.auditProgress);
+    }
+    if(activeNav.value==='generated'&&filters.auditResult!=='all'){
+      list=list.filter(a=>{
+        if(filters.auditResult==='clear') return a.auditStatus==='done'&&a.auditResult==='clear';
+        if(filters.auditResult==='risk') return a.auditStatus==='done'&&a.auditResult&&a.auditResult!=='clear';
+        return true;
+      });
+    }
+    if(activeNav.value==='usable'&&filters.channel!=='all') list=list.filter(a=>a.channels?.includes(filters.channel)||(filters.channel!=='通用'&&a.channels?.includes('通用')));
+    if(isGroupPage.value&&filters.library!=='all') list=list.filter(a=>a.libs.includes(filters.library));
+    if(filters.time!=='all'){
+      const now=new Date('2026-07-23T20:00:00');
+      const days={ '7d':7, '30d':30, '90d':90 }[filters.time];
+      if(days) list=list.filter(a=>{
+        const d=new Date(a.createdAt.replace(' ','T'));
+        return (now-d)/86400000<=days;
+      });
+    }
+    if(filters.search){const q=filters.search.toLowerCase(); list=list.filter(a=>a.name.toLowerCase().includes(q))}
+    return list.sort((a,b)=>b.createdAt.localeCompare(a.createdAt));
+  });
+  const selectedCount=computed(()=>assets.value.filter(a=>a.selected).length);
+  const detailList=computed(()=>detail.list);
+  const detailIndex=computed(()=>detail.asset?detail.list.findIndex(a=>a.id===detail.asset.id):-1);
+  const menuAsset=computed(()=>assets.value.find(a=>a.id===menuAssetId.value)||null);
+  const menuStyle=computed(()=>({left:menuPos.left+'px',top:menuPos.top+'px',transform:menuPos.openUp?'translateY(-100%)':'none'}));
+  const emptyState=computed(()=>{
+    if(hasFilters.value) return {title:'没有符合条件的素材',desc:'调整或清空筛选后再试。'};
+    if(activeNav.value==='original') return {title:'暂无原素材',desc:'上传图片或视频，或在生成对话中一键引用。',action:'上传素材'};
+    if(activeNav.value==='generated') return {title:'暂无生成素材',desc:'团队成员在图像 / 镜头生成中收藏后出现在这里。'};
+    if(activeNav.value==='usable') return {title:'暂无可用素材',desc:'审核通过未发现明显风险后会出现在这里。'};
+    return {title:'该分组暂无素材',desc:'从各库将素材添加到此分组。'};
+  });
+  const shareCandidates=computed(()=>{
+    const a=shareModal.asset; const taken=new Set((a?.sharedTo||[]).map(x=>x.id));
+    return people.filter(p=>p.team!==meTeam&&!taken.has(p.id)&&(p.name.includes(shareModal.q)||!shareModal.q));
+  });
+
+  function showToast(m){clearTimeout(toast.timer);toast.message=m;toast.show=true;toast.timer=setTimeout(()=>toast.show=false,2400)}
+  function navClass(k){return activeNav.value===k?'bg-primary/10 text-primary font-medium':'text-white/50 hover:bg-white/[.045] hover:text-white/80'}
+  function resetFilters(){Object.assign(filters,{search:'',media:'all',time:'all',auditProgress:'all',auditResult:'all',channel:'all',library:'all',scope:'all'}); closeFilterMenus()}
+  function setNav(k){activeNav.value=k;resetFilters();exitSelect();closeMenu()}
+  function closeMenu(){menuAssetId.value=null}
+  function toggleCardMenu(a,e){e.stopPropagation(); if(menuAssetId.value===a.id){closeMenu();return} const r=e.currentTarget.getBoundingClientRect(); menuPos.openUp=r.top>320; menuPos.left=Math.min(r.right-228,innerWidth-236); menuPos.top=menuPos.openUp?r.top-8:r.bottom+8; menuAssetId.value=a.id}
+  function closeMenuEv(){closeMenu(); closeFilterMenus()}
+  onMounted(()=>document.addEventListener('click',closeMenuEv));
+  onBeforeUnmount(()=>document.removeEventListener('click',closeMenuEv));
+  function durationText(sec=0){const m=Math.floor(sec/60),s=sec%60;return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`}
+  function sizeText(a){return a.width?`${a.width}×${a.height}`:'—'}
+  function channelText(a){return (a.channels&&a.channels[0])||'通用'}
+  function originText(o){return {upload:'本地上传',imageGen:'图像生成',videoGen:'镜头生成',adapt:'素材适配'}[o]||o}
+  function auditStatusText(a){return {pending:'待审核',reviewing:'审核中',done:'已完成',failed:'审核失败'}[a?.auditStatus]||'—'}
+  function auditResultText(a){return {clear:'未发现明显风险',high:'存在高风险',medium:'存在中风险',low:'存在低风险'}[a?.auditResult]||''}
+  function auditColor(a){const s=a?.auditStatus,r=a?.auditResult; if(s==='pending'||s==='reviewing') return 'text-sky-400'; if(s==='failed') return 'text-red-400'; if(r==='clear') return 'text-emerald-400'; if(r) return 'text-orange-400'; return 'text-white/45'}
+  function cardViewLib(a){ if(isGroupPage.value){ if(filters.library!=='all') return filters.library; if(a.libs.includes('usable')) return 'usable'; if(a.libs.includes('generated')) return 'generated'; return 'original'} return activeNav.value }
+  function cardMeta(a){
+    const lib=cardViewLib(a);
+    if(lib==='original') return '';
+    if(lib==='generated') return a.auditStatus==='done'?auditResultText(a):auditStatusText(a);
+    if(lib==='usable') return `${sizeText(a)} · ${channelText(a)}`;
+    return '';
+  }
+  function cardExtra(a){
+    if(cardViewLib(a)!=='usable') return '';
+    if(filters.scope==='sharedOut') return `已共享 ${(a.sharedTo||[]).length} 人`;
+    if(filters.scope==='sharedIn'&&a.shareIn==='sub') return `共享给：${a.shareToName}`;
+    return '';
+  }
+  function cardMetaClass(a){return cardViewLib(a)==='generated'?auditColor(a):'text-white/40'}
+  function groupNames(a){return (a.groupIds||[]).map(id=>groups.value.find(g=>g.id===id)?.name).filter(Boolean)}
+  function activeLib(a){return cardViewLib(a)}
+  function isOwner(a){return a.creator===me}
+  function canManage(a){return isOwner(a)||a.creator==='李设计'}
+  function canShare(a){return !!(a&&a.libs.includes('usable')&&canManage(a)&&!a.shareIn)}
+  function canHandleAudit(a){return canManage(a)}
+  function assetActions(a,withDetail){
+    const lib=cardViewLib(a), items=[];
+    if(withDetail) items.push({key:'detail',label:'查看详情',icon:'ph-arrows-out'});
+    if(lib==='original'){ items.push({key:'rename',label:'重命名',icon:'ph-pencil-simple'},{key:'download',label:'下载',icon:'ph-download-simple'},{key:'group',label:'添加到分组',icon:'ph-folder-plus'},{key:'imageGen',label:'转到图像生成',icon:'ph-image'},{key:'videoGen',label:'转到镜头生成',icon:'ph-film-strip'}); if(isGroupPage.value) items.push({key:'ungroup',label:'从当前分组移出',icon:'ph-folder-minus'}); items.push({key:'delete',label:'删除',icon:'ph-trash'}); }
+    if(lib==='generated'){ items.push({key:'download',label:'下载',icon:'ph-download-simple'},{key:'group',label:'添加到分组',icon:'ph-folder-plus'},{key:'imageGen',label:'转到图像生成',icon:'ph-image'},{key:'videoGen',label:'转到镜头生成',icon:'ph-film-strip'},{key:'audit',label:'查看审核详情',icon:'ph-shield-check'}); if(isOwner(a)) items.unshift({key:'rename',label:'重命名',icon:'ph-pencil-simple'}); if(isGroupPage.value) items.push({key:'ungroup',label:'从当前分组移出',icon:'ph-folder-minus'}); }
+    if(lib==='usable'){ items.push({key:'download',label:'下载',icon:'ph-download-simple'},{key:'group',label:'添加到分组',icon:'ph-folder-plus'},{key:'imageGen',label:'转到图像生成',icon:'ph-image'}); if(a.media==='image') items.push({key:'adapt',label:'转到素材适配',icon:'ph-magic-wand'}); if(canManage(a)&&!a.shareIn){ items.splice(withDetail?1:0,0,{key:'rename',label:'重命名',icon:'ph-pencil-simple'}); items.push({key:'share',label:'共享',icon:'ph-share-network'},{key:'delete',label:'删除',icon:'ph-trash'}); } if(isGroupPage.value) items.push({key:'ungroup',label:'从当前分组移出',icon:'ph-folder-minus'}); }
+    return items;
+  }
+  function runAction(key,a){
+    closeMenu();
+    if(key==='detail') openDetail(a);
+    else if(key==='rename') startRename(a);
+    else if(key==='download') showToast('已开始下载「'+a.name+'」');
+    else if(key==='group') openGrouping('single',a);
+    else if(key==='ungroup'){a.groupIds=(a.groupIds||[]).filter(id=>id!==activeNav.value); showToast('已从当前分组移出')}
+    else if(key==='imageGen') showToast('已携带「'+a.name+'」转到图像生成');
+    else if(key==='videoGen') showToast('已携带「'+a.name+'」转到镜头生成');
+    else if(key==='adapt'){
+      showToast('已携带「'+a.name+'」转到素材适配');
+      setTimeout(()=>{ window.location.href='design-ai-empowerment-prototype-v9.html?fromAsset=1&assetId='+encodeURIComponent(a.id); },250);
+    }
+    else if(key==='audit') openAuditView(a);
+    else if(key==='share') openShare(a);
+    else if(key==='delete') askDelete(a);
+  }
+  function cardClick(a,e){ if(selectMode.value||e.metaKey||e.ctrlKey){ selectMode.value=true; a.selected=!a.selected; if(!selectedCount.value) selectMode.value=false;} else openDetail(a)}
+  function selectAsset(a){a.selected=!a.selected; selectMode.value=selectedCount.value>0}
+  function exitSelect(){selectMode.value=false; assets.value.forEach(a=>a.selected=false)}
+  function selectAll(){filteredAssets.value.forEach(a=>a.selected=true); selectMode.value=true}
+  function openDetail(a){ if(scrollArea.value) listScrollTop.value=scrollArea.value.scrollTop; detail.list=[...filteredAssets.value]; detail.asset=a; detail.open=true; detail.editName=false; }
+  function closeDetail(){ detail.open=false; nextTick(()=>{ if(scrollArea.value) scrollArea.value.scrollTop=listScrollTop.value }); }
+  function prevAsset(){ if(detailIndex.value>0){ detail.asset=detail.list[detailIndex.value-1]; detail.editName=false}}
+  function nextAsset(){ if(detailIndex.value<detail.list.length-1){ detail.asset=detail.list[detailIndex.value+1]; detail.editName=false}}
+  function startRename(a){ const d=a.name.lastIndexOf('.'); detail.ext=d>0?a.name.slice(d):''; detail.nameBase=d>0?a.name.slice(0,d):a.name; if(detail.open&&detail.asset.id===a.id) detail.editName=true; else { editModal.show=true; editModal.kind='name'; editModal.title='重命名'; editModal.value=detail.nameBase; editModal.target=a; }}
+  function saveName(){ if(!detail.nameBase.trim()) return; detail.asset.name=detail.nameBase.trim()+detail.ext; detail.editName=false; showToast('已重命名，仅当前库展示名变化')}
+  function startUpload(){ Object.assign(upload,{show:true,files:[]})}
+  function onFiles(e){ upload.files=Array.from(e.target.files||[])}
+  function onDropFiles(e){ upload.files=Array.from(e.dataTransfer?.files||[]).filter(f=>f.type.startsWith('image/')||f.type.startsWith('video/')); if(!upload.files.length) showToast('请拖入图片或视频文件') }
+  function submitUpload(){ if(!upload.files.length) return showToast('请先选择文件'); upload.files.forEach((f,i)=>{ const video=f.type.startsWith('video'); assets.value.unshift({id:'U'+Date.now()+i,name:f.name,media:video?'video':'image',format:(f.name.split('.').pop()||'').toUpperCase(),width:video?1920:3000,height:video?1080:3000,duration:video?12:undefined,size:((f.size||1000000)/1048576).toFixed(1)+' MB',createdAt:'2026-07-23 20:10',creator:me,origin:'upload',libs:['original'],groupIds:[],placeholder:'bg-gradient-to-br from-sky-500/20 to-slate-950',selected:false});}); upload.show=false; activeNav.value='original'; showToast('已上传到原素材库，仅自己可见')}
+  function openGrouping(mode,a=null){ groupModal.show=true; groupModal.mode=mode; groupModal.asset=a; groupModal.ids=a?[...(a.groupIds||[])]:[] }
+  function confirmGroups(){ const targets=groupModal.mode==='batch'?assets.value.filter(x=>x.selected):[groupModal.asset]; targets.filter(Boolean).forEach(a=>{ const set=new Set(a.groupIds||[]); groupModal.ids.forEach(id=>set.add(id)); a.groupIds=[...set]; }); showToast('已添加到所选分组'); groupModal.show=false; if(groupModal.mode==='batch') exitSelect(); }
+  function openGroupEdit(kind,g=null){ editModal.show=true; editModal.kind=kind; editModal.title=kind==='create'?'新建分组':'重命名分组'; editModal.value=g?.name||''; editModal.target=g; }
+  function confirmEdit(){ const v=editModal.value.trim(); if(!v) return; if(editModal.kind==='create'){ const g={id:'g'+Date.now(),name:v}; groups.value.push(g); if(groupModal.show) groupModal.ids.push(g.id); showToast('已创建分组')} else if(editModal.kind==='rename'){ editModal.target.name=v; showToast('分组已重命名')} else if(editModal.kind==='name'){ const d=editModal.target.name.lastIndexOf('.'); const ext=d>0?editModal.target.name.slice(d):''; editModal.target.name=v+ext; showToast('已重命名')} editModal.show=false; }
+  function askDeleteGroup(g){ confirmModal.show=true; confirmModal.type='group'; confirmModal.target=g; confirmModal.title='删除分组？'; confirmModal.message='只解散「'+g.name+'」，组内素材仍在各自库中。'; }
+  function askDelete(a){ const lib=cardViewLib(a); confirmModal.show=true; confirmModal.type='asset'; confirmModal.target={a,lib}; confirmModal.title='删除该素材？';
+    if(lib==='original'&&a.libs.includes('usable')) confirmModal.message='将从原素材库移除，可用素材库中的同一文件保留。';
+    else if(lib==='usable') confirmModal.message='将从可用素材库移除。'+(a.sharedTo||[]).length+' 人的共享将被取消（如有）。已建适配任务和入库结果保留。';
+    else confirmModal.message='仅在原素材库时将删除文件，操作后不可恢复。'; }
+  function askBatchDelete(){ confirmModal.show=true; confirmModal.type='batch'; confirmModal.title='删除所选素材？'; confirmModal.message='按当前库规则解除关系，无权限项会跳过。'; }
+  function doConfirm(){
+    if(confirmModal.type==='group'){ const g=confirmModal.target; assets.value.forEach(a=>a.groupIds=(a.groupIds||[]).filter(id=>id!==g.id)); groups.value=groups.value.filter(x=>x.id!==g.id); if(activeNav.value===g.id) activeNav.value='original'; showToast('分组已删除'); }
+    else if(confirmModal.type==='asset'){ const {a,lib}=confirmModal.target; a.libs=a.libs.filter(x=>x!==(lib==='original'?'original':'usable')); if(lib==='usable') a.sharedTo=[]; if(!a.libs.length) assets.value=assets.value.filter(x=>x.id!==a.id); if(detail.asset?.id===a.id) closeDetail(); showToast('已删除'); }
+    else { assets.value.filter(a=>a.selected).forEach(a=>{ const lib=activeNav.value; if(lib==='generated'||isGroupPage.value) return; if(lib==='usable'&&!canManage(a)) return; a.libs=a.libs.filter(x=>x!==lib); if(lib==='usable') a.sharedTo=[]; }); assets.value=assets.value.filter(a=>a.libs.length); exitSelect(); showToast('已按当前库删除'); }
+    confirmModal.show=false;
+  }
+  function openShare(a){ const target=a||assets.value.find(x=>x.selected); shareModal.show=true; shareModal.manage=false; shareModal.asset=target; shareModal.q=''; shareModal.ids=[]; }
+  function openShareManage(a){ shareModal.show=true; shareModal.manage=true; shareModal.asset=a; }
+  function confirmShare(){ const a=shareModal.asset; if(!a) return; a.sharedTo=a.sharedTo||[]; shareModal.ids.forEach(id=>{ const p=people.find(x=>x.id===id); if(p&&!a.sharedTo.some(x=>x.id===id)) a.sharedTo.push({id:p.id,name:p.name}); }); shareModal.show=false; showToast('已共享，接收人直属 Leader 自动可见'); }
+  function unshare(p){ const a=shareModal.asset; a.sharedTo=a.sharedTo.filter(x=>x.id!==p.id); showToast('已取消共享'); }
+  function openAuditView(a){ auditView.show=true; auditView.asset=a; }
+  function handleRisk(r,kind){ showToast(kind==='confirm'?'已确认风险':'已提交误判，将重算结果'); }
+  function previewSource(s){ sourcePrev.show=true; sourcePrev.item=s; }
+  function batchDownload(){ showToast('已开始下载 '+selectedCount.value+' 个素材'); }
+
+  return {
+    activeNav, setNav, navClass, filters, openFilterKey, groups, assets, detail, upload,
+    groupModal, shareModal, editModal, confirmModal, auditView, sourcePrev, toast, scrollArea,
+    menuAssetId, menuAsset, menuStyle, toggleCardMenu, isGroupPage, pageTitle,
+    canUpload, canUpload, hasFilters, filteredAssets, selectedCount, detailList, detailIndex, emptyState, shareCandidates,
+    mediaFilterOptions, timeFilterOptions, auditProgressOptions, auditResultOptions, scopeFilterOptions, channelFilterOptions, libraryFilterOptions,
+    filterChipLabel, toggleFilter, pickFilter,
+    resetFilters, durationText, cardMeta, cardExtra, cardMetaClass, cardMetaClass, groupNames, activeLib,
+    originText, auditStatusText, auditResultText, auditColor, canShare, canHandleAudit,
+    assetActions, runAction, cardClick, selectAsset, selectAll, exitSelect,
+    openDetail, closeDetail, prevAsset, nextAsset, saveName,
+    startUpload, onFiles, onDropFiles, submitUpload, openGrouping, confirmGroups, openGroupEdit, confirmEdit,
+    askDeleteGroup, askBatchDelete, doConfirm, openShare, openShareManage, confirmShare, unshare,
+    openAuditView, handleRisk, previewSource, batchDownload,
+    originText, previewSource, openAuditView, canHandleAudit, handleRisk, submitUpload,
+    confirmGroups, confirmShare, openGroupEdit, cardMeta, cardMetaClass, runAction, cardClick,
+    saveName, startUpload, askDeleteGroup, closeDetail, assetActions, doConfirm,
+    openGrouping, selectAsset, exitSelect, activeLib, groupNames, auditColor, auditStatusText, auditResultText
+  };
+}
+}).mount('#app');
+} catch (e) {
+  console.error(e);
+  const app = document.getElementById('app');
+  if (app) {
+    app.removeAttribute('v-cloak');
+    app.innerHTML = '<div style="padding:24px;color:#fbbf24;font-family:sans-serif">原型加载失败：' + (e.message || e) + '</div>';
+  }
+}
+</script>
+</body>
+</html>
