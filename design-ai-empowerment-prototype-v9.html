@@ -4,12 +4,18 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>智岩 AI 设计赋能 - 素材适配 v9</title>
+<link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
+<script src="assets/vendor/vue.global.prod.js"></script>
 <script src="https://cdn.tailwindcss.com/3.4.17"></script>
 <script src="https://unpkg.com/@phosphor-icons/web"></script>
+<script>
+if (typeof Vue === 'undefined') {
+  document.write('<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"><\\/script>');
+}
+</script>
 <style>
 :root {
   --bg: #0a0a0c;
@@ -35,6 +41,7 @@ body {
   background: var(--bg); color: var(--text); overflow: hidden; height: 100vh;
   -webkit-font-smoothing: antialiased;
 }
+[v-cloak] { display: none !important; }
 .ambient-bg {
   position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden;
 }
@@ -529,24 +536,28 @@ div:hover > .group-actions {
 .result-toolbar-actions .ghost-btn { padding: 5px 12px; font-size: 12px; min-width: 64px; }
 .result-toolbar .lang-filter-bar { margin-left: auto; }
 .result-grid {
-  flex: 1; display: flex; flex-wrap: wrap; align-content: flex-start; gap: 12px;
-  padding: 16px; overflow-y: auto;
+  flex: 1; display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  align-content: flex-start; gap: 16px;
+  padding: 16px 24px; overflow-y: auto;
 }
 .result-card {
-  width: 180px; border-radius: 10px; overflow: hidden; cursor: pointer;
-  background: rgba(0,0,0,0.3); border: 1px solid var(--border); transition: all 0.2s;
+  border-radius: 12px; overflow: hidden; cursor: pointer;
+  background: rgba(0,0,0,0.25); border: 1px solid var(--border); transition: all 0.2s;
   position: relative;
 }
 .result-card.is-menu-open { overflow: visible; z-index: 30; }
-.result-card:hover { border-color: var(--amber); transform: translateY(-2px); }
-.result-card.selected { border-color: rgba(245,158,11,0.5); background: rgba(245,158,11,0.02); }
-.result-card-img { width: 100%; height: 140px; background: rgba(255,255,255,0.02); position: relative; overflow: hidden; cursor: pointer; }
+.result-card:hover { border-color: rgba(255,255,255,0.2); transform: translateY(-2px); box-shadow: 0 12px 28px rgba(0,0,0,0.35); }
+.result-card.selected { border-color: var(--amber); box-shadow: 0 0 0 1px var(--amber); background: rgba(245,158,11,0.04); }
+.result-card-img {
+  width: 100%; aspect-ratio: 4 / 3; background: rgba(9,11,16,1);
+  position: relative; overflow: hidden; cursor: pointer;
+}
 .result-card-img .placeholder {
   width: 100%; height: 100%; display: flex; align-items: center;
   justify-content: center; color: var(--text-dim); font-size: 11px;
 }
 .card-hover-mask {
-  position: absolute; inset: 0; background: rgba(0,0,0,0.5);
+  position: absolute; inset: 0; background: rgba(0,0,0,0.45);
   display: flex; align-items: center; justify-content: center;
   opacity: 0; transition: opacity 0.2s;
 }
@@ -555,45 +566,53 @@ div:hover > .group-actions {
   padding: 6px 12px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
   border-radius: 6px; font-size: 12px; color: #fff; backdrop-filter: blur(4px);
 }
-.result-card-info { padding: 8px 10px; cursor: pointer; }
-.result-card-info .size-label { font-size: 11px; color: var(--amber); font-weight: 600; }
-.result-card-info .lang-label { font-size: 11px; color: var(--text-dim); }
-.result-card-status { padding: 0 10px 8px 10px; display: flex; gap: 4px; flex-wrap: wrap; align-items: center; cursor: pointer; }
+.result-card-info { padding: 8px 12px 4px; cursor: pointer; min-height: 44px; }
+.result-card-info .size-label {
+  font-size: 12px; color: var(--text); font-weight: 500;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;
+}
+.result-card-info .lang-label {
+  margin-top: 4px; font-size: 10px; color: var(--text-dim);
+  display: flex; align-items: center; gap: 6px; min-width: 0;
+}
+.result-card-status {
+  padding: 0 12px 10px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; cursor: pointer;
+}
+.result-card-status .card-status-text {
+  font-size: 10px; font-weight: 500; line-height: 1.4;
+}
+.result-card-status .card-status-text.is-reviewing { color: #38bdf8; }
+.result-card-status .card-status-text.is-failed { color: #f87171; }
+.result-card-status .card-status-text.is-pass { color: #34d399; }
+.result-card-status .card-status-text.is-risk { color: #fb923c; }
+.result-card-status .card-status-text.is-muted { color: var(--text-dim); }
+.result-card-status .card-status-pill {
+  font-size: 10px; padding: 1px 6px; border-radius: 4px; font-weight: 500;
+}
+.result-card-status .card-status-pill.is-saved {
+  color: #34d399; background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.22);
+}
+.result-card-status .card-status-pill.is-edited {
+  color: var(--amber); background: var(--amber-dim); border: 1px solid rgba(245,158,11,0.28);
+}
 .result-card-select {
   position: absolute; top: 8px; left: 8px; z-index: 5;
-  width: 22px; height: 22px; border-radius: 6px;
-  background: rgba(0,0,0,0.55); border: 1px solid rgba(255,255,255,0.25);
-  display: flex; align-items: center; justify-content: center;
-  opacity: 0; transition: opacity 0.2s;
+  width: 20px; height: 20px; border-radius: 4px;
+  border: 1px solid rgba(255,255,255,0.5); background: rgba(0,0,0,0.6);
+  display: grid; place-items: center;
+  opacity: 0; transition: opacity 0.15s, background 0.15s, border-color 0.15s;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+.result-card-select.is-checked {
+  opacity: 1; background: var(--amber); border-color: var(--amber); color: #0a0a0c;
 }
 .result-card:hover .result-card-select,
-.result-card.selected .result-card-select { opacity: 1; }
-.result-card-select input { width: 14px; height: 14px; cursor: pointer; accent-color: var(--amber); }
-.result-card-more {
-  position: absolute; top: 8px; right: 8px; z-index: 6;
-  width: 24px; height: 24px; border-radius: 50%;
-  background: rgba(0,0,0,0.55); border: 1px solid rgba(255,255,255,0.25);
-  color: #fff; cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  opacity: 0; transition: opacity 0.2s; padding: 0;
+.result-grid.has-selection .result-card-select { opacity: 1; }
+.result-card-select i { font-size: 11px; font-weight: 700; line-height: 1; }
+.source-unavailable-tag {
+  display: inline-block; margin-left: 6px; padding: 1px 6px; border-radius: 4px;
+  font-size: 10px; color: #fbbf24; background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.28);
 }
-.result-card-more svg { width: 14px; height: 14px; display: block; }
-.result-card:hover .result-card-more,
-.result-card.selected .result-card-more,
-.result-card-more.is-open { opacity: 1; }
-.result-card-more:hover { background: rgba(0,0,0,0.75); border-color: rgba(255,255,255,0.4); }
-.result-card-menu {
-  position: absolute; top: 36px; right: 8px; z-index: 8;
-  min-width: 168px; padding: 8px 0; border-radius: 10px;
-  background: #16161e; border: 1px solid rgba(255,255,255,0.1);
-  box-shadow: 0 12px 28px rgba(0,0,0,0.55);
-}
-.result-card-menu-row {
-  display: flex; justify-content: space-between; gap: 12px;
-  padding: 6px 12px; font-size: 11px; line-height: 1.4;
-}
-.result-card-menu-row .k { color: var(--text-dim); flex-shrink: 0; }
-.result-card-menu-row .v { color: var(--text); text-align: right; word-break: break-all; }
 .result-lang-badge {
   display: inline-flex; align-items: center; padding: 1px 6px; border-radius: 4px;
   font-size: 10px; font-weight: 700; letter-spacing: 0.03em;
@@ -960,21 +979,7 @@ div:hover > .group-actions {
   padding: 16px 20px; border-bottom: 1px solid var(--border-light); flex-shrink: 0;
 }
 .bg-picker-header .dialog-sub { font-size: 12px; color: var(--text-tertiary); margin-top: 4px; font-weight: 400; }
-.bg-picker-tabs {
-  display: flex; gap: 24px; padding: 0 20px; border-bottom: 1px solid var(--border); flex-shrink: 0;
-}
-.bg-picker-tab {
-  padding: 12px 0; font-size: 13px; color: var(--text-dim); cursor: pointer;
-  border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.2s;
-}
-.bg-picker-tab.active { color: var(--amber); border-bottom-color: var(--amber); font-weight: 600; }
 .bg-picker-body { padding: 0; min-height: 280px; flex: 1; overflow: hidden; display: flex; flex-direction: column; }
-.bg-picker-upload-zone {
-  border: 1px dashed rgba(255,255,255,0.15); border-radius: 10px;
-  padding: 48px 24px; text-align: center; cursor: pointer; transition: all 0.2s;
-  background: rgba(0,0,0,0.15); margin: 20px;
-}
-.bg-picker-upload-zone:hover { border-color: var(--amber); background: rgba(245,158,11,0.04); }
 .bg-picker-footer {
   display: flex; align-items: center; justify-content: space-between;
   padding: 14px 20px; border-top: 1px solid var(--border-light); flex-shrink: 0;
@@ -1028,6 +1033,79 @@ div:hover > .group-actions {
 }
 .asset-pick-card .name { font-size: 12px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .asset-pick-card .meta { font-size: 10px; color: var(--text-tertiary); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* 连续预览：复用素材审核视图的左预览、右风险信息结构 */
+.result-preview-overlay {
+  position: fixed; inset: 0; z-index: 2100; background: rgba(5,5,8,.88);
+  backdrop-filter: blur(18px); display: flex; flex-direction: column;
+}
+.result-preview-header {
+  height: 64px; flex-shrink: 0; display: flex; align-items: center; gap: 16px;
+  padding: 0 22px; border-bottom: 1px solid rgba(255,255,255,.08); background: rgba(18,18,25,.92);
+}
+.result-preview-title { min-width: 0; flex: 1; }
+.result-preview-title strong { display:block; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.result-preview-title span { display:block; color:var(--text-dim); font-size:11px; margin-top:3px; }
+.result-preview-actions { display:flex; gap:8px; align-items:center; }
+.result-preview-close { width:34px; height:34px; border-radius:8px; border:1px solid var(--border); background:rgba(255,255,255,.03); color:var(--text); cursor:pointer; }
+.result-preview-body { flex:1; min-height:0; display:grid; grid-template-columns:minmax(0,1fr) 360px; }
+.result-preview-stage { min-width:0; min-height:0; position:relative; display:flex; align-items:center; justify-content:center; padding:28px 70px 110px; overflow:hidden; }
+.result-preview-canvas { position:relative; max-width:min(72vw,900px); max-height:calc(100vh - 230px); aspect-ratio:1; width:min(64vh,720px); border-radius:12px; overflow:hidden; background:#111118; box-shadow:0 20px 70px rgba(0,0,0,.55); border:1px solid rgba(255,255,255,.09); }
+.result-preview-canvas.portrait { aspect-ratio:4/5; width:min(50vh,560px); }
+.result-preview-canvas.story { aspect-ratio:9/16; width:min(38vh,430px); }
+.result-preview-canvas.wide { aspect-ratio:16/9; width:min(74vw,900px); }
+.result-preview-canvas.banner { aspect-ratio:820/312; width:min(74vw,940px); }
+.result-preview-copy { position:absolute; inset:0; display:flex; flex-direction:column; padding:7%; pointer-events:none; }
+.result-preview-copy .brand { color:var(--amber); font-weight:800; font-size:clamp(12px,1.2vw,20px); margin-bottom:auto; }
+.result-preview-copy .title { color:#fff; font-weight:750; font-size:clamp(16px,2.2vw,34px); line-height:1.15; max-width:82%; }
+.result-preview-copy .subtitle { color:rgba(255,255,255,.72); font-size:clamp(11px,1.15vw,18px); margin-top:6px; max-width:78%; }
+.result-preview-nav { position:absolute; top:50%; transform:translateY(-50%); width:42px; height:42px; border-radius:50%; border:1px solid rgba(255,255,255,.14); background:rgba(20,20,27,.82); color:#fff; cursor:pointer; display:grid; place-items:center; font-size:20px; }
+.result-preview-nav:hover { border-color:var(--amber); color:var(--amber); }
+.result-preview-nav.prev { left:18px; }
+.result-preview-nav.next { right:18px; }
+.result-preview-filmstrip { position:absolute; left:24px; right:24px; bottom:18px; height:74px; display:flex; gap:8px; justify-content:center; align-items:center; overflow-x:auto; }
+.result-preview-thumb { width:58px; height:58px; border-radius:8px; overflow:hidden; position:relative; flex:0 0 auto; border:2px solid transparent; background:#171720; cursor:pointer; opacity:.72; }
+.result-preview-thumb.active { border-color:var(--amber); opacity:1; }
+.result-preview-thumb .gen-canvas-wrap { pointer-events:none; }
+.preview-thumb-state { position:absolute; right:3px; bottom:3px; width:8px; height:8px; border-radius:50%; box-shadow:0 0 0 2px rgba(0,0,0,.65); }
+.preview-thumb-state.pass { background:var(--green); }
+.preview-thumb-state.risk { background:var(--red); }
+.preview-thumb-state.reviewing { background:#60a5fa; }
+.preview-thumb-state.failed { background:var(--amber); }
+.result-preview-panel { min-width:0; border-left:1px solid rgba(255,255,255,.08); background:rgba(18,18,25,.96); display:flex; flex-direction:column; }
+.result-preview-panel-scroll { flex:1; overflow-y:auto; padding:20px; }
+.preview-section { padding-bottom:18px; margin-bottom:18px; border-bottom:1px solid rgba(255,255,255,.07); }
+.preview-section:last-child { border-bottom:0; }
+.preview-section-title { font-size:12px; font-weight:700; margin-bottom:12px; }
+.preview-meta-grid { display:grid; grid-template-columns:72px 1fr; gap:9px 12px; font-size:12px; line-height:1.45; }
+.preview-meta-grid .k { color:var(--text-dim); }
+.preview-meta-grid .v { color:var(--text); word-break:break-word; }
+.preview-audit-summary { padding:12px; border-radius:10px; border:1px solid var(--border); background:rgba(0,0,0,.2); margin-bottom:12px; }
+.preview-audit-summary.pass { border-color:rgba(34,197,94,.3); background:rgba(34,197,94,.07); }
+.preview-audit-summary.risk { border-color:rgba(239,68,68,.3); background:rgba(239,68,68,.07); }
+.preview-audit-summary.reviewing { border-color:rgba(96,165,250,.3); background:rgba(96,165,250,.07); }
+.preview-audit-summary.failed { border-color:rgba(245,158,11,.35); background:rgba(245,158,11,.07); }
+.preview-audit-summary strong { display:block; font-size:13px; }
+.preview-audit-summary span { display:block; margin-top:5px; font-size:11px; color:var(--text-dim); line-height:1.5; }
+.preview-risk-card { padding:12px; border-radius:10px; border:1px solid rgba(239,68,68,.24); background:rgba(239,68,68,.05); margin-top:10px; font-size:11px; line-height:1.55; }
+.preview-risk-card.misjudged { opacity:.48; border-color:rgba(255,255,255,.12); background:rgba(255,255,255,.03); }
+.preview-risk-head { display:flex; align-items:center; gap:8px; margin-bottom:7px; }
+.preview-risk-head strong { color:var(--amber); font-size:12px; }
+.preview-risk-head .status { margin-left:auto; color:var(--text-dim); }
+.preview-risk-action { margin-top:9px; color:var(--amber); border:0; padding:0; background:transparent; cursor:pointer; font-size:11px; }
+.preview-risk-marker { position:absolute; border:2px solid #ef4444; background:rgba(239,68,68,.12); border-radius:8px; pointer-events:none; }
+.preview-risk-marker::after { content:attr(data-label); position:absolute; left:-2px; top:-25px; padding:3px 7px; border-radius:5px; background:#ef4444; color:#fff; font-size:10px; white-space:nowrap; }
+.handoff-asset-card { display:flex; gap:12px; align-items:center; padding:10px; margin-bottom:16px; border:1px solid rgba(245,158,11,.25); background:rgba(245,158,11,.06); border-radius:10px; }
+.handoff-asset-card img { width:56px; height:56px; object-fit:cover; border-radius:8px; flex-shrink:0; }
+.handoff-asset-card strong { display:block; font-size:12px; word-break:break-all; }
+.handoff-asset-card span { display:block; color:var(--text-dim); font-size:11px; margin-top:4px; }
+.canvas-editor-layout.is-reviewing .canvas-layer-panel,
+.canvas-editor-layout.is-reviewing .canvas-editor-main,
+.canvas-editor-layout.is-reviewing .right-section:not(:first-child) { pointer-events:none; opacity:.62; }
+@media (max-width: 980px) {
+  .result-preview-body { grid-template-columns:minmax(0,1fr) 320px; }
+  .result-preview-stage { padding-left:54px; padding-right:54px; }
+}
 .asset-pick-item {
   aspect-ratio: 1; border-radius: 6px; border: 2px solid transparent; cursor: pointer;
   overflow: hidden; transition: all 0.2s; background: rgba(255,255,255,0.04);
@@ -1413,12 +1491,13 @@ div:hover > .group-actions {
 .flow-link-btn:hover { text-decoration: underline; }
 .flow-header-link {
   height: 32px; padding: 0 14px; border-radius: 8px;
-  border: 1px solid var(--border); background: rgba(255,255,255,0.06);
-  font-size: 12px; font-weight: 500; color: var(--text); cursor: pointer; white-space: nowrap;
+  border: none; background: var(--amber);
+  font-size: 12px; font-weight: 600; color: #0a0a0c; cursor: pointer; white-space: nowrap;
   display: inline-flex; align-items: center; transition: all 0.2s;
+  box-shadow: 0 0 12px rgba(245,158,11,0.2);
 }
-.flow-header-link:hover { background: rgba(255,255,255,0.10); border-color: rgba(255,255,255,0.18); }
-.flow-header-link:disabled { opacity: 0.45; cursor: not-allowed; }
+.flow-header-link:hover { background: var(--amber-hover); transform: translateY(-1px); box-shadow: 0 0 16px rgba(245,158,11,0.4); }
+.flow-header-link:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none; }
 .workspace-body { flex: 1; display: flex; overflow: hidden; min-height: 0; }
 .config-preview-area,
 .config-template-area {
@@ -1560,7 +1639,7 @@ div:hover > .group-actions {
   <div class="blob blob-3"></div>
 </div>
 
-<div id="app" class="app-shell">
+<div id="app" class="app-shell" v-cloak>
   <!-- Top Toast -->
   <div class="toast-container" v-if="toast.visible">
     <div class="toast">
@@ -1605,7 +1684,7 @@ div:hover > .group-actions {
               <button class="ghost-btn" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid rgba(245,158,11,0.30); background: rgba(245,158,11,0.06); color: #f59e0b; font-weight: 600; height: 36px; border-radius: 8px;" @click="showNewGroupModal=true">
                 <span style="font-size: 16px;">+</span> 新建分组
               </button>
-              <button class="amber-btn" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; height: 36px; border-radius: 8px;" @click="showNewProject=true">
+              <button class="amber-btn" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; height: 36px; border-radius: 8px;" @click="openNewProject">
                 <span style="font-size: 16px;">+</span> 新建任务
               </button>
             </div>
@@ -1661,7 +1740,6 @@ div:hover > .group-actions {
                          @click="selectProject(proj._index)"
                          @dragstart="onTaskDragStart($event, proj.id)"
                          @dragend="onTaskDragEnd">
-                      <span class="sb-dot" :style="{ background: getDotColor(proj.status) }"></span>
                       <span class="sb-name">{{ proj.name }}</span>
                       <button type="button" class="sb-more-btn" title="更多"
                               @click.stop="openSidebarMenu($event, 'task', proj.id)">⋯</button>
@@ -1694,7 +1772,6 @@ div:hover > .group-actions {
                      @click="selectProject(proj._index)"
                      @dragstart="onTaskDragStart($event, proj.id)"
                      @dragend="onTaskDragEnd">
-                  <span class="sb-dot" :style="{ background: getDotColor(proj.status) }"></span>
                   <span class="sb-name">{{ proj.name }}</span>
                   <button type="button" class="sb-more-btn" title="更多"
                           @click.stop="openSidebarMenu($event, 'task', proj.id)">⋯</button>
@@ -1719,16 +1796,16 @@ div:hover > .group-actions {
                   <span class="flow-phase-title">{{ isConfigReadonly ? '生成配置' : '素材配置' }}</span>
                 </div>
                 <button v-if="results.length" type="button" class="flow-header-link" @click="switchWorkspaceMode('results')">
-                  查看生成结果（{{ results.length }} 张）→
+                  查看生成结果（{{ results.length }} 张）
                 </button>
               </div>
               <div class="config-workspace">
                 <div class="config-settings-main">
-                  <!-- 左侧：商品图片 + 商品信息 -->
+                      <!-- 左侧：单张源素材 + 商品信息 -->
                   <div class="config-panel product-panel config-panel-content-only" :style="{ width: configWidth + 'px' }">
                     <div class="config-panel-scroll">
                       <div class="product-image-section">
-                        <div class="section-label">商品图片</div>
+                        <div class="section-label">源素材</div>
                         <div class="product-image-grid">
                           <div class="product-image-thumb" v-for="img in productImages" :key="img.id"
                                :class="{ active: previewImageId === img.id }"
@@ -1736,7 +1813,7 @@ div:hover > .group-actions {
                             <img :src="img.url" :alt="img.name">
                             <div class="thumb-remove" v-if="!isConfigReadonly" @click.stop="removeProductImage(img.id)">✕</div>
                           </div>
-                          <div class="product-image-add" v-if="!isConfigReadonly" @click="openBgPicker" title="添加图片">+</div>
+                          <div class="product-image-add" v-if="!isConfigReadonly && !productImages.length" @click="openBgPicker" title="选择源素材">+</div>
                         </div>
                       </div>
 
@@ -1764,9 +1841,9 @@ div:hover > .group-actions {
                     <div class="spec-link-block">
                       <div class="spec-link-row">
                         <div class="config-group" style="margin-bottom:0;">
-                          <div class="config-group-title">渠道</div>
-                          <div class="ui-select" :class="{ open: openSelectId === 'channel', disabled: isConfigReadonly }">
-                            <button type="button" class="ui-select-trigger" :disabled="isConfigReadonly" @click.stop="toggleSelect('channel')">
+                          <div class="config-group-title">适用渠道</div>
+                          <div class="ui-select" :class="{ open: openSelectId === 'channel', disabled: isChannelReadonly }">
+                            <button type="button" class="ui-select-trigger" :disabled="isChannelReadonly" @click.stop="toggleSelect('channel')">
                               <span class="ui-select-label" :class="{ 'is-placeholder': !selectedChannel }">{{ selectedChannel || '请选择' }}</span>
                               <span class="ui-select-chevron">▾</span>
                             </button>
@@ -1784,7 +1861,7 @@ div:hover > .group-actions {
                             <button type="button" class="ui-select-trigger"
                                     :disabled="!selectedChannel || isConfigReadonly"
                                     @click.stop="toggleSelect('type')">
-                              <span class="ui-select-label" :class="{ 'is-placeholder': !selectedType }">{{ selectedType || (selectedChannel ? '请选择' : '请先选择渠道') }}</span>
+                              <span class="ui-select-label" :class="{ 'is-placeholder': !selectedType }">{{ selectedType || (selectedChannel ? '请选择' : '请先选择适用渠道') }}</span>
                               <span class="ui-select-chevron">▾</span>
                             </button>
                             <div class="ui-select-menu" v-if="openSelectId === 'type'" @click.stop>
@@ -1814,7 +1891,7 @@ div:hover > .group-actions {
                             {{ sz }}
                           </span>
                         </div>
-                        <div v-else class="spec-size-hint">选择渠道与图需类型后显示可选尺寸</div>
+                        <div v-else class="spec-size-hint">选择适用渠道与图需类型后显示可选尺寸</div>
                       </div>
                     </div>
 
@@ -1851,9 +1928,7 @@ div:hover > .group-actions {
                 <div class="config-generate-bar" :class="{ 'is-disabled': isConfigReadonly }">
                   <div class="generate-count">
                     本次生成<strong>{{ generateCount }}</strong>张
-                    <span v-if="productImages.length > 1 && selectedSizes.length > 0" style="font-size:12px;color:var(--text-dim);margin-left:6px;">
-                     （{{ productImages.length }} 张图 × {{ selectedSizes.length }} 个尺寸）
-                    </span>
+                    <span v-if="selectedSizes.length > 0" style="font-size:12px;color:var(--text-dim);margin-left:6px;">（{{ selectedSizes.length }} 个目标尺寸）</span>
                   </div>
                   <button class="amber-btn" style="padding:10px 32px;white-space:nowrap;" :disabled="!canGenerate || isConfigReadonly" @click="handleGenerate">
                     一键生成
@@ -1868,9 +1943,12 @@ div:hover > .group-actions {
                 <div class="flow-header-left">
                   <span class="flow-phase-title">生成结果</span>
                   <span class="flow-phase-count" v-if="results.length">{{ results.length }} 张</span>
+                  <span class="flow-phase-count" v-if="results.length">
+                    {{ isGenerating ? '生成中' : '已完成' }} · {{ generationSuccessCount }}/{{ results.length }} 生成成功
+                  </span>
                 </div>
-                <button v-if="isConfigReadonly" type="button" class="flow-header-link" @click="switchWorkspaceMode('config')">
-                  查看生成配置 →
+                <button v-if="results.length" type="button" class="flow-header-link" @click="switchWorkspaceMode('config')">
+                  {{ isConfigReadonly ? '查看生成配置' : '修改生成配置' }}
                 </button>
               </div>
               <div class="result-toolbar" v-if="results.length">
@@ -1878,12 +1956,16 @@ div:hover > .group-actions {
                   <input type="checkbox" :checked="allFilteredSelected" @change="toggleSelectAllFiltered">
                   全选
                 </label>
-                <span class="result-toolbar-hint warn" v-if="pendingCount">{{ pendingCount }} 张中/高风险待处理</span>
-                <span class="result-toolbar-hint" v-else-if="savableCount">{{ savableCount }} 张可入库</span>
+                <span class="result-toolbar-hint warn" v-if="riskResultCount">{{ riskResultCount }} 张存在风险</span>
+                <span class="result-toolbar-hint warn" v-if="auditFailedCount">{{ auditFailedCount }} 张审核失败</span>
+                <span class="result-toolbar-hint" v-if="auditReviewingCount">{{ auditReviewingCount }} 张审核中</span>
+                <span class="result-toolbar-hint" v-if="generationRunningCount">{{ generationRunningCount }} 张生成中</span>
+                <span class="result-toolbar-hint warn" v-if="generationFailedCount">{{ generationFailedCount }} 张生成失败</span>
+                <span class="result-toolbar-hint" v-if="savableCount">{{ savableCount }} 张可入库</span>
                 <div class="result-toolbar-actions">
                   <button class="ghost-btn" @click="handleSaveSelected"
                           :disabled="!selectedSavableCount"
-                          :title="selectedResultCount && !selectedSavableCount ? '所选素材存在中/高风险，请先修复并重新检测' : ''">
+                          :title="selectedResultCount && !selectedSavableCount ? '所选素材暂不符合入库条件' : ''">
                     确认入库<span v-if="selectedSavableCount"> ({{ selectedSavableCount }})</span>
                   </button>
                   <button class="ghost-btn" @click="handleDownloadSelected" :disabled="!selectedResultCount">下载</button>
@@ -1911,13 +1993,20 @@ div:hover > .group-actions {
                   <span style="font-size:14px;">当前语言筛选下暂无结果</span>
                   <button class="ghost-btn" style="margin-top:8px;" @click="resultLangFilter = 'ALL'">查看全部</button>
                 </div>
-                <div class="result-grid" v-else>
+                <div class="result-grid" v-else :class="{ 'has-selection': selectedResultCount > 0 }">
                   <div class="result-card" v-for="{ r, i } in filteredResultsWithIndex" :key="r.id || i"
-                       :class="{ selected: r.selected, 'is-menu-open': resultCardMenuId === (r.id || i) }"
-                       @click="openResultEditor(i)">
-                    <div class="result-card-img">
-                      <div class="result-card-select" @click.stop="toggleResultSelect(i)">
-                        <input type="checkbox" :checked="!!r.selected" @click.stop="toggleResultSelect(i)">
+                       :class="{ selected: r.selected }">
+                    <div class="result-card-img" @click="r.generationStatus === 'success' && openResultPreview(i)">
+                      <button type="button" class="result-card-select" v-if="r.generationStatus === 'success'"
+                              :class="{ 'is-checked': !!r.selected }"
+                              :title="r.selected ? '取消选择' : '选择结果'"
+                              @click.stop="toggleResultSelect(i)">
+                        <i v-if="r.selected" class="ph-bold ph-check"></i>
+                      </button>
+                      <div v-if="r.generationStatus !== 'success'" style="position:absolute;inset:0;z-index:6;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:rgba(8,8,14,.78);color:rgba(255,255,255,.82);font-size:13px;">
+                        <strong>{{ r.generationStatus === 'failed' ? '生成失败' : '生成中…' }}</strong>
+                        <span v-if="r.generationStatus === 'failed'" style="font-size:11px;color:var(--text-dim);">{{ r.generationError || '生成服务异常' }}</span>
+                        <button v-if="r.generationStatus === 'failed'" class="ghost-btn" @click.stop="retryGeneration(r)">重新生成</button>
                       </div>
                       <div class="gen-canvas-wrap" :style="{ width: '100%', height: '100%' }">
                         <div class="gen-canvas-bg" :style="getBgStyle(r.bgUrl, r.bgTransform)"></div>
@@ -1929,44 +2018,119 @@ div:hover > .group-actions {
                         </div>
                       </div>
                       <div class="card-hover-mask">
-                        <span class="edit-btn">编辑</span>
+                        <span class="edit-btn">预览</span>
                       </div>
                     </div>
-                    <button type="button" class="result-card-more" :class="{ 'is-open': resultCardMenuId === (r.id || i) }"
-                            title="详情" @click.stop="toggleResultCardMenu(r.id || i)">
-                      <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                        <circle cx="8" cy="8" r="6.25" stroke="currentColor" stroke-width="1.4"/>
-                        <path d="M8 7.2v4.1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                        <circle cx="8" cy="5.1" r="0.9" fill="currentColor"/>
-                      </svg>
-                    </button>
-                    <div class="result-card-menu" v-if="resultCardMenuId === (r.id || i)" @click.stop>
-                      <div class="result-card-menu-row"><span class="k">渠道</span><span class="v">{{ r.channel || '—' }}</span></div>
-                      <div class="result-card-menu-row"><span class="k">图需类型</span><span class="v">{{ r.type || '—' }}</span></div>
-                      <div class="result-card-menu-row"><span class="k">SKU</span><span class="v">{{ r.sku || '—' }}</span></div>
-                      <div class="result-card-menu-row"><span class="k">来源素材</span><span class="v">{{ r.sourceImageName || '—' }}</span></div>
-                      <div class="result-card-menu-row"><span class="k">模版</span><span class="v">{{ r.template || '—' }}</span></div>
-                      <div class="result-card-menu-row"><span class="k">尺寸</span><span class="v">{{ r.size || '—' }}</span></div>
-                      <div class="result-card-menu-row"><span class="k">语言</span><span class="v">{{ getResultLang(r) }}</span></div>
-                      <div class="result-card-menu-row"><span class="k">文件名</span><span class="v">{{ r.filename || '—' }}</span></div>
-                    </div>
-                    <div class="result-card-info">
-                      <div class="size-label">{{ r.filename }}</div>
+                    <div class="result-card-info" @click="r.generationStatus === 'success' && openResultPreview(i)">
+                      <span class="size-label" :title="r.filename">{{ r.filename }}</span>
                       <div class="lang-label">
                         <span class="result-lang-badge">{{ getResultLang(r) }}</span>
-                        {{ r.size }}
+                        <span>{{ r.size }}</span>
                       </div>
                     </div>
-                    <div class="result-card-status">
-                      <span class="badge" v-if="r.review"
-                            :class="auditBadgeClass(r.review.auditStatus)">{{ auditResultLabel(r.review.auditStatus) }}</span>
-                      <span class="badge badge-green" v-if="r.saved">已入库</span>
-                      <span class="badge badge-orange" v-if="r.edited && !r.saved">已编辑</span>
+                    <div class="result-card-status" @click="r.generationStatus === 'success' && openResultPreview(i)">
+                      <span v-if="r.generationStatus === 'failed'" class="card-status-text is-failed">生成失败</span>
+                      <span v-else-if="r.review && r.generationStatus === 'success'"
+                            class="card-status-text"
+                            :class="auditCardStatusClass(r.review.auditStatus)">
+                        {{ auditResultCardLabel(r.review.auditStatus) }}<template v-if="reviewRiskCount(r.review)"> · {{ reviewRiskCount(r.review) }}项</template>
+                      </span>
+                      <button v-if="r.review?.auditStatus === 'failed'" type="button" class="ghost-btn"
+                              style="padding:2px 8px;font-size:10px;min-width:auto;height:22px;"
+                              @click.stop="retryReview(r)">重新审核</button>
+                      <span v-if="r.saved" class="card-status-pill is-saved">已入库</span>
+                      <span v-if="r.edited && !r.saved" class="card-status-pill is-edited">已编辑</span>
                     </div>
                   </div>
                 </div>
               </div>
             </template>
+
+            <!-- 连续预览：交互与素材审核的素材视图保持一致 -->
+            <div class="result-preview-overlay" v-if="showResultPreview && previewResultItem" @click.self="closeResultPreview">
+              <div class="result-preview-header">
+                <div class="result-preview-title">
+                  <strong>{{ previewResultItem.filename }}</strong>
+                  <span>{{ previewPosition }} / {{ previewItems.length }} · {{ previewResultItem.size }} · {{ getResultLang(previewResultItem) }}</span>
+                </div>
+                <div class="result-preview-actions">
+                  <button class="ghost-btn" @click="showRiskMarkers = !showRiskMarkers" v-if="reviewRiskCount(previewResultItem.review)">
+                    {{ showRiskMarkers ? '隐藏标记' : '显示标记' }}
+                  </button>
+                  <button class="ghost-btn" @click="enterPreviewEdit" :disabled="previewResultItem.review?.auditStatus === 'reviewing'">编辑</button>
+                  <button class="ghost-btn" @click="downloadPreviewCurrent">下载</button>
+                  <button class="amber-btn" @click="savePreviewCurrent"
+                          :disabled="previewResultItem.saved || !isResultSavable(previewResultItem)">
+                    {{ previewResultItem.saved ? '已入库' : '确认入库' }}
+                  </button>
+                  <button class="result-preview-close" title="关闭" @click="closeResultPreview"><i class="ph ph-x"></i></button>
+                </div>
+              </div>
+              <div class="result-preview-body">
+                <div class="result-preview-stage">
+                  <button class="result-preview-nav prev" @click="previewPrev" title="上一张"><i class="ph ph-caret-left"></i></button>
+                  <div class="result-preview-canvas" :class="getAspectClass(previewResultItem.size)">
+                    <div class="gen-canvas-bg" :style="getBgStyle(previewResultItem.bgUrl, previewResultItem.bgTransform)"></div>
+                    <div class="gen-canvas-overlay" :style="getOverlayStyle(previewResultItem.overlayMask || defaultOverlayMask())"></div>
+                    <div class="result-preview-copy">
+                      <div class="brand">GOVEE</div>
+                      <div class="title">{{ getResultPreviewText(previewResultItem).title }}</div>
+                      <div class="subtitle">{{ getResultPreviewText(previewResultItem).subtitle }}</div>
+                    </div>
+                    <template v-if="showRiskMarkers && previewResultItem.review">
+                      <div v-for="(risk, ri) in effectiveReviewRisks(previewResultItem.review)" :key="risk.pointCode + ri"
+                           class="preview-risk-marker" :data-label="risk.pointCode" :style="getRiskMarkerStyle(risk, ri)"></div>
+                    </template>
+                  </div>
+                  <button class="result-preview-nav next" @click="previewNext" title="下一张"><i class="ph ph-caret-right"></i></button>
+                  <div class="result-preview-filmstrip">
+                    <div class="result-preview-thumb" v-for="({r, i}, pi) in previewItems" :key="r.id || i"
+                         :class="{ active: i === previewResultIndex }" @click="setPreviewIndex(i)">
+                      <div class="gen-canvas-wrap" style="width:100%;height:100%;">
+                        <div class="gen-canvas-bg" :style="getBgStyle(r.bgUrl, r.bgTransform)"></div>
+                        <div class="gen-canvas-overlay" :style="getOverlayStyle(r.overlayMask || defaultOverlayMask())"></div>
+                      </div>
+                      <span class="preview-thumb-state" :class="previewAuditStateClass(r.review)"></span>
+                    </div>
+                  </div>
+                </div>
+                <aside class="result-preview-panel">
+                  <div class="result-preview-panel-scroll">
+                    <section class="preview-section">
+                      <div class="preview-section-title">基础信息</div>
+                      <div class="preview-meta-grid">
+                        <span class="k">适用渠道</span><span class="v">{{ previewResultItem.channel || '—' }}</span>
+                        <span class="k">图需类型</span><span class="v">{{ previewResultItem.type || '—' }}</span>
+                        <span class="k">尺寸</span><span class="v">{{ previewResultItem.size || '—' }}</span>
+                        <span class="k">语言</span><span class="v">{{ getResultLang(previewResultItem) }}</span>
+                      </div>
+                    </section>
+                    <section class="preview-section">
+                      <div class="preview-section-title">审核结果</div>
+                      <div class="preview-audit-summary" :class="previewAuditStateClass(previewResultItem.review)">
+                        <strong>{{ auditResultCardLabel(previewResultItem.review?.auditStatus) }}</strong>
+                        <span>{{ previewResultItem.review?.primaryHit || '暂无审核结果' }}</span>
+                      </div>
+                      <button class="ghost-btn" style="width:100%;margin-bottom:10px;" v-if="previewResultItem.review?.auditStatus === 'failed'" @click="retryReview(previewResultItem)">
+                        重新审核
+                      </button>
+                      <div v-for="(risk, ri) in previewResultItem.review?.risks || []" :key="risk.pointCode + ri"
+                           class="preview-risk-card" :class="{ misjudged: risk.misjudged }">
+                        <div class="preview-risk-head">
+                          <strong>{{ risk.pointCode }}</strong>
+                          <span>{{ auditRiskLevelLabel(risk.level) }}</span>
+                          <span class="status" v-if="risk.misjudged">已反馈误判</span>
+                        </div>
+                        <div><span class="text-dim">审核点：</span>{{ risk.pointName }}</div>
+                        <div><span class="text-dim">发现问题：</span>{{ risk.problem }}</div>
+                        <div v-if="risk.misjudged && risk.misjudgmentReason"><span class="text-dim">误判说明：</span>{{ risk.misjudgmentReason }}</div>
+                        <button v-if="!risk.misjudged" class="preview-risk-action" @click="openMisjudgmentFeedback(risk)">反馈误判</button>
+                      </div>
+                    </section>
+                  </div>
+                </aside>
+              </div>
+            </div>
 
             <!-- Immersive canvas edit overlay · MasterGo-like -->
             <div class="canvas-edit-overlay" v-if="showEdit && detailResult" @click="showAssistMenu = false">
@@ -1990,50 +2154,24 @@ div:hover > .group-actions {
                         </label>
                       </div>
                     </div>
-                    <button type="button" class="canvas-close-btn" title="关闭" @click="cancelEdit" :disabled="isRerunningReview">
+                    <button type="button" class="canvas-close-btn" title="关闭" @click="requestCloseEditor" :disabled="isRerunningReview">
                       <i class="ph ph-x"></i>
                     </button>
                   </div>
                 </div>
 
-                <div class="canvas-editor-layout">
-                  <div class="canvas-layer-panel">
-                    <div class="layer-panel-head">图层</div>
-                    <div class="canvas-layer-list">
-                      <div class="layer-item" :class="{ active: editSelection === 'bg' }" @click="selectBg">
-                        <span class="layer-icon"><i class="ph ph-image"></i></span>
-                        <span class="layer-label">底图</span>
-                      </div>
-                      <div class="layer-item" :class="{ active: editSelection === 'overlay' }" @click="selectOverlay">
-                        <span class="layer-icon"><i class="ph ph-circle-half"></i></span>
-                        <span class="layer-label">渐变遮罩</span>
-                      </div>
-                      <div class="layer-item" v-for="(el, ei) in editElements" :key="ei"
-                           :class="{ active: editSelection === el.role }" @click="selectElement(ei)">
-                        <span class="layer-icon">
-                          <i :class="el.role === 'logo' ? 'ph ph-diamond' : 'ph ph-text-t'"></i>
-                        </span>
-                        <span class="layer-label">{{ getElementLabel(el) }}</span>
-                      </div>
-                    </div>
-                  </div>
-
+                <div class="canvas-editor-layout" :class="{ 'is-reviewing': isRerunningReview }">
                   <div class="canvas-editor-main">
                     <div class="design-canvas-viewport"
                          @mousemove="onCanvasDrag($event)"
                          @mouseup="onCanvasDrop()"
                          @mouseleave="onCanvasDrop()">
                       <div class="design-canvas"
-                           :class="{ 'is-overlay-selected': editSelection === 'overlay' }"
                            :style="{ width: canvasWidth + 'px', height: canvasHeight + 'px' }"
                            @mousedown.self="clearEditSelection">
                         <div class="gen-canvas-bg" :style="getBgStyle(detailResult.bgUrl, bgTransform)"
                              @mousedown.stop="selectBg"></div>
-                        <div class="canvas-overlay-layer"
-                             :class="{ 'is-disabled-hit': editSelection === 'bg' }"
-                             :style="getOverlayStyle(overlayMask)"
-                             @mousedown.stop="selectOverlay"
-                             @dblclick.stop="selectBg"></div>
+                        <div class="canvas-overlay-layer" :style="getOverlayStyle(overlayMask)" style="pointer-events:none;"></div>
                         <div v-if="showSafeArea" class="canvas-safe-area"></div>
                         <div v-if="showAlignGuides" class="canvas-align-guides">
                           <div class="guide-v"></div>
@@ -2074,7 +2212,7 @@ div:hover > .group-actions {
                           <span class="sec-title">
                             合规信息
                             <span class="sec-badge" v-if="detailResult.review" :style="{ color: auditStatusColor(detailResult.review.auditStatus) }">
-                              {{ isRerunningReview ? '检测中' : auditResultLabel(detailResult.review.auditStatus) }}
+                              {{ isRerunningReview ? '审核中' : auditResultLabel(detailResult.review.auditStatus) }}
                             </span>
                           </span>
                           <i class="ph" :class="complianceSectionOpen ? 'ph-caret-up' : 'ph-caret-down'"></i>
@@ -2082,17 +2220,22 @@ div:hover > .group-actions {
                         <div class="right-section-body" v-show="complianceSectionOpen && detailResult.review">
                           <div class="canvas-audit-banner" :class="isRerunningReview ? '' : detailResult.review.auditStatus">
                             <div class="audit-banner-title">
-                              {{ isRerunningReview ? '正在重新检测…' : auditResultLabel(detailResult.review.auditStatus) }}
+                              {{ isRerunningReview ? '正在审核最新版本…' : auditResultLabel(detailResult.review.auditStatus) }}
                             </div>
                             <div class="audit-banner-hint" v-if="!isRerunningReview">
                               {{ detailResult.review.primaryHit || '未发现需要优先处理的问题' }}
                             </div>
                           </div>
-                          <div v-if="!hasReviewRisks(detailResult.review)" class="audit-pass-empty">
+                          <div v-if="detailResult.review.auditStatus === 'pass'" class="audit-pass-empty">
                             <span class="audit-pass-icon">✓</span>
                             未发现明显风险
                           </div>
-                          <template v-else>
+                          <div v-else-if="detailResult.review.auditStatus === 'reviewing'" class="audit-pass-empty">正在审核当前版本…</div>
+                          <div v-else-if="detailResult.review.auditStatus === 'failed'" class="audit-pass-empty" style="display:block;">
+                            <div style="margin-bottom:10px;">审核服务异常，暂未获得审核结果。</div>
+                            <button class="ghost-btn" @click="rerunReviewManual">重新审核</button>
+                          </div>
+                          <template v-else-if="hasReviewRisks(detailResult.review)">
                             <div style="font-size:11px;color:var(--text-dim);margin:0 0 8px;line-height:1.5;">
                               风险命中：
                               <span v-if="detailResult.review.highCount > 0" style="color:var(--red);">高风险{{ detailResult.review.highCount }}个</span>
@@ -2119,12 +2262,12 @@ div:hover > .group-actions {
 
                       <div class="right-section">
                         <div class="right-section-static">
-                          <span class="sec-title">图层编辑</span>
+                          <span class="sec-title">元素属性</span>
                           <span class="sec-sub">{{ editSelection ? editSelectionLabel : '未选中' }}</span>
                         </div>
                         <div class="right-section-body">
                           <div class="inspector-empty-hint" v-if="!editSelection">
-                            在左侧选择图层，或点击画布上的文字、Logo、遮罩进行编辑。
+                            点击画布上的底图、文字或 Logo 进行调整。
                           </div>
 
                           <template v-else-if="editSelection === 'bg'">
@@ -2137,59 +2280,6 @@ div:hover > .group-actions {
                               </div>
                             </div>
                             <button class="ghost-btn" style="width:100%;font-size:12px;margin-top:8px;" @click="resetBgTransform">重置底图</button>
-                          </template>
-
-                          <template v-else-if="editSelection === 'overlay'">
-                            <div class="inspector-hint">形状与方向跟随模版，可调整位置、强度、缩放与颜色。</div>
-                            <div class="edit-field">
-                              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
-                                <input type="checkbox" v-model="overlayMask.enabled"> 启用渐变遮罩
-                              </label>
-                            </div>
-                            <template v-if="overlayMask.enabled">
-                              <div class="prop-row">
-                                <label>位置 X</label>
-                                <div class="prop-input-row" style="flex:1;">
-                                  <input type="range" min="-40" max="40" v-model.number="overlayMask.offsetX">
-                                  <span class="prop-value">{{ overlayMask.offsetX }}%</span>
-                                </div>
-                              </div>
-                              <div class="prop-row">
-                                <label>位置 Y</label>
-                                <div class="prop-input-row" style="flex:1;">
-                                  <input type="range" min="-40" max="40" v-model.number="overlayMask.offsetY">
-                                  <span class="prop-value">{{ overlayMask.offsetY }}%</span>
-                                </div>
-                              </div>
-                              <div class="prop-row">
-                                <label>强度</label>
-                                <div class="prop-input-row" style="flex:1;">
-                                  <input type="range" min="0" max="100" v-model.number="overlayMask.opacityPercent">
-                                  <span class="prop-value">{{ overlayMask.opacityPercent }}%</span>
-                                </div>
-                              </div>
-                              <div class="prop-row">
-                                <label>缩放</label>
-                                <div class="prop-input-row" style="flex:1;">
-                                  <input type="range" min="50" max="200" v-model.number="overlayMask.scalePercent">
-                                  <span class="prop-value">{{ overlayMask.scalePercent }}%</span>
-                                </div>
-                              </div>
-                              <div class="edit-field">
-                                <label>颜色</label>
-                                <div class="color-picker-row">
-                                  <input type="color" :value="overlayColorHex" @input="setOverlayColor($event.target.value)">
-                                  <input class="text-input color-hex" :value="overlayColorHex"
-                                         @change="setOverlayColor($event.target.value)" placeholder="#000000">
-                                </div>
-                                <div class="color-preset-grid" style="margin-top:10px;">
-                                  <div class="color-preset" v-for="c in overlayColors" :key="c"
-                                       :class="{ active: overlayColorHex.toLowerCase() === c.toLowerCase() }"
-                                       :style="{ background: c }"
-                                       @click="setOverlayColor(c)"></div>
-                                </div>
-                              </div>
-                            </template>
                           </template>
 
                           <template v-else-if="selectedElementIndex >= 0 && editElements[selectedElementIndex] && editElements[selectedElementIndex].role === 'logo'">
@@ -2218,24 +2308,17 @@ div:hover > .group-actions {
                                 <span class="prop-value">{{ editElements[selectedElementIndex].size }}px</span>
                               </div>
                             </div>
-                            <div class="prop-row">
-                              <label>行距</label>
-                              <div class="prop-input-row" style="flex:1;">
-                                <input type="range" min="100" max="200" step="5"
-                                       :value="Math.round((editElements[selectedElementIndex].lineHeight || 1.2) * 100)"
-                                       @input="editElements[selectedElementIndex].lineHeight = $event.target.value / 100">
-                                <span class="prop-value">{{ Math.round((editElements[selectedElementIndex].lineHeight || 1.2) * 100) }}%</span>
-                              </div>
-                            </div>
+                            <div class="edit-field"><label>颜色</label><input type="color" :value="normalizeHexColor(editElements[selectedElementIndex].color)" @input="editElements[selectedElementIndex].color=$event.target.value"></div>
+                            <div class="prop-row"><label>对齐</label><div style="display:flex;gap:6px;"><button class="ghost-btn" v-for="a in ['left','center','right']" :key="a" @click="editElements[selectedElementIndex].align=a">{{ a === 'left' ? '左' : a === 'center' ? '中' : '右' }}</button></div></div>
                           </template>
                         </div>
                       </div>
                     </div>
 
                     <div class="inspector-footer">
-                      <button class="ghost-btn" @click="cancelEdit" :disabled="isRerunningReview">取消</button>
-                      <button class="amber-btn" @click="saveEdit" :disabled="isRerunningReview">
-                        {{ isRerunningReview ? '检测中…' : '保存并复检' }}
+                      <button class="ghost-btn" @click="requestCloseEditor" :disabled="isRerunningReview">取消</button>
+                      <button class="amber-btn" @click="saveEdit" :disabled="isRerunningReview || !hasEditChanges">
+                        {{ isRerunningReview ? '审核中…' : '保存并审核' }}
                       </button>
                     </div>
                   </div>
@@ -2251,6 +2334,30 @@ div:hover > .group-actions {
   </div>
   </div><!-- /.app-glass -->
   </div><!-- /.app-chrome -->
+
+  <!-- 反馈误判 -->
+  <div class="dialog-overlay" v-if="showMisjudgmentModal" @click.self="closeMisjudgmentFeedback">
+    <div class="dialog" style="max-width:620px;width:92%;">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:18px;">
+        <div class="dialog-title" style="margin:0;">反馈误判</div>
+        <button type="button" @click="closeMisjudgmentFeedback" style="background:transparent;border:none;color:var(--text-dim);font-size:24px;cursor:pointer;">×</button>
+      </div>
+      <div v-if="feedbackRisk" style="padding:14px;border-radius:10px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.2);margin-bottom:16px;font-size:12px;line-height:1.65;">
+        <div style="display:flex;gap:10px;align-items:center;margin-bottom:8px;"><strong style="color:var(--amber);">{{ feedbackRisk.pointCode }}</strong><span class="badge badge-red">{{ auditRiskLevelLabel(feedbackRisk.level) }}</span></div>
+        <div><span class="text-dim">审核点：</span>{{ feedbackRisk.pointName }}</div>
+        <div><span class="text-dim">发现问题：</span>{{ feedbackRisk.problem }}</div>
+      </div>
+      <div class="config-group">
+        <div class="section-label">误判说明 <span style="color:var(--red)">*</span></div>
+        <textarea class="text-input" rows="5" v-model="misjudgmentReason" placeholder="请填写误判说明"></textarea>
+        <div style="font-size:11px;color:var(--text-dim);margin-top:7px;line-height:1.5;">提交后将从当前有效风险中移除该项，并自动更新审核结果。</div>
+      </div>
+      <div class="dialog-actions">
+        <button class="ghost-btn" @click="closeMisjudgmentFeedback">取消</button>
+        <button class="amber-btn" :disabled="!misjudgmentReason.trim()" @click="submitMisjudgmentFeedback">提交反馈</button>
+      </div>
+    </div>
+  </div>
 
   <!-- 侧栏三点菜单（Teleport 到 body，避免被玻璃层影响定位） -->
   <teleport to="body">
@@ -2306,7 +2413,7 @@ div:hover > .group-actions {
     <div class="dialog bg-picker-dialog" @click.stop>
       <div class="bg-picker-header">
         <div>
-          <div class="dialog-title" style="margin:0;">选择底图</div>
+          <div class="dialog-title" style="margin:0;">选择源素材</div>
           <div class="dialog-sub">仅可选可用素材库中的图片</div>
         </div>
         <button @click="closeBgPicker" style="background:none;border:none;color:var(--text-dim);font-size:18px;cursor:pointer;line-height:1;"><i class="ph ph-x"></i></button>
@@ -2315,23 +2422,9 @@ div:hover > .group-actions {
         <div class="lib-filter-bar">
           <div class="lib-search">
             <i class="ph ph-magnifying-glass"></i>
-            <input type="text" v-model="librarySearch" placeholder="搜索文件名">
+            <input type="text" v-model="librarySearch" placeholder="搜索文件名、SKU 或商品名称">
           </div>
-          <select class="lib-filter-select" v-model="libraryChannelFilter">
-            <option value="all" hidden>适用渠道</option>
-            <option value="通用">通用</option>
-            <option value="Amazon">Amazon</option>
-            <option value="TikTok Shop">TikTok Shop</option>
-            <option value="独立站">独立站</option>
-          </select>
-          <select class="lib-filter-select" v-model="libraryTimeFilter" @change="onLibraryTimeChange">
-            <option value="all" hidden>创建时间</option>
-            <option value="today">今天</option>
-            <option value="7">近 7 天</option>
-            <option value="30">近 30 天</option>
-            <option value="custom">自定义</option>
-          </select>
-          <button v-if="hasLibraryFilters" class="ghost-btn" style="height:32px;padding:0 10px;font-size:12px;" @click="resetLibraryFilters">清空筛选</button>
+          <span style="font-size:12px;color:var(--text-dim);margin-left:auto;">单选</span>
         </div>
         <div class="lib-grid-wrap">
           <div v-if="!filteredLibraryAssets.length" style="padding:48px 0;text-align:center;color:var(--text-tertiary);font-size:13px;">无匹配可用图片</div>
@@ -2343,27 +2436,31 @@ div:hover > .group-actions {
                 <div class="check" v-if="isPickerDraftSelected(asset.id)"><i class="ph-bold ph-check"></i></div>
               </div>
               <div class="name">{{ asset.name }}</div>
-              <div class="meta">{{ (asset.channels || []).join(' · ') || '—' }}</div>
+              <div class="meta" v-if="asset.sku || asset.productName">{{ [asset.sku, asset.productName].filter(Boolean).join(' · ') }}</div>
             </div>
           </div>
         </div>
       </div>
       <div class="bg-picker-footer">
-        <span style="font-size:13px;color:var(--text-dim);">已选 {{ pickerDrafts.length }} 张底图</span>
+        <span style="font-size:13px;color:var(--text-dim);">{{ pickerDrafts.length ? '已选择 1 张源素材' : '请选择 1 张源素材' }}</span>
         <div style="display:flex;gap:8px;">
           <button class="ghost-btn" @click="closeBgPicker">取消</button>
-          <button class="amber-btn" :disabled="!pickerDrafts.length" @click="confirmBgPicker">确认添加</button>
+          <button class="amber-btn" :disabled="!pickerDrafts.length" @click="confirmBgPicker">确认选择</button>
         </div>
       </div>
     </div>
   </div>
 
   <!-- New Project (Task) Dialog -->
-  <div class="dialog-overlay" v-if="showNewProject" @click.self="showNewProject=false">
+  <div class="dialog-overlay" v-if="showNewProject" @click.self="cancelNewProject">
     <div class="dialog">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:16px;">
         <div class="dialog-title" style="margin-bottom:0;">新建任务</div>
-        <button type="button" @click="showNewProject=false" style="background:transparent;border:none;color:rgba(255,255,255,0.45);font-size:26px;line-height:1;cursor:pointer;padding:0;">×</button>
+        <button type="button" @click="cancelNewProject" style="background:transparent;border:none;color:rgba(255,255,255,0.45);font-size:26px;line-height:1;cursor:pointer;padding:0;">×</button>
+      </div>
+      <div class="handoff-asset-card" v-if="handoffAsset">
+        <img :src="handoffAsset.url" :alt="handoffAsset.name">
+        <div style="min-width:0;"><strong>{{ handoffAsset.name }}</strong><span>已从可用素材库带入</span></div>
       </div>
       <div class="config-group">
         <div class="section-label">SKU <span style="color:var(--red)">*</span></div>
@@ -2375,10 +2472,10 @@ div:hover > .group-actions {
       </div>
       <div class="config-group">
         <div class="section-label">任务名称（选填）</div>
-        <input class="text-input" v-model="newProjectName" placeholder="例如：主图适配">
+        <input class="text-input" v-model="newProjectName" @input="markProjectNameTouched" placeholder="例如：主图适配">
       </div>
       <div class="dialog-actions">
-        <button class="ghost-btn" @click="showNewProject=false">取消</button>
+        <button class="ghost-btn" @click="cancelNewProject">取消</button>
         <button class="amber-btn" @click="createProject">创建任务</button>
       </div>
     </div>
@@ -2446,7 +2543,7 @@ div:hover > .group-actions {
           <div style="min-width: 0;">
             <div style="font-size: 20px; font-weight: 700; color: rgba(255,255,255,0.95); line-height: 28px; margin-bottom: 18px;">{{ deleteType === 'group' ? '确认解散分组' : '确认删除' }}</div>
             <div style="font-size: 16px; line-height: 24px; color: rgba(255,255,255,0.58); white-space: nowrap;">
-              {{ deleteType === 'group' ? '解散后分组将无法恢复，组内任务将变为未分组。' : '删除后任务内容将无法恢复，确定要删除吗？' }}
+              {{ deleteType === 'group' ? '解散后分组将无法恢复，组内任务将变为未分组。' : '删除后任务与未入库结果将无法恢复。已入库素材不会被删除，确定要删除吗？' }}
             </div>
           </div>
         </div>
@@ -2468,7 +2565,8 @@ div:hover > .group-actions {
           <div style="min-width: 0;">
             <div style="font-size: 20px; font-weight: 700; color: rgba(255,255,255,0.95); line-height: 28px; margin-bottom: 18px;">确认删除</div>
             <div style="font-size: 16px; line-height: 24px; color: rgba(255,255,255,0.58);">
-              确定删除已选的 {{ selectedResultCount }} 张生成结果吗？删除后无法恢复。
+              <template v-if="selectedContainsSaved">该结果已入可用素材库。删除后仅从当前任务中移除，不影响已入库素材。</template>
+              <template v-else>确定删除已选的 {{ selectedResultCount }} 张生成结果吗？</template>
             </div>
           </div>
         </div>
@@ -2481,15 +2579,24 @@ div:hover > .group-actions {
     </div>
   </div>
 
+  <!-- 未保存修改确认 -->
+  <div class="dialog-overlay" v-if="showUnsavedEditModal" @click.self="showUnsavedEditModal=false">
+    <div class="dialog" style="max-width:480px;width:92%;">
+      <div class="dialog-title">放弃未保存修改？</div>
+      <div style="color:var(--text-dim);font-size:13px;line-height:1.7;">当前结果已发生修改，退出后未保存内容将丢失。</div>
+      <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:24px;">
+        <button class="ghost-btn" @click="showUnsavedEditModal=false">继续编辑</button>
+        <button class="amber-btn" @click="discardEditChanges">放弃修改</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 生成多语言版本 -->
   <div class="dialog-overlay" v-if="showLocaleModal" @click.self="closeLocaleModal">
     <div class="dialog" style="max-width: 520px; width: 92%;">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:16px;">
         <div class="dialog-title" style="margin-bottom:0;">生成多语言版本</div>
         <button type="button" @click="closeLocaleModal" style="background:transparent;border:none;color:rgba(255,255,255,0.45);font-size:26px;line-height:1;cursor:pointer;padding:0;">×</button>
-      </div>
-      <div style="font-size: 12px; color: var(--text-dim); line-height: 1.6; margin-bottom: 16px;">
-        基于已选的 <strong style="color:var(--amber);">{{ localeSourceCount }}</strong> 张素材，复用当前布局批量生成其他语言版本，结果将追加到本任务。
       </div>
 
       <div class="config-group">
@@ -2523,8 +2630,15 @@ div:hover > .group-actions {
 </div>
 
 <script>
-console.log('Vue version:', Vue.version);
+if (typeof Vue === 'undefined') {
+  const app = document.getElementById('app');
+  if (app) {
+    app.removeAttribute('v-cloak');
+    app.innerHTML = '<div style="padding:24px;color:rgba(255,255,255,.9);font-family:sans-serif;line-height:1.6">页面脚本未能加载。请确认与本 HTML 同目录下的 <code style="color:#fbbf24">assets/vendor/vue.global.prod.js</code> 存在；或检查网络能否访问 CDN。请用 Chrome / Edge 直接打开本文件，并保持 <code style="color:#fbbf24">03-原型设计</code> 目录结构完整。</div>';
+  }
+} else {
 try {
+console.log('Vue version:', Vue.version);
 const { createApp, ref, computed, reactive, onMounted, onBeforeUnmount } = Vue;
 
 createApp({
@@ -2534,14 +2648,45 @@ createApp({
     const newProjectSku = ref('');
     const newProjectProductName = ref('');
     const newProjectName = ref('');
+    const newProjectNameTouched = ref(false);
+    const handoffAsset = ref(null);
+    const handoffFromAssetManagement = ref(false);
     const projectSearch = ref('');
 
     function updateNewProjectName() {
+      if (newProjectNameTouched.value) return;
       const sku = newProjectSku.value.trim();
       const productName = newProjectProductName.value.trim();
       if (sku || productName) {
         newProjectName.value = `${sku} ${productName}`.trim();
       }
+    }
+
+    function markProjectNameTouched() {
+      newProjectNameTouched.value = true;
+    }
+
+    function resetNewProjectForm() {
+      newProjectSku.value = '';
+      newProjectProductName.value = '';
+      newProjectName.value = '';
+      newProjectNameTouched.value = false;
+    }
+
+    function openNewProject() {
+      handoffAsset.value = null;
+      handoffFromAssetManagement.value = false;
+      resetNewProjectForm();
+      showNewProject.value = true;
+    }
+
+    function cancelNewProject() {
+      showNewProject.value = false;
+      const shouldReturn = handoffFromAssetManagement.value;
+      handoffAsset.value = null;
+      handoffFromAssetManagement.value = false;
+      resetNewProjectForm();
+      if (shouldReturn && window.history.length > 1) window.history.back();
     }
 
     const showNewGroupModal = ref(false);
@@ -2577,64 +2722,56 @@ createApp({
         name: 'FL-A30-BK 落地灯 A30 主图',
         sku: 'FL-A30-BK',
         productName: '落地灯 A30',
-        groupId: 'g1',
-        status: 'red'
+        groupId: 'g1'
       },
       {
         id: 't2',
         name: 'FL-A30-BK 落地灯 A30 场景图',
         sku: 'FL-A30-BK',
         productName: '落地灯 A30',
-        groupId: 'g1',
-        status: 'green'
+        groupId: 'g1'
       },
       {
         id: 't3',
         name: 'H8131 星空灯 H8131 主图',
         sku: 'H8131',
         productName: '星空灯 H8131',
-        groupId: 'g2',
-        status: 'orange'
+        groupId: 'g2'
       },
       {
         id: 't4',
         name: 'H8131 星空灯 H8131 详情页',
         sku: 'H8131',
         productName: '星空灯 H8131',
-        groupId: 'g2',
-        status: 'red'
+        groupId: 'g2'
       },
       {
         id: 't5',
         name: 'TL-B12 台灯 B12 场景图',
         sku: 'TL-B12',
         productName: '台灯 B12',
-        groupId: 'g3',
-        status: 'green'
+        groupId: 'g3'
       },
       {
         id: 't6',
         name: 'TL-B12 台灯 B12 主图',
         sku: 'TL-B12',
         productName: '台灯 B12',
-        groupId: 'g3',
-        status: 'orange'
+        groupId: 'g3'
       },
       {
         id: 't7',
         name: 'FL-A30-BK 落地灯 A30 广告图',
         sku: 'FL-A30-BK',
         productName: '落地灯 A30',
-        groupId: null,
-        status: 'red'
+        groupId: null
       },
       {
         id: 't8',
         name: 'H8131 星空灯 H8131 高清放大',
         sku: 'H8131',
         productName: '星空灯 H8131',
-        groupId: null,
-        status: 'green'
+        groupId: null
       }
     ]);
     const currentProject = ref(0);
@@ -2732,12 +2869,6 @@ createApp({
       },
       'YouTube': {
         types: { '主页背景': ['2560×1140'] }
-      },
-      '跨平台': {
-        types: {
-          '视频广告': ['1080×1920', '1920×1080', '1080×1080', '1464×600'],
-          '品牌Paid图': ['1080×1080', '1080×1920', '1200×628', '1200×1200', '960×1200', '1920×720']
-        }
       },
       '旗舰店': {
         types: {
@@ -2882,30 +3013,19 @@ createApp({
     }
 
     function addProductImages(items) {
-      const existingUrls = new Set(productImages.value.map(img => img.url));
-      const existingIds = new Set(productImages.value.map(img => img.assetId).filter(Boolean));
-      const added = [];
-      items.forEach(item => {
-        if (!item?.url) return;
-        if (item.assetId && existingIds.has(item.assetId)) return;
-        if (existingUrls.has(item.url)) return;
-        existingUrls.add(item.url);
-        if (item.assetId) existingIds.add(item.assetId);
-        added.push({
-          id: nextProductImageId(),
-          url: item.url,
-          name: item.name || '商品图',
-          assetId: item.assetId || '',
-          sku: '',
-          productName: '',
-          visibility: item.visibility || 'team',
-          channels: item.channels ? [...item.channels] : []
-        });
-      });
-      if (!added.length) return 0;
-      productImages.value = [...productImages.value, ...added];
-      if (!previewImageId.value) previewImageId.value = productImages.value[0].id;
-      return added.length;
+      const item = (items || []).find(candidate => candidate?.url);
+      if (!item) return 0;
+      productImages.value = [{
+        id: nextProductImageId(),
+        url: item.url,
+        name: item.name || '源素材',
+        assetId: item.assetId || '',
+        sku: item.sku || '',
+        productName: item.productName || '',
+        channels: item.channels ? [...item.channels] : []
+      }];
+      previewImageId.value = productImages.value[0].id;
+      return 1;
     }
 
     function removeProductImage(id) {
@@ -2932,54 +3052,29 @@ createApp({
     const defaultTemplateSceneBg = demoSceneImages.bedroom;
 
     const materialLibrary = ref([
-      { id: 'A001', name: 'H7131_主图参考.jpg', url: demoSceneImages.product, mediaType: 'image', channels: ['通用'], visibility: 'team', createdAt: '2026-07-23 14:26' },
-      { id: 'A003', name: '夏日场景_生成01.png', url: demoSceneImages.livingRoom, mediaType: 'image', channels: ['Amazon', '独立站'], visibility: 'team', createdAt: '2026-07-23 11:45' },
-      { id: 'A011', name: '卧室暖光参考.jpg', url: demoSceneImages.bedroom, mediaType: 'image', channels: ['通用'], visibility: 'private', createdAt: '2026-07-22 09:18' },
-      { id: 'A006', name: 'A+_生活方式模块_1500.jpg', url: demoSceneImages.holiday, mediaType: 'image', channels: ['Amazon'], visibility: 'team', createdAt: '2026-07-19 13:12' },
-      { id: 'A007', name: '商城横幅_适配.png', url: demoSceneImages.outdoor, mediaType: 'image', channels: ['Amazon'], visibility: 'team', createdAt: '2026-07-18 17:06' },
-      { id: 'A012', name: '风扇主图参考.jpg', url: demoSceneImages.product, mediaType: 'image', channels: ['通用'], visibility: 'team', createdAt: '2026-07-17 10:40' },
-      { id: 'A013', name: 'Gaming_Desk_Scene.jpg', url: demoSceneImages.gaming, mediaType: 'image', channels: ['TikTok Shop'], visibility: 'team', createdAt: '2026-07-16 08:55' },
-      { id: 'A010', name: '审核直接入库_白底图.jpg', url: demoSceneImages.product, mediaType: 'image', channels: ['通用'], visibility: 'team', createdAt: '2026-07-15 12:28' }
+      { id: 'A001', name: 'H7131_主图参考.jpg', url: demoSceneImages.product, mediaType: 'image', channels: ['通用'], sku: 'H7131', productName: '星空灯 H7131', width: 2000, height: 2000, createdAt: '2026-07-23 14:26' },
+      { id: 'A003', name: '夏日场景_生成01.png', url: demoSceneImages.livingRoom, mediaType: 'image', channels: ['Amazon'], sku: 'FL-A30-BK', productName: '落地灯 A30', width: 2048, height: 2048, createdAt: '2026-07-23 11:45' },
+      { id: 'A006', name: 'A+_生活方式模块_1500.jpg', url: demoSceneImages.holiday, mediaType: 'image', channels: ['Amazon'], sku: 'FL-A30-BK', productName: '落地灯 A30', width: 1500, height: 1500, createdAt: '2026-07-19 13:12' },
+      { id: 'A007', name: '商城横幅_适配.png', url: demoSceneImages.outdoor, mediaType: 'image', channels: ['Amazon'], width: 2560, height: 1080, createdAt: '2026-07-18 17:06' },
+      { id: 'A014', name: '风扇主图参考.jpg', url: demoSceneImages.product, mediaType: 'image', channels: ['通用'], width: 2000, height: 2000, createdAt: '2026-07-17 10:40' },
+      { id: 'A016', name: 'Gaming_Desk_Scene.jpg', url: demoSceneImages.gaming, mediaType: 'image', channels: ['TikTok Shop'], width: 1080, height: 1920, createdAt: '2026-07-16 08:55' },
+      { id: 'A010', name: '审核模块直接入库_白底图.jpg', url: demoSceneImages.product, mediaType: 'image', channels: ['通用'], width: 2000, height: 2000, createdAt: '2026-07-15 12:28' },
+      { id: 'A012', name: '独立站主图_场景.jpg', url: demoSceneImages.livingRoom, mediaType: 'image', channels: ['独立站'], width: 2000, height: 2000, createdAt: '2026-07-14 11:00' },
+      { id: 'A013', name: '通用场景参考.jpg', url: demoSceneImages.bedroom, mediaType: 'image', channels: ['通用'], width: 1800, height: 1200, createdAt: '2026-07-13 15:22' }
     ]);
 
     const librarySearch = ref('');
-    const libraryChannelFilter = ref('all');
-    const libraryTimeFilter = ref('all');
-    const hasLibraryFilters = computed(() => !!(librarySearch.value || libraryChannelFilter.value !== 'all' || libraryTimeFilter.value !== 'all'));
-
     const filteredLibraryAssets = computed(() => {
       let list = materialLibrary.value.filter(a => a.mediaType === 'image');
-      if (libraryChannelFilter.value !== 'all') {
-        list = list.filter(a => a.channels?.includes(libraryChannelFilter.value) || (libraryChannelFilter.value !== '通用' && a.channels?.includes('通用')));
-      }
-      if (libraryTimeFilter.value !== 'all') {
-        const now = new Date('2026-07-24T09:45:00');
-        list = list.filter(a => {
-          const d = new Date((a.createdAt || '').replace(' ', 'T'));
-          if (Number.isNaN(d.getTime())) return true;
-          if (libraryTimeFilter.value === 'today') return d.toDateString() === now.toDateString();
-          if (libraryTimeFilter.value === '7') return (now - d) / 86400000 <= 7;
-          if (libraryTimeFilter.value === '30') return (now - d) / 86400000 <= 30;
-          return true;
-        });
-      }
       if (librarySearch.value.trim()) {
         const q = librarySearch.value.trim().toLowerCase();
-        list = list.filter(a => (a.name || '').toLowerCase().includes(q));
+        list = list.filter(a => [a.name, a.sku, a.productName].some(v => (v || '').toLowerCase().includes(q)));
       }
       return list;
     });
 
     function resetLibraryFilters() {
       librarySearch.value = '';
-      libraryChannelFilter.value = 'all';
-      libraryTimeFilter.value = 'all';
-    }
-    function onLibraryTimeChange() {
-      if (libraryTimeFilter.value === 'custom') {
-        libraryTimeFilter.value = 'all';
-        showToast('自定义时间范围将在正式版支持');
-      }
     }
 
     const availableTypes = computed(() => {
@@ -3003,13 +3098,13 @@ createApp({
     }
 
     function toggleSelect(id) {
-      if (id === 'channel' && isConfigReadonly.value) return;
+      if (id === 'channel' && isChannelReadonly.value) return;
       if (id === 'type' && (!selectedChannel.value || isConfigReadonly.value)) return;
       openSelectId.value = openSelectId.value === id ? null : id;
     }
 
     function pickChannel(ch) {
-      if (isConfigReadonly.value) return;
+      if (isChannelReadonly.value) return;
       selectedChannel.value = ch;
       onChannelChange();
       closeSelect();
@@ -3096,23 +3191,23 @@ createApp({
             url: asset.url,
             name: asset.name,
             assetId: asset.id,
-            visibility: asset.visibility || 'team',
+            sku: asset.sku || '',
+            productName: asset.productName || '',
             channels: asset.channels ? [...asset.channels] : []
           });
         }
       });
-      // 已选底图预填草稿便于继续加选
+      // 当前源素材预填，用户可在首次成功生成前替换
       if (!pickerDrafts.value.length && productImages.value.length) {
-        productImages.value.forEach(img => {
-          if (!img.assetId) return;
-          pickerDrafts.value.push({
-            url: img.url,
-            name: img.name,
-            assetId: img.assetId,
-            visibility: img.visibility || 'team',
-            channels: img.channels ? [...img.channels] : []
-          });
-        });
+        const img = productImages.value[0];
+        if (img.assetId) pickerDrafts.value = [{
+          url: img.url,
+          name: img.name,
+          assetId: img.assetId,
+          sku: img.sku || '',
+          productName: img.productName || '',
+          channels: img.channels ? [...img.channels] : []
+        }];
       }
       showBgPicker.value = true;
     }
@@ -3133,13 +3228,14 @@ createApp({
         pickerDrafts.value.splice(idx, 1);
         return;
       }
-      pickerDrafts.value.push({
+      pickerDrafts.value = [{
         url: asset.url,
         name: asset.name,
         assetId: asset.id,
-        visibility: asset.visibility || 'team',
+        sku: asset.sku || '',
+        productName: asset.productName || '',
         channels: asset.channels ? [...asset.channels] : []
-      });
+      }];
     }
     function confirmBgPicker() {
       if (!pickerDrafts.value.length) return;
@@ -3150,7 +3246,7 @@ createApp({
       const count = addProductImages(drafts);
       showBgPicker.value = false;
       pickerDrafts.value = [];
-      showToast(count > 1 ? `已选择 ${count} 张底图` : '已选择底图');
+      showToast(count ? '已选择源素材' : '请选择源素材');
     }
 
     function buildElementsFromTemplate(tmpl, title, subtitle, cw, ch, origW, origH) {
@@ -3158,11 +3254,13 @@ createApp({
       const layout = tmpl.layout;
       const els = [];
       const logoCfg = layout.logo;
-      els.push({
-        text: 'GOVEE', x: logoCfg.nx * cw, y: logoCfg.ny * ch,
-        size: Math.round(20 * scale), color: '#f59e0b', align: logoCfg.align || 'left',
-        bold: true, z: 3, role: 'logo', scale: 1, lineHeight: 1.2
-      });
+      if (logoCfg) {
+        els.push({
+          text: 'GOVEE', x: logoCfg.nx * cw, y: logoCfg.ny * ch,
+          size: Math.round(20 * scale), color: '#f59e0b', align: logoCfg.align || 'left',
+          bold: true, z: 3, role: 'logo', scale: 1, lineHeight: 1.2
+        });
+      }
       const titleCfg = layout.title;
       els.push({
         text: title, x: titleCfg.nx * cw, y: titleCfg.ny * ch,
@@ -3246,10 +3344,19 @@ createApp({
 
     // Results
     const results = ref([]);
+    const hasEverGenerated = ref(false); // 任一尺寸曾生成成功 → 配置永久锁定（删结果也不解锁）
     const showDetail = ref(false);
     const showEdit = ref(false);
+    const showUnsavedEditModal = ref(false);
+    const showResultPreview = ref(false);
+    const previewResultIndex = ref(-1);
+    const showRiskMarkers = ref(true);
     const detailResult = ref(null);
     const detailIndex = ref(-1);
+    const showMisjudgmentModal = ref(false);
+    const feedbackRisk = ref(null);
+    const misjudgmentReason = ref('');
+    const editOriginalSnapshot = ref('');
 
     // Edit canvas drag state
     const editElements = ref([]);
@@ -3462,25 +3569,36 @@ createApp({
       };
     }
 
+    function buildReviewingReview(mode = 'full') {
+      return { auditStatus: 'reviewing', auditMode: mode, primaryHit: '正在审核当前结果…', risks: [], highCount: 0, mediumCount: 0, lowCount: 0 };
+    }
+
+    function buildFailedReview(mode = 'full') {
+      return { auditStatus: 'failed', auditMode: mode, primaryHit: '审核服务异常，暂未获得审核结果。', risks: [], highCount: 0, mediumCount: 0, lowCount: 0 };
+    }
+
     function buildReviewFromRisks(risks) {
-      const highCount = risks.filter(r => r.level === 'high').length;
-      const mediumCount = risks.filter(r => r.level === 'medium').length;
-      const lowCount = risks.filter(r => r.level === 'low').length;
+      const allRisks = Array.isArray(risks) ? risks : [];
+      const effective = allRisks.filter(r => !r.misjudged);
+      const highCount = effective.filter(r => r.level === 'high').length;
+      const mediumCount = effective.filter(r => r.level === 'medium').length;
+      const lowCount = effective.filter(r => r.level === 'low').length;
       let auditStatus = 'pass';
       if (highCount > 0) auditStatus = 'high';
       else if (mediumCount > 0) auditStatus = 'medium';
       else if (lowCount > 0) auditStatus = 'low';
-      const top = risks[0];
+      const top = effective[0];
       const levelPrefix = { high: '高风险', medium: '中风险', low: '低风险' }[auditStatus] || '';
       const primaryHit = auditStatus === 'pass'
         ? '未命中当前规则范围内的高、中、低风险项。'
         : `${levelPrefix} · ${top.pointName} · ${top.problem}`;
-      return { auditStatus, primaryHit, risks, highCount, mediumCount, lowCount };
+      return { auditStatus, primaryHit, risks: allRisks, highCount, mediumCount, lowCount };
     }
 
     function normalizeReview(review) {
       if (!review) return buildEmptyReview();
-      if (Array.isArray(review.risks)) return review;
+      if (review.auditStatus === 'reviewing' || review.auditStatus === 'failed') return review;
+      if (Array.isArray(review.risks)) return { ...review, ...buildReviewFromRisks(review.risks) };
       if (review.categories) {
         const risks = [];
         review.categories.forEach(cat => {
@@ -3504,11 +3622,29 @@ createApp({
     }
 
     function hasReviewRisks(review) {
-      return review && Array.isArray(review.risks) && review.risks.length > 0;
+      return reviewRiskCount(review) > 0;
+    }
+
+    function effectiveReviewRisks(review) {
+      return (review?.risks || []).filter(r => !r.misjudged);
+    }
+
+    function reviewRiskCount(review) {
+      return effectiveReviewRisks(review).length;
     }
 
     function auditResultLabel(status) {
-      return { pass: '未发现明显风险', low: '存在低风险', medium: '存在中风险', high: '存在高风险' }[status] || status;
+      return { reviewing: '审核中', failed: '审核失败', pass: '未发现明显风险', low: '存在低风险', medium: '存在中风险', high: '存在高风险' }[status] || '暂无审核结果';
+    }
+
+    function auditResultCardLabel(status) {
+      if (status === 'low' || status === 'medium' || status === 'high') return '存在风险';
+      return auditResultLabel(status);
+    }
+
+    function isSourceAssetAvailable(result) {
+      if (!result?.sourceAssetId) return true;
+      return materialLibrary.value.some(a => a.id === result.sourceAssetId);
     }
 
     function auditRiskLevelLabel(level) {
@@ -3516,27 +3652,34 @@ createApp({
     }
 
     function auditBadgeClass(status) {
-      return { pass: 'badge-green', low: 'badge-blue', medium: 'badge-amber', high: 'badge-red' }[status] || 'badge-amber';
+      return { reviewing: 'badge-blue', failed: 'badge-amber', pass: 'badge-green', low: 'badge-blue', medium: 'badge-amber', high: 'badge-red' }[status] || 'badge-amber';
+    }
+
+    function auditCardStatusClass(status) {
+      if (status === 'reviewing') return 'is-reviewing';
+      if (status === 'failed') return 'is-failed';
+      if (status === 'pass') return 'is-pass';
+      if (status === 'low' || status === 'medium' || status === 'high') return 'is-risk';
+      return 'is-muted';
     }
 
     function auditStatusColor(status) {
-      return { pass: 'var(--green)', low: '#94a3b8', medium: 'var(--amber)', high: 'var(--red)' }[status] || 'var(--text-dim)';
+      return { reviewing: '#60a5fa', failed: 'var(--amber)', pass: 'var(--green)', low: '#94a3b8', medium: 'var(--amber)', high: 'var(--red)' }[status] || 'var(--text-dim)';
     }
 
     function isReviewSavable(review) {
-      if (!review) return true;
-      return review.auditStatus === 'pass' || review.auditStatus === 'low';
+      return !!review && review.auditStatus === 'pass';
     }
 
     function generateMockReview() {
       const seed = Math.random();
-      // 以文字/排版类风险为主；底图类高风险保持低概率
+      // 安全区由模板代码保证；模拟只保留内容、文案和 AI 扩图风险
       if (seed < 0.22) {
         return buildReviewFromRisks([
           {
-            level: 'medium', ruleCategory: '格式规范类', pointCode: 'FORMAT-01', pointName: '平台安全区识别',
-            problem: '主标题超出 Instagram 安全展示区域', hitLocation: '图片底部标题区域',
-            hitBasis: '安全区模型检测到文案越界，置信度 88%', suggestion: '将标题上移或缩小字号，确保在安全区内展示。'
+            level: 'medium', ruleCategory: '生成质量类', pointCode: 'AIGC-03', pointName: 'AI 扩图一致性',
+            problem: '扩展区域出现结构不连续，与原画面风格不一致', hitLocation: '图片右侧扩展区域',
+            hitBasis: '生成一致性检测命中，置信度 88%', suggestion: '调整底图构图或重新生成扩展区域。'
           }
         ]);
       }
@@ -3586,9 +3729,9 @@ createApp({
       if (seed < 0.92) {
         return buildReviewFromRisks([
           {
-            level: 'medium', ruleCategory: '格式规范类', pointCode: 'FORMAT-01', pointName: '平台安全区识别',
-            problem: '修改后的主标题仍接近或超出安全区', hitLocation: '图片底部标题区域',
-            hitBasis: '安全区模型复检未通过，置信度 85%', suggestion: '继续上移标题或缩小字号后保存并重新检测。'
+            level: 'medium', ruleCategory: '内容合规类', pointCode: 'COPY-02', pointName: '夸大宣传表达',
+            problem: '修改后文案包含缺少依据的绝对化表达', hitLocation: '主标题文字区域',
+            hitBasis: '文案合规检测命中绝对化描述，置信度 85%', suggestion: '改为客观、可验证的产品描述后再审核。'
           }
         ]);
       }
@@ -3599,6 +3742,58 @@ createApp({
           hitBasis: '排版检测命中文案溢出', suggestion: '精简文案或调小字号后重新检测。'
         }
       ]);
+    }
+
+    /** 多语言版本默认只审核文案与文字显示效果 */
+    function generateLanguageAuditReview() {
+      const seed = Math.random();
+      if (seed < 0.65) return buildEmptyReview();
+      if (seed < 0.85) {
+        return buildReviewFromRisks([
+          {
+            level: 'medium', ruleCategory: '内容合规类', pointCode: 'COPY-02', pointName: '夸大宣传表达',
+            problem: '目标语言文案包含缺少依据的绝对化表达', hitLocation: '主标题文字区域',
+            hitBasis: '文案合规检测命中绝对化描述', suggestion: '改为客观、可验证的产品描述后再审核。'
+          }
+        ]);
+      }
+      return buildReviewFromRisks([
+        {
+          level: 'low', ruleCategory: '格式规范类', pointCode: 'FORMAT-04', pointName: '文案截断 / 重叠',
+          problem: '目标语言标题过长，出现意外换行并与副标题重叠', hitLocation: '主标题区域',
+          hitBasis: '排版检测命中文案溢出', suggestion: '精简文案或调小字号后重新检测。'
+        }
+      ]);
+    }
+
+    function generateAuditOutcome(mode = 'full', allowFailure = true) {
+      if (allowFailure && Math.random() < 0.1) return buildFailedReview(mode);
+      const review = mode === 'language'
+        ? generateLanguageAuditReview()
+        : (mode === 'edit' ? generatePostEditReview() : generateMockReview());
+      return { ...normalizeReview(review), auditMode: mode };
+    }
+
+    function startAuditForResults(items, mode = 'full') {
+      const targets = (items || []).filter(Boolean);
+      targets.forEach(r => { r.review = buildReviewingReview(mode); });
+      saveTaskState();
+      setTimeout(() => {
+        targets.forEach(r => { r.review = generateAuditOutcome(mode, true); });
+        saveTaskState();
+      }, 900);
+    }
+
+    function retryReview(result) {
+      if (!result || result.review?.auditStatus === 'reviewing') return;
+      const mode = result.review?.auditMode || 'full';
+      result.review = buildReviewingReview(mode);
+      saveTaskState();
+      setTimeout(() => {
+        result.review = generateAuditOutcome(mode, false);
+        saveTaskState();
+        showToast(`审核完成：${auditResultLabel(result.review.auditStatus)}`);
+      }, 750);
     }
 
     function buildEditElements() {
@@ -3614,7 +3809,18 @@ createApp({
         canvasHeight.value = Math.floor(h * ratio);
       }
       const tmpl = detailResult.value.templateData;
-      if (tmpl) {
+      if (detailResult.value.elements?.length) {
+        editElements.value = JSON.parse(JSON.stringify(detailResult.value.elements));
+        const sourceW = parseInt(sizeMatch[1]);
+        const ratio = canvasWidth.value / sourceW;
+        editElements.value.forEach(el => {
+          el.x *= ratio;
+          el.y *= ratio;
+          el.size *= ratio;
+          if (el.width) el.width *= ratio;
+        });
+        previewElements.value = [...editElements.value];
+      } else if (tmpl) {
         editElements.value = buildElementsFromTemplate(
           tmpl,
           detailResult.value.mainTitle || mainTitle.value || '主标题',
@@ -3623,15 +3829,16 @@ createApp({
           parseInt(sizeMatch[1]), parseInt(sizeMatch[2])
         );
         previewElements.value = [...editElements.value];
-      } else if (detailResult.value.elements) {
-        editElements.value = JSON.parse(JSON.stringify(detailResult.value.elements));
-        previewElements.value = [...editElements.value];
       }
       bgTransform.value = normalizeBgTransform(detailResult.value.bgTransform);
       overlayMask.value = normalizeOverlayMask(detailResult.value.overlayMask);
       editElements.value.forEach(el => {
         if (!el.scale) el.scale = 1;
         if (!el.lineHeight) el.lineHeight = 1.2;
+      });
+      editOriginalSnapshot.value = JSON.stringify({
+        elements: editElements.value,
+        bgTransform: bgTransform.value
       });
       clearEditSelection();
     }
@@ -3794,16 +4001,37 @@ createApp({
       allSizesHaveTemplate.value && mainTitle.value.trim()
     );
 
-    const generateCount = computed(() =>
-      productImages.value.length * selectedSizes.value.length
-    );
+    const generateCount = computed(() => productImages.value.length ? selectedSizes.value.length : 0);
+    const generationSuccessCount = computed(() => results.value.filter(r => isGenerationSuccess(r)).length);
+    const generationRunningCount = computed(() => results.value.filter(r => r.generationStatus === 'generating').length);
+    const generationFailedCount = computed(() => results.value.filter(r => r.generationStatus === 'failed').length);
+    const isGenerating = computed(() => generationRunningCount.value > 0);
+    // 生成中临时只读；曾有任一尺寸成功则永久锁定。全部失败且从未成功 → 可改配置再生成
+    const isConfigReadonly = computed(() => isGenerating.value || hasEverGenerated.value);
+    const isChannelReadonly = computed(() => isConfigReadonly.value);
 
-    const isConfigReadonly = computed(() => results.value.length > 0);
+    function isGenerationSuccess(r) {
+      if (!r || r.generationStatus === 'failed' || r.generationStatus === 'generating') return false;
+      // 无 generationStatus 的旧结果视为已成功出图
+      return r.generationStatus === 'success' || !r.generationStatus;
+    }
+
+    function syncConfigLockFromResults() {
+      if (results.value.some(isGenerationSuccess)) {
+        hasEverGenerated.value = true;
+      }
+    }
+
+    const currentEditSnapshot = computed(() => JSON.stringify({
+      elements: editElements.value,
+      bgTransform: bgTransform.value
+    }));
+    const hasEditChanges = computed(() => !!detailResult.value && currentEditSnapshot.value !== editOriginalSnapshot.value);
 
     const currentTaskName = computed(() => projects[currentProject.value]?.name || '未选择任务');
-    const pendingCount = computed(() =>
-      results.value.filter(r => !r.saved && r.review && (r.review.auditStatus === 'high' || r.review.auditStatus === 'medium')).length
-    );
+    const riskResultCount = computed(() => results.value.filter(r => reviewRiskCount(r.review) > 0).length);
+    const auditFailedCount = computed(() => results.value.filter(r => r.review?.auditStatus === 'failed').length);
+    const auditReviewingCount = computed(() => results.value.filter(r => r.review?.auditStatus === 'reviewing').length);
     const savableCount = computed(() =>
       results.value.filter(r => !r.saved && isReviewSavable(r.review)).length
     );
@@ -3816,8 +4044,6 @@ createApp({
     }
 
     const resultLangFilter = ref('ALL');
-    const resultCardMenuId = ref(null);
-    const showInfoPanel = ref(false);
     const showComplianceDrawer = ref(false);
     const complianceSectionOpen = ref(true);
     const editSidebarCollapsed = ref(true);
@@ -3872,9 +4098,17 @@ createApp({
 
     const filteredResults = computed(() => filteredResultsWithIndex.value.map(item => item.r));
 
+    const previewItems = computed(() => filteredResultsWithIndex.value.filter(({ r }) => r.generationStatus === 'success'));
+    const previewResultItem = computed(() => results.value[previewResultIndex.value] || null);
+    const previewPosition = computed(() => {
+      const pos = previewItems.value.findIndex(item => item.i === previewResultIndex.value);
+      return pos >= 0 ? pos + 1 : 0;
+    });
+
     const selectedResultCount = computed(() =>
-      results.value.filter(r => r.selected).length
+      results.value.filter(r => r.selected && r.generationStatus === 'success').length
     );
+    const selectedContainsSaved = computed(() => results.value.some(r => r.selected && r.saved));
 
     const selectedSavableCount = computed(() =>
       results.value.filter(r => r.selected && isResultSavable(r)).length
@@ -3909,22 +4143,111 @@ createApp({
 
     function toggleResultSelect(index) {
       const r = results.value[index];
-      if (!r) return;
+      if (!r || r.generationStatus !== 'success') return;
       r.selected = !r.selected;
     }
 
-    function toggleResultCardMenu(id) {
-      resultCardMenuId.value = resultCardMenuId.value === id ? null : id;
+    function openResultPreview(index) {
+      if (!results.value[index] || results.value[index].generationStatus !== 'success') return;
+      previewResultIndex.value = index;
+      showRiskMarkers.value = true;
+      showResultPreview.value = true;
     }
 
-    function closeResultCardMenu() {
-      resultCardMenuId.value = null;
+    function closeResultPreview() {
+      showResultPreview.value = false;
+    }
+
+    function setPreviewIndex(index) {
+      if (!results.value[index] || results.value[index].generationStatus !== 'success') return;
+      previewResultIndex.value = index;
+      showRiskMarkers.value = true;
+    }
+
+    function movePreview(step) {
+      const items = previewItems.value;
+      if (!items.length) return;
+      const current = items.findIndex(item => item.i === previewResultIndex.value);
+      const next = current < 0 ? 0 : (current + step + items.length) % items.length;
+      setPreviewIndex(items[next].i);
+    }
+
+    function previewPrev() { movePreview(-1); }
+    function previewNext() { movePreview(1); }
+
+    function previewAuditStateClass(review) {
+      const status = review?.auditStatus;
+      if (status === 'reviewing') return 'reviewing';
+      if (status === 'failed') return 'failed';
+      if (status === 'pass') return 'pass';
+      return 'risk';
+    }
+
+    function getRiskMarkerStyle(risk, index) {
+      const positions = [
+        { left: '62%', top: '58%', width: '28%', height: '22%' },
+        { left: '8%', top: '64%', width: '48%', height: '18%' },
+        { left: '68%', top: '70%', width: '24%', height: '16%' }
+      ];
+      if ((risk.hitLocation || '').includes('右')) return { left: '66%', top: '62%', width: '28%', height: '24%' };
+      if ((risk.hitLocation || '').includes('标题')) return { left: '8%', top: '66%', width: '62%', height: '18%' };
+      return positions[index % positions.length];
+    }
+
+    function enterPreviewEdit() {
+      const index = previewResultIndex.value;
+      if (index < 0 || previewResultItem.value?.review?.auditStatus === 'reviewing') return;
+      showResultPreview.value = false;
+      openResultEditor(index);
+    }
+
+    function downloadPreviewCurrent() {
+      if (!previewResultItem.value) return;
+      showToast(`已下载当前素材：${previewResultItem.value.filename}`);
+    }
+
+    function savePreviewCurrent() {
+      const r = previewResultItem.value;
+      if (!r || r.saved || !isResultSavable(r)) return;
+      r.saved = true;
+      r.libraryAssetId = r.libraryAssetId || `LIB-${Date.now()}-${r.id}`;
+      r.edited = false;
+      saveTaskState();
+      showToast('已确认入库到可用素材库');
+    }
+
+    function openMisjudgmentFeedback(risk) {
+      feedbackRisk.value = risk;
+      misjudgmentReason.value = '';
+      showMisjudgmentModal.value = true;
+    }
+
+    function closeMisjudgmentFeedback() {
+      showMisjudgmentModal.value = false;
+      feedbackRisk.value = null;
+      misjudgmentReason.value = '';
+    }
+
+    function submitMisjudgmentFeedback() {
+      const r = previewResultItem.value;
+      const risk = feedbackRisk.value;
+      const reason = misjudgmentReason.value.trim();
+      if (!r || !risk || !reason) return;
+      risk.misjudged = true;
+      risk.misjudgmentReason = reason;
+      risk.feedbackAt = new Date().toLocaleString('zh-CN', { hour12: false });
+      const auditMode = r.review?.auditMode || 'full';
+      r.review = { ...buildReviewFromRisks(r.review?.risks || []), auditMode };
+      if (detailIndex.value === previewResultIndex.value) detailResult.value = r;
+      closeMisjudgmentFeedback();
+      saveTaskState();
+      showToast('已反馈误判，审核结果已更新');
     }
 
     function toggleSelectAllFiltered() {
       const shouldSelect = !allFilteredSelected.value;
       filteredResultsWithIndex.value.forEach(({ r }) => {
-        r.selected = shouldSelect;
+        if (r.generationStatus === 'success') r.selected = shouldSelect;
       });
     }
 
@@ -3937,7 +4260,7 @@ createApp({
     function openLocaleModal() {
       if (!selectedResultCount.value) return;
       localeSourceIndices.value = results.value
-        .map((r, i) => (r.selected ? i : -1))
+        .map((r, i) => (r.selected && r.generationStatus === 'success' ? i : -1))
         .filter(i => i >= 0);
       targetLocales.value = [];
       showLocaleModal.value = true;
@@ -3964,7 +4287,6 @@ createApp({
         if (el.role === 'title') el.text = title;
         if (el.role === 'subtitle') el.text = subtitle;
       });
-      const skuPart = (snapshot.filename || 'GOVEE').split('_')[0];
       const imageTag = snapshot.sourceImageName
         ? snapshot.sourceImageName.replace(/\s+/g, '_')
         : (snapshot.filename || 'img').split('_')[1] || 'img';
@@ -3975,13 +4297,12 @@ createApp({
         mainTitle: title,
         subTitle: subtitle,
         elements,
-        filename: `${skuPart}_${imageTag}_${snapshot.channel}_${lang}_${snapshot.size}`,
+        filename: `${imageTag}_${snapshot.channel}_${snapshot.size}_${lang}_01.png`,
         saved: false,
         edited: false,
         selected: false,
-        review: snapshot.review
-          ? JSON.parse(JSON.stringify(normalizeReview(snapshot.review)))
-          : generateMockReview(),
+        generationStatus: 'success',
+        review: buildReviewingReview('full'),
         localeSourceId: snapshot.id,
         localeSourceLang: getResultLang(snapshot)
       };
@@ -4007,12 +4328,11 @@ createApp({
       }
 
       results.value.push(...newItems);
-      ensureResultReviews(newItems);
       results.value.forEach(r => { r.selected = false; });
       showLocaleModal.value = false;
       localeSourceIndices.value = [];
-      saveTaskState();
-      showToast(`已追加 ${newItems.length} 张多语言版本`);
+      startAuditForResults(newItems, 'full');
+      showToast(`已追加 ${newItems.length} 张多语言版本，正在进行完整审核`);
     }
 
     // v7: task state persistence
@@ -4027,6 +4347,7 @@ createApp({
         subTitle: '',
         productImages: [],
         previewImageId: '',
+        hasEverGenerated: false,
         results: []
       };
     }
@@ -4049,12 +4370,15 @@ createApp({
       state.subTitle = subTitle.value;
       state.productImages = JSON.parse(JSON.stringify(productImages.value));
       state.previewImageId = previewImageId.value;
+      state.hasEverGenerated = hasEverGenerated.value;
       state.results = JSON.parse(JSON.stringify(results.value));
     }
 
     function ensureResultReviews(items) {
       (items || []).forEach(r => {
-        r.review = normalizeReview(r.review);
+        if (!r.generationStatus) r.generationStatus = 'success';
+        if (r.generationStatus === 'success') r.review = normalizeReview(r.review);
+        else r.review = null;
       });
     }
 
@@ -4087,8 +4411,9 @@ createApp({
       Object.assign(templateBySize, state.templateBySize || {});
       mainTitle.value = state.mainTitle || '';
       subTitle.value = state.subTitle || '';
-      productImages.value = state.productImages ? JSON.parse(JSON.stringify(state.productImages)) : [];
+      productImages.value = state.productImages?.length ? [JSON.parse(JSON.stringify(state.productImages[0]))] : [];
       previewImageId.value = state.previewImageId || '';
+      hasEverGenerated.value = !!(state.hasEverGenerated || (state.results || []).some(isGenerationSuccess));
       ensurePreviewImage();
       results.value = state.results ? JSON.parse(JSON.stringify(state.results)) : [];
       ensureResultIds(results.value);
@@ -4123,6 +4448,7 @@ createApp({
       mainTitle.value = '';
       subTitle.value = '';
       results.value = [];
+      hasEverGenerated.value = false;
       showDetail.value = false;
       showEdit.value = false;
       workspaceMode.value = 'config';
@@ -4147,23 +4473,36 @@ createApp({
       const sku = newProjectSku.value.trim();
       const productName = newProjectProductName.value.trim();
       const taskName = newProjectName.value.trim();
+      let pendingAsset = null;
+      if (handoffAsset.value) {
+        const assetId = handoffAsset.value.assetId || handoffAsset.value.id;
+        const fresh = materialLibrary.value.find(a => a.id === assetId);
+        if (!fresh) {
+          showToast('带入的素材已失效，请返回重新选择', 'warn');
+          return;
+        }
+        pendingAsset = { ...fresh, assetId: fresh.id };
+      }
       projects.push({
         id: 't' + Date.now(),
         name: taskName || `${sku} ${productName}`,
         sku,
         productName,
-        groupId: null,
-        status: 'green'
+        groupId: null
       });
       currentProject.value = projects.length - 1;
-      newProjectSku.value = '';
-      newProjectProductName.value = '';
-      newProjectName.value = '';
+      resetNewProjectForm();
       showNewProject.value = false;
       sectionOpen.tasks = true;
       loadTaskState(currentProject.value);
+      if (pendingAsset) {
+        addProductImages([pendingAsset]);
+        showToast(`任务已创建，已带入「${pendingAsset.name}」`);
+      }
+      handoffAsset.value = null;
+      handoffFromAssetManagement.value = false;
       saveTaskState();
-      showToast('任务创建成功');
+      if (!pendingAsset) showToast('任务创建成功');
     }
 
     function createGroup() {
@@ -4445,22 +4784,15 @@ createApp({
       return filteredProjects.value.filter(p => !p.groupId);
     });
 
-    function getDotColor(status) {
-      if (status === 'green') return '#10b981';
-      if (status === 'orange') return '#f59e0b';
-      if (status === 'red') return '#ef4444';
-      return 'rgba(255,255,255,0.3)';
-    }
-
     function generateMaterial() {
       const currentProj = projects[currentProject.value];
       const skuName = currentProj?.sku || 'GOVEE';
       const title = mainTitle.value.trim() || currentProj?.productName || '主标题';
       const subtitle = subTitle.value.trim() || '副标题文案';
       const newResults = [];
-      const images = productImages.value;
+      const img = productImages.value[0];
 
-      for (const img of images) {
+      if (img) {
         for (const sz of selectedSizes.value) {
           const tmplId = templateBySize[sz];
           const tmpl = getTemplatesForSize(sz).find(t => t.id === tmplId) || getTemplatesForSize(sz)[0];
@@ -4469,7 +4801,7 @@ createApp({
           const origW = parseInt(sizeMatch[1]);
           const origH = parseInt(sizeMatch[2]);
           const elements = buildElementsFromTemplate(tmpl, title, subtitle, origW, origH, origW, origH);
-          const imageTag = img.name.replace(/\s+/g, '_');
+          const imageTag = img.name.replace(/\.[^/.]+$/, '').replace(/\s+/g, '_');
           newResults.push({
             id: nextResultId(),
             channel: selectedChannel.value,
@@ -4485,26 +4817,64 @@ createApp({
             overlayMask: defaultOverlayMask(),
             sourceImageName: img.name,
             sourceAssetId: img.assetId || '',
-            sku: img.sku || skuName,
-            productName: img.productName || currentProj?.productName || '',
-            visibility: img.visibility || 'team',
+            sku: skuName,
+            productName: currentProj?.productName || '',
             elements,
-            filename: `${(img.sku || skuName)}_${imageTag}_${selectedChannel.value}_${sz}`,
+            filename: `${imageTag}_${selectedChannel.value}_${sz}_01.png`,
             saved: false,
             edited: false,
             selected: false,
-            review: generateMockReview()
+            generationStatus: 'generating',
+            generationError: '',
+            review: null
           });
         }
       }
 
       results.value = newResults;
-      ensureResultReviews(results.value);
       showDetail.value = false;
       showEdit.value = false;
       workspaceMode.value = 'results';
       saveTaskState();
-      showToast(`已生成 ${newResults.length} 张社媒物料`);
+      newResults.forEach((result, index) => {
+        setTimeout(() => {
+          const demoFailure = result.simulateFailure === true;
+          if (demoFailure) {
+            result.generationStatus = 'failed';
+            result.generationError = result.generationError || '生成服务异常，可单独重试';
+            result.review = null;
+          } else {
+            result.generationStatus = 'success';
+            result.review = buildReviewingReview('full');
+            startAuditForResults([result], 'full');
+          }
+          const stillRunning = results.value.some(r => r.generationStatus === 'generating');
+          if (!stillRunning) {
+            // 有成功才永久锁配置；全部失败且从未成功过则保持可编辑
+            syncConfigLockFromResults();
+            saveTaskState();
+            showToast(`已完成 · ${generationSuccessCount.value}/${results.value.length} 生成成功`);
+          } else {
+            saveTaskState();
+          }
+        }, 550 + index * 220);
+      });
+      showToast(`已提交 ${newResults.length} 个尺寸，正在独立生成`);
+    }
+
+    function retryGeneration(result) {
+      if (!result || result.generationStatus !== 'failed') return;
+      result.generationStatus = 'generating';
+      result.generationError = '';
+      saveTaskState();
+      setTimeout(() => {
+        result.generationStatus = 'success';
+        result.review = buildReviewingReview('full');
+        syncConfigLockFromResults();
+        startAuditForResults([result], 'full');
+        saveTaskState();
+        showToast(`${result.size} 重新生成成功，正在进行完整审核`);
+      }, 750);
     }
 
     function handleGenerate() {
@@ -4512,7 +4882,7 @@ createApp({
     }
 
     function openResultEditor(ri) {
-      closeResultCardMenu();
+      showResultPreview.value = false;
       detailResult.value = results.value[ri];
       if (detailResult.value.review) {
         detailResult.value.review = normalizeReview(detailResult.value.review);
@@ -4522,7 +4892,6 @@ createApp({
       detailIndex.value = ri;
       buildEditElements();
       clearEditSelection();
-      showInfoPanel.value = false;
       showComplianceDrawer.value = false;
       complianceSectionOpen.value = true;
       workspaceMode.value = 'results';
@@ -4543,8 +4912,10 @@ createApp({
       return new Promise(resolve => {
         isRerunningReview.value = true;
         showComplianceDrawer.value = true;
+        applyReviewToCurrent(buildReviewingReview('full'));
+        saveTaskState();
         setTimeout(() => {
-          const next = applyReviewToCurrent(generatePostEditReview());
+          const next = applyReviewToCurrent(generateAuditOutcome('full', true));
           isRerunningReview.value = false;
           resolve(next);
         }, 650);
@@ -4555,12 +4926,11 @@ createApp({
       if (isRerunningReview.value) return;
       isRerunningReview.value = true;
       showComplianceDrawer.value = true;
+      applyReviewToCurrent(buildReviewingReview('full'));
       setTimeout(() => {
-        const next = applyReviewToCurrent(generatePostEditReview());
+        const next = applyReviewToCurrent(generateAuditOutcome('full', false));
         isRerunningReview.value = false;
-        showToast(isReviewSavable(next)
-          ? `复检完成：${auditResultLabel(next.auditStatus)}`
-          : `复检仍有风险：${auditResultLabel(next.auditStatus)}`);
+        showToast(`审核完成：${auditResultLabel(next.auditStatus)}`);
         saveTaskState();
       }, 650);
     }
@@ -4575,7 +4945,12 @@ createApp({
       showDetail.value = false;
     }
     function saveCurrent() {
+      if (!isResultSavable(detailResult.value)) {
+        showToast('当前结果暂不符合入库条件', 'warn');
+        return;
+      }
       detailResult.value.saved = true;
+      detailResult.value.libraryAssetId = detailResult.value.libraryAssetId || `LIB-${Date.now()}-${detailResult.value.id}`;
       detailResult.value.edited = false;
       results.value[detailIndex.value] = { ...detailResult.value };
       saveTaskState();
@@ -4590,10 +4965,10 @@ createApp({
         return;
       }
       const skipped = results.value.filter(r => !r.saved && !isReviewSavable(r.review)).length;
-      savable.forEach(r => { r.saved = true; r.edited = false; r.selected = false; });
+      savable.forEach(r => { r.saved = true; r.libraryAssetId = r.libraryAssetId || `LIB-${Date.now()}-${r.id}`; r.edited = false; r.selected = false; });
       saveTaskState();
       showToast(skipped
-        ? `已入库 ${savable.length} 张到可用素材库；${skipped} 张因中/高风险未入库`
+        ? `成功入库 ${savable.length} 张，跳过 ${skipped} 张`
         : `已入库 ${savable.length} 张到可用素材库`);
     }
 
@@ -4605,10 +4980,6 @@ createApp({
       }
     }
 
-    function saveAll() {
-      results.value.forEach(r => { r.saved = true; r.edited = false; });
-      showToast(`已入库 ${results.value.length} 张到可用素材库`);
-    }
     function handleSaveSelected() {
       const selected = results.value.filter(r => r.selected);
       if (!selected.length) return;
@@ -4620,14 +4991,14 @@ createApp({
           showToast('所选结果已入库，不会重复创建');
           return;
         }
-        showToast('所选素材存在中/高风险，请先修复并重新检测后再入库');
+        showToast('所选素材暂不符合入库条件');
         return;
       }
-      savable.forEach(r => { r.saved = true; r.edited = false; r.selected = false; });
+      savable.forEach(r => { r.saved = true; r.libraryAssetId = r.libraryAssetId || `LIB-${Date.now()}-${r.id}`; r.edited = false; r.selected = false; });
       saveTaskState();
-      const parts = [`已入库 ${savable.length} 张到可用素材库`];
+      const parts = [`成功入库 ${savable.length} 张`];
       if (already.length) parts.push(`${already.length} 张已入库跳过`);
-      if (blocked > 0) parts.push(`${blocked} 张因中/高风险未入库`);
+      if (blocked > 0) parts.push(`跳过 ${blocked} 张`);
       showToast(parts.join('；'));
     }
     function handleDownloadSelected() {
@@ -4690,54 +5061,103 @@ createApp({
       showDetail.value = false;
       workspaceMode.value = 'results';
       clearEditSelection();
+      if (detailIndex.value >= 0) {
+        previewResultIndex.value = detailIndex.value;
+        showResultPreview.value = true;
+      }
+    }
+
+    function requestCloseEditor() {
+      if (hasEditChanges.value) {
+        showUnsavedEditModal.value = true;
+        return;
+      }
+      cancelEdit();
+    }
+
+    function discardEditChanges() {
+      showUnsavedEditModal.value = false;
+      cancelEdit();
     }
 
     async function saveEdit() {
       if (isRerunningReview.value) return;
-      detailResult.value.edited = true;
-      detailResult.value.saved = false;
-      detailResult.value.elements = JSON.parse(JSON.stringify(editElements.value));
-      detailResult.value.bgTransform = JSON.parse(JSON.stringify(bgTransform.value));
-      detailResult.value.overlayMask = JSON.parse(JSON.stringify(overlayMask.value));
+      const previous = JSON.parse(JSON.stringify(results.value[detailIndex.value]));
+      const archivedLibraryVersions = [...(previous.archivedLibraryVersions || [])];
+      if (previous.saved) archivedLibraryVersions.push({ ...previous, archivedAt: new Date().toISOString() });
+      const sourceWidth = parseInt(detailResult.value.size.match(/(\d+)×(\d+)/)?.[1] || canvasWidth.value);
+      const saveScale = sourceWidth / canvasWidth.value;
+      const persistedElements = JSON.parse(JSON.stringify(editElements.value)).map(el => ({
+        ...el,
+        x: el.x * saveScale,
+        y: el.y * saveScale,
+        size: el.size * saveScale,
+        width: el.width ? el.width * saveScale : el.width
+      }));
+      detailResult.value = {
+        ...detailResult.value,
+        id: nextResultId(),
+        versionId: `VER-${Date.now()}`,
+        edited: true,
+        saved: false,
+        generationStatus: 'success',
+        archivedLibraryVersions,
+        elements: persistedElements,
+        bgTransform: JSON.parse(JSON.stringify(bgTransform.value))
+      };
       const titleEl = editElements.value.find(el => el.role === 'title');
       const subEl = editElements.value.find(el => el.role === 'subtitle');
       if (titleEl) detailResult.value.mainTitle = titleEl.text;
       if (subEl) detailResult.value.subTitle = subEl.text;
-      previewElements.value = [...editElements.value];
+      previewElements.value = [...persistedElements];
       results.value[detailIndex.value] = { ...detailResult.value };
       const review = await rerunReviewAfterEdit();
       results.value[detailIndex.value] = { ...detailResult.value };
       saveTaskState();
+      previewResultIndex.value = detailIndex.value;
+      showEdit.value = false;
+      showResultPreview.value = true;
       if (isReviewSavable(review)) {
-        showToast(`编辑已保存 · ${auditResultLabel(review.auditStatus)}，可回结果页入库`);
+        showToast(`编辑已保存 · ${auditResultLabel(review.auditStatus)}`);
+      } else if (review.auditStatus === 'failed') {
+        showToast('编辑已保存 · 审核失败，可在预览中重新审核');
       } else {
-        showToast(`编辑已保存 · ${auditResultLabel(review.auditStatus)}，请继续修复后再入库`);
+        showToast(`编辑已保存 · ${auditResultLabel(review.auditStatus)}`);
         showComplianceDrawer.value = true;
       }
     }
 
-    function buildDemoResult(sz, tmplId, channel, type, title, subtitle, bgUrl, skuName, reviewStatus) {
+    function buildDemoResult(sz, tmplId, channel, type, title, subtitle, bgUrl, skuName, reviewStatus, sourceMeta = {}) {
       const tmpl = getTemplatesForSize(sz).find(t => t.id === tmplId) || getTemplatesForSize(sz)[0];
       if (!tmpl) return null;
       const sizeMatch = sz.match(/(\d+)×(\d+)/);
       const origW = parseInt(sizeMatch[1]);
       const origH = parseInt(sizeMatch[2]);
       const elements = buildElementsFromTemplate(tmpl, title, subtitle, origW, origH, origW, origH);
-      const review = reviewStatus === 'warning'
-        ? buildReviewFromRisks([{
-            level: 'medium', ruleCategory: '格式规范类', pointCode: 'FORMAT-01', pointName: '平台安全区识别',
-            problem: '文字接近底部安全区', hitLocation: '图片底部标题区域',
-            hitBasis: '安全区模型检测到文案越界，置信度 88%', suggestion: '建议主标题上移 32px 或缩小字号'
-          }])
-        : buildEmptyReview();
+      let review;
+      if (reviewStatus === 'warning') {
+        review = buildReviewFromRisks([{
+          level: 'medium', ruleCategory: '内容合规类', pointCode: 'COPY-02', pointName: '夸大宣传表达',
+          problem: '主标题包含缺少依据的绝对化描述', hitLocation: '主标题文字区域',
+          hitBasis: '文案合规检测命中，置信度 88%', suggestion: '建议改为客观、可验证的产品描述'
+        }]);
+      } else if (reviewStatus === 'reviewing') {
+        review = buildReviewingReview();
+      } else if (reviewStatus === 'failed') {
+        review = buildFailedReview();
+      } else {
+        review = buildEmptyReview();
+      }
       return {
         id: nextResultId(),
         channel, type, size: sz, template: tmpl.name, templateData: tmpl,
         mainTitle: title, subTitle: subtitle, lang: 'EN',
         bgUrl,
         bgTransform: defaultBgTransform(), overlayMask: defaultOverlayMask(), elements,
+        sourceImageName: sourceMeta.name || '',
+        sourceAssetId: sourceMeta.assetId || '',
         filename: `${skuName}_${channel}_${type}_${sz}`.replace(/\s+/g, '_'),
-        saved: false, edited: false, selected: false, review
+        saved: false, edited: false, selected: false, generationStatus: 'success', review
       };
     }
 
@@ -4745,21 +5165,31 @@ createApp({
       const title = 'Smart Lighting for Every Moment';
       const subtitle = 'Warm ambience at home with RGBIC technology';
       const demoImages = [
-        { id: 'demo-img-1', url: demoSceneImages.bedroom, name: '卧室暖光', assetId: 'A011', sku: 'GV-H7131', productName: 'Govee 氛围落地灯', visibility: 'private' },
-        { id: 'demo-img-2', url: demoSceneImages.livingRoom, name: '客厅氛围', assetId: 'A001', sku: 'GV-H7131', productName: 'Govee 氛围落地灯', visibility: 'team' }
+        { id: 'demo-img-1', url: demoSceneImages.livingRoom, name: '夏日场景_生成01.png', assetId: 'A003', sku: 'FL-A30-BK', productName: '落地灯 A30' },
+        { id: 'demo-img-2', url: demoSceneImages.product, name: 'H7131_主图参考.jpg', assetId: 'A001', sku: 'H7131', productName: '星空灯 H7131' }
       ];
-      const sizes = ['1080×1080', '1080×1350'];
-      const tmplBySize = { '1080×1080': 'sq-center', '1080×1350': 'pt-bottom' };
+      const sizes = ['1080×1080', '1080×1350', '1080×1920', '1920×1080'];
+      const tmplBySize = {
+        '1080×1080': 'sq-center',
+        '1080×1350': 'pt-bottom',
+        '1080×1920': 'st-mid',
+        '1920×1080': 'wide-center'
+      };
+      const statusPlan = ['warning', 'passed', 'failed', 'generation-failed'];
       const demoResults = [];
-      demoImages.forEach((img, imgIdx) => {
-        sizes.forEach((sz, szIdx) => {
-          const r = buildDemoResult(sz, tmplBySize[sz], 'Instagram', '常规帖子', title, subtitle, img.url, 'FL-A30-BK', imgIdx === 0 && szIdx === 0 ? 'warning' : 'passed');
-          if (r) {
-            r.sourceImageName = img.name;
-            r.filename = `FL-A30-BK_${img.name.replace(/\s+/g, '_')}_Instagram_${sz}`;
-            demoResults.push(r);
-          }
-        });
+      const demoSource = demoImages[0];
+      sizes.forEach((sz, szIdx) => {
+        const status = statusPlan[szIdx] || 'passed';
+        const reviewStatus = status === 'generation-failed' ? 'passed' : status;
+        const r = buildDemoResult(sz, tmplBySize[sz], 'Instagram', '常规帖子', title, subtitle, demoSource.url, 'FL-A30-BK', reviewStatus, demoSource);
+        if (!r) return;
+        r.filename = `FL-A30-BK_${demoSource.name.replace(/\s+/g, '_')}_Instagram_${sz}`;
+        if (status === 'generation-failed') {
+          r.generationStatus = 'failed';
+          r.generationError = '扩图服务超时，未产出有效底图';
+          r.review = null;
+        }
+        demoResults.push(r);
       });
 
       taskStates['t1'] = {
@@ -4770,8 +5200,9 @@ createApp({
         templateBySize: tmplBySize,
         mainTitle: title,
         subTitle: subtitle,
-        productImages: demoImages,
+        productImages: [demoSource],
         previewImageId: 'demo-img-1',
+        hasEverGenerated: true,
         results: demoResults
       };
 
@@ -4786,14 +5217,39 @@ createApp({
         productImages: [{
           id: 'demo-img-3',
           url: demoSceneImages.livingRoom,
-          name: '客厅氛围',
-          assetId: 'A001',
-          sku: 'GV-H7131',
-          productName: 'Govee 氛围落地灯',
-          visibility: 'team'
+          name: '夏日场景_生成01.png',
+          assetId: 'A003',
+          sku: 'FL-A30-BK',
+          productName: '落地灯 A30'
         }],
         previewImageId: 'demo-img-3',
-        results: [buildDemoResult('1080×1080', 'sq-top', 'Facebook', 'Feeds广告', 'Create Your Perfect Mood', 'Scene modes for every moment', demoSceneImages.livingRoom, 'FL-A30-BK', 'passed')].filter(Boolean)
+        hasEverGenerated: true,
+        results: [buildDemoResult('1080×1080', 'sq-top', 'Facebook', 'Feeds广告', 'Create Your Perfect Mood', 'Scene modes for every moment', demoSceneImages.livingRoom, 'FL-A30-BK', 'passed', {
+          name: '夏日场景_生成01.png',
+          assetId: 'A003'
+        })].filter(Boolean)
+      };
+
+      const allFailedA = buildDemoResult('1080×1080', 'sq-top', 'Instagram', '常规帖子', title, subtitle, demoSource.url, 'FL-A30-BK', 'passed', demoSource);
+      const allFailedB = buildDemoResult('1080×1920', 'st-topleft', 'Instagram', '常规帖子', title, subtitle, demoSource.url, 'FL-A30-BK', 'passed', demoSource);
+      [allFailedA, allFailedB].forEach((r) => {
+        if (!r) return;
+        r.generationStatus = 'failed';
+        r.generationError = '扩图服务超时，未产出有效底图';
+        r.review = null;
+      });
+      taskStates['t7'] = {
+        lastMode: 'results',
+        selectedChannel: 'Instagram',
+        selectedType: '常规帖子',
+        selectedSizes: ['1080×1080', '1080×1920'],
+        templateBySize: { '1080×1080': 'sq-top', '1080×1920': 'st-topleft' },
+        mainTitle: title,
+        subTitle: subtitle,
+        productImages: [demoSource],
+        previewImageId: demoSource.id,
+        hasEverGenerated: false,
+        results: [allFailedA, allFailedB].filter(Boolean)
       };
     }
 
@@ -4803,33 +5259,47 @@ createApp({
     function handleDocumentClick() {
       closeSelect();
       showAssistMenu.value = false;
-      closeResultCardMenu();
       closeSidebarMenu();
+    }
+
+    function handleGlobalKeydown(event) {
+      if (!showResultPreview.value || showMisjudgmentModal.value) return;
+      if (event.key === 'ArrowLeft') previewPrev();
+      if (event.key === 'ArrowRight') previewNext();
+      if (event.key === 'Escape') closeResultPreview();
     }
 
     onMounted(() => {
       document.addEventListener('click', handleDocumentClick);
+      document.addEventListener('keydown', handleGlobalKeydown);
       const params = new URLSearchParams(window.location.search);
       const assetId = params.get('assetId');
       if (assetId) {
         const asset = materialLibrary.value.find(a => a.id === assetId);
         if (asset) {
-          openBgPicker([assetId]);
-          showToast(`已预选「${asset.name}」，可继续选择同 SKU 底图`);
+          handoffAsset.value = { ...asset, assetId: asset.id };
+          handoffFromAssetManagement.value = params.get('fromAsset') === '1';
+          resetNewProjectForm();
+          newProjectSku.value = asset.sku || '';
+          newProjectProductName.value = asset.productName || '';
+          updateNewProjectName();
+          showNewProject.value = true;
+          showToast(`已带入「${asset.name}」，请先创建任务`);
         } else {
-          showToast('未找到携带的可用素材，请重新选择底图');
-          openBgPicker();
+          showToast('未找到带入的可用素材，请返回重新选择', 'warn');
         }
       }
     });
 
     onBeforeUnmount(() => {
       document.removeEventListener('click', handleDocumentClick);
+      document.removeEventListener('keydown', handleGlobalKeydown);
     });
 
     return {
       toast, showToast,
       showNewProject, newProjectSku, newProjectProductName, newProjectName, updateNewProjectName,
+      openNewProject, cancelNewProject, markProjectNameTouched, handoffAsset,
       projectSearch, projects, filteredProjects, currentProject,
       groups, filteredGroups, sectionOpen, showNewGroupModal, newGroupName,
       sidebarMenu, moveOpen, dragTaskId, dropTargetGroupId, currentMenuTask, moveTargetGroups,
@@ -4838,9 +5308,10 @@ createApp({
       onTaskDragStart, onTaskDragEnd, onGroupDragOver, onGroupDragLeave, onGroupDrop,
       onUngroupDragOver, onUngroupDragLeave, onUngroupDrop,
       showRenameModal, renameType, renameValue, showDeleteModal, showResultDeleteModal, deleteType,
-      createGroup, startRename, saveRename, startDelete, confirmDelete, getGroupTasks, ungroupedTasks, getDotColor,
+      createGroup, startRename, saveRename, startDelete, confirmDelete, getGroupTasks, ungroupedTasks,
       sidebarWidth, configWidth, resizing, startResize,
-      workspaceMode, switchWorkspaceMode, currentTaskName, pendingCount, savableCount, isConfigReadonly,
+      workspaceMode, switchWorkspaceMode, currentTaskName, riskResultCount, auditFailedCount, auditReviewingCount, savableCount, isConfigReadonly, isChannelReadonly,
+      isGenerating, generationSuccessCount, generationRunningCount, generationFailedCount, retryGeneration,
       previewSize, selectTemplateForSize, handleSizeChipClick,
       getTemplatePreviewBg, buildTemplateOverlayElements, getTemplateOverlayStyle,
       getAspectClass, defaultBgTransform,
@@ -4848,37 +5319,39 @@ createApp({
       availableTypes, availableSizes, allSizesSelected, allSizesHaveTemplate, channelRuleHint,
       getTemplatesForSize, toggleSize, toggleAllSizes,
       mainTitle, subTitle, productImages, previewImageId, materialLibrary,
-      librarySearch, libraryChannelFilter, libraryTimeFilter, hasLibraryFilters,
-      resetLibraryFilters, onLibraryTimeChange, filteredLibraryAssets,
+      librarySearch, resetLibraryFilters, filteredLibraryAssets,
       generateCount,
       showBgPicker, pickerDrafts,
       openBgPicker, closeBgPicker,
       isPickerDraftSelected, toggleAssetInPicker, confirmBgPicker, removeProductImage,
       onChannelChange, onTypeChange,
       results, showDetail, showEdit, detailResult, detailIndex, previewElements,
+      showResultPreview, previewResultIndex, previewResultItem, previewItems, previewPosition, showRiskMarkers,
+      openResultPreview, closeResultPreview, setPreviewIndex, previewPrev, previewNext, previewAuditStateClass,
+      getRiskMarkerStyle, enterPreviewEdit, downloadPreviewCurrent, savePreviewCurrent,
       canGenerate, selectProject, createProject,
       handleGenerate, openResultEditor, previewResult, enterEdit, saveCurrent, handleSave, downloadCurrent, handleDownload, clearResults,
-      hasReviewRisks, isReviewSavable, isResultSavable, auditResultLabel, auditRiskLevelLabel, auditBadgeClass, auditStatusColor,
-      showInfoPanel, showComplianceDrawer, complianceSectionOpen, editSidebarCollapsed, isRerunningReview, rerunReviewManual,
+      hasReviewRisks, effectiveReviewRisks, reviewRiskCount, isReviewSavable, isResultSavable, isSourceAssetAvailable, auditResultLabel, auditResultCardLabel, auditRiskLevelLabel, auditBadgeClass, auditCardStatusClass, auditStatusColor, retryReview,
+      showMisjudgmentModal, feedbackRisk, misjudgmentReason, openMisjudgmentFeedback, closeMisjudgmentFeedback, submitMisjudgmentFeedback,
+      showComplianceDrawer, complianceSectionOpen, editSidebarCollapsed, isRerunningReview, rerunReviewManual,
       handleSaveSelected, handleDownloadSelected, openResultDeleteConfirm, confirmDeleteSelected,
       resultLangFilter, resultLangOptions, filteredResultsWithIndex, filteredResults,
-      selectedResultCount, selectedSavableCount,
+      selectedResultCount, selectedSavableCount, selectedContainsSaved,
       allFilteredSelected, toggleResultSelect, toggleSelectAllFiltered, getResultLang, getResultPreviewText,
-      resultCardMenuId, toggleResultCardMenu,
       showLocaleModal, targetLocales, localeOptions,
       localeSourceCount, localeGeneratePreviewCount, openLocaleModal, closeLocaleModal,
       toggleTargetLocale, confirmLocaleGenerate,
-      exitDetail, exitDetailOrEdit, cancelEdit,
+      exitDetail, exitDetailOrEdit, cancelEdit, requestCloseEditor, discardEditChanges, showUnsavedEditModal,
       editElements, editSelection, editSelectionLabel, clearEditSelection,
       showSafeArea, showAlignGuides, showAssistMenu,
       selectedElementIndex, getElementLabel, selectBg, selectOverlay, selectElement,
       bgTransform, overlayMask, overlayPresets, overlayColors, overlayColorHex, setOverlayColor, textColors, activeChipStyle,
       elementSizeMin, elementSizeMax,
-      getOverlayStyle, getOverlayPresetSwatch, applyOverlayPreset, defaultOverlayMask,
+      getOverlayStyle, getOverlayPresetSwatch, applyOverlayPreset, defaultOverlayMask, normalizeHexColor,
       getCanvasObjectStyle, getCanvasObjectContentStyle, setElementScale,
       getBgStyle, getBgFrameStyle, resetBgTransform, canvasWidth, canvasHeight,
       startDrag, startBgDrag, startBgResize, startElemResize, onCanvasDrag, onCanvasDrop, editText,
-      saveEdit
+      hasEditChanges, saveEdit
     };
   }
 }).mount('#app');
@@ -4886,6 +5359,7 @@ console.log('Vue app mounted successfully');
 } catch(e) {
   console.error('Vue mount failed:', e);
   document.body.innerHTML += '<div style="position:fixed;top:0;left:0;right:0;background:red;color:white;padding:12px;z-index:9999;font-size:14px;">Vue Error: ' + e.message + '</div>';
+}
 }
 </script>
 </body>
