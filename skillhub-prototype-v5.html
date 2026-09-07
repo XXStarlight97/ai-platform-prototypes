@@ -247,7 +247,7 @@
         <Transition name="fade" mode="out-in">
           
           <!-- VIEW: SKILL MARKET -->
-          <div v-if="activeTab.view === 'market'" class="flex flex-col h-full" key="market">
+          <div v-if="activeTab.view === 'market'" class="flex flex-col h-full min-h-0" key="market">
             <!-- Topbar (Discover / Mine Tabs & Create) -->
             <div class="h-[60px] border-b border-border-default flex items-center px-6 justify-between shrink-0 bg-bg-elevated/90">
               <div class="flex items-center gap-6">
@@ -275,7 +275,7 @@
             </div>
 
             <!-- DISCOVER TAB CONTENT -->
-            <template v-if="mainTab === 'discover'">
+            <div v-show="mainTab === 'discover'" class="flex-1 min-h-0 flex flex-col">
               <!-- Toolbar: Categories + Search + Filters -->
               <div class="px-6 py-3 flex items-center justify-between shrink-0 border-b border-border-default bg-bg-elevated/90">
                 <!-- Categories -->
@@ -294,22 +294,30 @@
                     <input type="text" v-model="searchQuery" placeholder="搜索技能名称或描述..." 
                            class="w-full h-[32px] bg-black/20 border border-border-default rounded-lg pl-9 pr-3 text-[13px] outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all placeholder-text-tertiary truncate">
                   </div>
-                  <div class="relative w-[160px]">
-                    <button type="button" @click.stop="toggleFilterDropdown('dept')"
-                            class="w-full h-[32px] bg-black/20 border rounded-lg pl-3 pr-8 text-[13px] outline-none transition-all cursor-pointer text-left truncate"
-                            :class="openFilterDropdown === 'dept' ? 'border-primary text-text-primary ring-1 ring-primary/40' : 'border-border-default text-text-secondary hover:border-primary/40'">
-                      {{ selectedDept }}
+                  <div class="relative w-[180px]" @click.stop>
+                    <input type="text" :value="deptComboboxDisplay"
+                           :placeholder="openFilterDropdown === 'dept' ? '搜索岗位' : '全部岗位'"
+                           class="w-full h-[32px] bg-black/20 border rounded-lg pl-3 pr-14 text-[13px] outline-none transition-all truncate"
+                           :class="openFilterDropdown === 'dept' ? 'border-primary text-text-primary ring-1 ring-primary/40' : 'border-border-default text-text-secondary hover:border-primary/40'"
+                           @focus="openDeptCombobox"
+                           @input="onDeptComboboxInput">
+                    <button v-if="selectedDept && selectedDept !== '全部岗位'" type="button" class="absolute right-7 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center text-text-tertiary hover:text-text-primary"
+                            @click.stop="clearDeptFilter" title="清除">
+                      <i class="ph ph-x text-xs"></i>
                     </button>
-                    <i class="ph ph-caret-down absolute right-2.5 top-1/2 -translate-y-1/2 text-text-tertiary pointer-events-none text-xs"></i>
+                    <button type="button" class="absolute right-1.5 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center text-text-tertiary hover:text-text-primary"
+                            @click.stop="toggleDeptCombobox">
+                      <i class="ph text-xs" :class="openFilterDropdown === 'dept' ? 'ph-caret-up' : 'ph-caret-down'"></i>
+                    </button>
                     <div v-if="openFilterDropdown === 'dept'"
-                         class="absolute left-0 top-[calc(100%+6px)] z-50 w-full max-h-[280px] overflow-y-auto py-1 rounded-xl bg-bg-elevated border border-border-default shadow-2xl ring-1 ring-white/10"
-                         @click.stop>
-                      <button type="button" v-for="d in departmentOptions" :key="d" @click="selectDeptFilter(d)"
+                         class="absolute left-0 top-[calc(100%+6px)] z-50 w-full max-h-[240px] overflow-y-auto py-1 rounded-xl bg-bg-elevated border border-border-default shadow-2xl ring-1 ring-white/10">
+                      <button type="button" v-for="d in filteredDeptOptions" :key="d" @click="selectDeptFilter(d)"
                               class="w-full text-left px-3 py-2 text-[13px] transition-colors truncate"
                               :class="selectedDept === d ? 'bg-white/10 text-text-primary' : 'text-text-secondary hover:bg-white/5 hover:text-text-primary'"
                               :title="d">
                         {{ d }}
                       </button>
+                      <div v-if="filteredDeptOptions.length === 0" class="px-3 py-6 text-center text-[12px] text-text-tertiary">无匹配岗位</div>
                     </div>
                   </div>
                   <div class="relative w-[160px]">
@@ -333,9 +341,9 @@
               </div>
 
               <!-- Grid -->
-              <div class="flex-1 overflow-y-auto px-6 py-5 pb-24">
+              <div ref="plazaListRef" class="flex-1 min-h-0 overflow-y-auto px-6 py-5 pb-24" @scroll="onPlazaScroll">
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-                  <div v-for="skill in filteredSkills" :key="skill.id" 
+                  <div v-for="skill in visiblePlazaSkills" :key="skill.id" 
                        @click="openDetailView(skill)"
                        class="group bg-white/[0.03] border border-border-default rounded-xl p-5 cursor-pointer hover:bg-white/[0.06] hover:border-primary/40 hover:-translate-y-1 transition-all duration-300 hover:shadow-glow-primary flex flex-col h-full">
                     
@@ -370,10 +378,10 @@
                   <p class="text-sm">暂无匹配的技能</p>
                 </div>
               </div>
-            </template>
+            </div>
 
             <!-- MINE TAB CONTENT -->
-            <template v-else-if="mainTab === 'mine'">
+            <div v-show="mainTab === 'mine'" class="flex-1 min-h-0 flex flex-col">
               <!-- Mine Toolbar: Sub-tabs + Search -->
               <div class="px-6 py-3 flex items-center justify-between shrink-0 border-b border-border-default bg-bg-elevated/90">
                 <div class="flex items-center gap-2 overflow-x-auto no-scrollbar">
@@ -390,7 +398,7 @@
                 </div>
               </div>
 
-              <div class="flex-1 overflow-y-auto px-6 py-5 pb-24">
+              <div class="flex-1 min-h-0 overflow-y-auto px-6 py-5 pb-24">
                 <!-- Mine Skills (Grid like market) -->
                 <div v-if="mineSubTab === 'published'">
                   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
@@ -404,8 +412,9 @@
                           <!-- Status Badge：失败原因仅在详情页展示 -->
                           <span v-if="ms.status === '检测中'" class="px-2 py-0.5 rounded text-[11px] font-medium bg-amber-500/10 text-amber-300 border border-amber-500/25">检测中</span>
                           <template v-else-if="ms.status === '已发布'">
-                            <span class="px-2 py-0.5 rounded text-[11px] font-medium bg-green-500/10 text-green-400 border border-green-500/20">已发布</span>
                             <span v-if="ms.pendingVersionDetect" class="px-2 py-0.5 rounded text-[11px] font-medium bg-amber-500/10 text-amber-300 border border-amber-500/25">新版本检测中</span>
+                            <span v-else-if="hasVersionPublishFail(ms)" class="px-2 py-0.5 rounded text-[11px] font-medium bg-red-500/10 text-red-400 border border-red-500/20">新版本发布失败</span>
+                            <span v-else class="px-2 py-0.5 rounded text-[11px] font-medium bg-green-500/10 text-green-400 border border-green-500/20">已发布</span>
                           </template>
                           <span v-else-if="ms.status === '发布失败'" class="px-2 py-0.5 rounded text-[11px] font-medium bg-red-500/10 text-red-400 border border-red-500/20">发布失败</span>
                           <span v-else-if="ms.status === '已下架'" class="px-2 py-0.5 rounded text-[11px] font-medium bg-white/10 text-text-tertiary border border-white/10">已下架</span>
@@ -498,7 +507,6 @@
 
                       <h3 class="text-[15px] font-semibold text-text-primary mb-1.5 group-hover:text-primary transition-colors line-clamp-1 leading-snug shrink-0">{{ ds.name }}</h3>
                       <p class="text-[13px] text-text-secondary line-clamp-2 leading-5 min-h-[2.5rem] shrink-0">{{ ds.desc }}</p>
-                      <p v-if="ds.downloadState === 'unpublished' && ds.unpublishedReason" class="text-[12px] text-text-tertiary line-clamp-1 mt-1 shrink-0">{{ ds.unpublishedReason }}</p>
                       <div class="mt-auto pt-3 border-t border-border-light flex items-center gap-2.5 text-[11px] text-text-tertiary shrink-0">
                         <span class="font-mono text-text-secondary shrink-0">v{{ ds.version }}</span>
                         <span v-if="ds.favorites" class="flex items-center gap-0.5 shrink-0"><i class="ph ph-star text-[10px]"></i>{{ ds.favorites }}</span>
@@ -521,7 +529,7 @@
                 </div>
                 
               </div>
-            </template>
+            </div>
           </div>
 
           <!-- VIEW: SKILL DETAIL -->
@@ -541,7 +549,8 @@
               <span v-else-if="activeTab.skillData.status === '已下架' || activeTab.skillData.unlisted || activeTab.skillData.downloadState === 'unpublished'" class="px-2 py-0.5 rounded text-[11px] font-medium bg-white/10 text-text-tertiary border border-white/10">已下架</span>
               <template v-else>
                 <span class="px-2 py-0.5 rounded text-[11px] font-medium bg-green-500/10 text-green-400 border border-green-500/20">已发布</span>
-                <span v-if="activeTab.skillData.pendingVersionDetect" class="px-2 py-0.5 rounded text-[11px] font-medium bg-amber-500/10 text-amber-300 border border-amber-500/25">新版本检测中</span>
+                <span v-if="resolveOwnRecord(activeTab.skillData).pendingVersionDetect" class="px-2 py-0.5 rounded text-[11px] font-medium bg-amber-500/10 text-amber-300 border border-amber-500/25">新版本检测中</span>
+                <span v-else-if="isOwnSkill(activeTab.skillData) && hasVersionPublishFail(activeTab.skillData)" class="px-2 py-0.5 rounded text-[11px] font-medium bg-red-500/10 text-red-400 border border-red-500/20">新版本发布失败</span>
               </template>
             </div>
 
@@ -574,7 +583,7 @@
                 <!-- Tab Content Area -->
                 <div class="flex-1 overflow-y-auto p-8 custom-scrollbar">
                   
-                  <!-- Overview Tab：优先 README，否则 skill.md -->
+                  <!-- Overview Tab：优先 README，否则 SKILL.md -->
                   <div v-show="currentDetailSubTab === 'overview'" class="max-w-3xl mx-auto md-content pb-10">
                     <div v-html="renderMarkdown(overviewDocContent)"></div>
                   </div>
@@ -777,26 +786,23 @@
                       <p class="text-[12px] text-text-secondary mt-0.5 leading-relaxed">{{ activeTab.skillData.unpublishedReason || '作者已下架，广场不可见。' }}已安装的本地版本可继续使用。</p>
                     </div>
                   </div>
-                  <div v-else>
-                    <h4 class="text-[13px] font-semibold text-text-secondary uppercase tracking-wider mb-4">安装</h4>
-                    <div class="space-y-4">
-                      <div class="p-4 bg-bg-elevated/50 rounded-lg border border-border-default relative group shadow-sm">
-                        <div class="text-[13px] font-mono text-text-primary/90 leading-relaxed pr-10 break-all overflow-hidden whitespace-pre-wrap">npx clawhub install {{ activeTab.skillData.id || 'skill-name' }} --registry https://skill.xfyun.cn</div>
-                        <button @click="copyCliCommand" class="absolute right-3 top-3 text-text-secondary hover:text-white transition-colors" title="复制代码">
-                          <i class="ph-duotone ph-copy text-lg"></i>
-                        </button>
-                      </div>
-
-                      <button @click="triggerDownload" class="w-full h-[36px] rounded-lg border border-border-default hover:border-primary text-text-primary hover:text-primary bg-white/5 hover:bg-primary/10 text-[13px] font-medium transition-all flex items-center justify-center gap-2">
-                        <i class="ph-bold ph-cloud-arrow-down text-lg"></i>
-                        下载
-                      </button>
-
-                      <button @click="toggleFavorite(activeTab.skillData.id)" class="w-full h-[36px] rounded-lg border text-[13px] font-medium transition-all flex items-center justify-center gap-2" :class="isFavorited(activeTab.skillData.id) ? 'border-primary/30 bg-primary/10 text-primary hover:bg-primary/15' : 'border-border-default text-text-primary hover:border-primary hover:text-primary bg-white/5 hover:bg-primary/10'">
-                        <i :class="isFavorited(activeTab.skillData.id) ? 'ph-fill ph-star' : 'ph ph-star'"></i>
-                        {{ isFavorited(activeTab.skillData.id) ? '已收藏' : '收藏' }}
+                  <div v-else class="space-y-3">
+                    <div class="rounded-xl border border-border-default bg-white/[0.03] p-4 space-y-3">
+                      <h4 class="text-[13px] font-semibold text-text-primary">将提示词发送给你的 AI 安装该 Skill</h4>
+                      <p class="text-[13px] text-text-secondary leading-relaxed break-all">{{ installPromptText(activeTab.skillData) }}</p>
+                      <button type="button" @click="copyInstallPrompt(activeTab.skillData)" class="w-full h-[36px] rounded-lg bg-primary hover:bg-primary-hover text-bg-base text-[13px] font-semibold transition-all flex items-center justify-center gap-2">
+                        <i class="ph-bold ph-copy"></i>
+                        复制 prompt
                       </button>
                     </div>
+                    <button @click="triggerDownload" class="w-full h-[36px] rounded-lg border border-border-default hover:border-primary text-text-primary hover:text-primary bg-white/5 hover:bg-primary/10 text-[13px] font-medium transition-all flex items-center justify-center gap-2">
+                      <i class="ph-bold ph-cloud-arrow-down text-lg"></i>
+                      下载 ZIP
+                    </button>
+                    <button @click="toggleFavorite(activeTab.skillData.id)" class="w-full h-[36px] rounded-lg border text-[13px] font-medium transition-all flex items-center justify-center gap-2" :class="isFavorited(activeTab.skillData.id) ? 'border-primary/30 bg-primary/10 text-primary hover:bg-primary/15' : 'border-border-default text-text-primary hover:border-primary hover:text-primary bg-white/5 hover:bg-primary/10'">
+                      <i :class="isFavorited(activeTab.skillData.id) ? 'ph-fill ph-star' : 'ph ph-star'"></i>
+                      {{ isFavorited(activeTab.skillData.id) ? '已收藏' : '收藏' }}
+                    </button>
                   </div>
 
                   <hr class="border-border-default">
@@ -846,29 +852,23 @@
                     </div>
                   </div>
                   <!-- Install Action Card (Cleanized) -->
-                  <div v-else>
-                    <h4 class="text-[13px] font-semibold text-text-secondary uppercase tracking-wider mb-4">安装</h4>
-                    <div class="space-y-4">
-                      <!-- Terminal Content -->
-                      <div class="p-4 bg-bg-elevated/50 rounded-lg border border-border-default relative group shadow-sm">
-                        <div class="text-[13px] font-mono text-text-primary/90 leading-relaxed pr-10 break-all overflow-hidden whitespace-pre-wrap">npx clawhub install {{ activeTab.skillData.id || 'skill-name' }} --registry https://skill.xfyun.cn</div>
-                        <button @click="copyCliCommand" class="absolute right-3 top-3 text-text-secondary hover:text-white transition-colors" title="复制代码">
-                          <i class="ph-duotone ph-copy text-lg"></i>
-                        </button>
-                      </div>
-
-                      <!-- Download Button -->
-                      <button @click="triggerDownload" class="w-full h-[36px] rounded-lg border border-border-default hover:border-primary text-text-primary hover:text-primary bg-white/5 hover:bg-primary/10 text-[13px] font-medium transition-all flex items-center justify-center gap-2">
-                        <i class="ph-bold ph-cloud-arrow-down text-lg"></i>
-                        下载
-                      </button>
-
-                      <!-- Favorite Button -->
-                      <button @click="toggleFavorite(activeTab.skillData.id)" class="w-full h-[36px] rounded-lg border text-[13px] font-medium transition-all flex items-center justify-center gap-2" :class="isFavorited(activeTab.skillData.id) ? 'border-primary/30 bg-primary/10 text-primary hover:bg-primary/15' : 'border-border-default text-text-primary hover:border-primary hover:text-primary bg-white/5 hover:bg-primary/10'">
-                        <i :class="isFavorited(activeTab.skillData.id) ? 'ph-fill ph-star' : 'ph ph-star'"></i>
-                        {{ isFavorited(activeTab.skillData.id) ? '已收藏' : '收藏' }}
+                  <div v-else class="space-y-3">
+                    <div class="rounded-xl border border-border-default bg-white/[0.03] p-4 space-y-3">
+                      <h4 class="text-[13px] font-semibold text-text-primary">将提示词发送给你的 AI 安装该 Skill</h4>
+                      <p class="text-[13px] text-text-secondary leading-relaxed break-all">{{ installPromptText(activeTab.skillData) }}</p>
+                      <button type="button" @click="copyInstallPrompt(activeTab.skillData)" class="w-full h-[36px] rounded-lg bg-primary hover:bg-primary-hover text-bg-base text-[13px] font-semibold transition-all flex items-center justify-center gap-2">
+                        <i class="ph-bold ph-copy"></i>
+                        复制 prompt
                       </button>
                     </div>
+                    <button @click="triggerDownload" class="w-full h-[36px] rounded-lg border border-border-default hover:border-primary text-text-primary hover:text-primary bg-white/5 hover:bg-primary/10 text-[13px] font-medium transition-all flex items-center justify-center gap-2">
+                      <i class="ph-bold ph-cloud-arrow-down text-lg"></i>
+                      下载 ZIP
+                    </button>
+                    <button @click="toggleFavorite(activeTab.skillData.id)" class="w-full h-[36px] rounded-lg border text-[13px] font-medium transition-all flex items-center justify-center gap-2" :class="isFavorited(activeTab.skillData.id) ? 'border-primary/30 bg-primary/10 text-primary hover:bg-primary/15' : 'border-border-default text-text-primary hover:border-primary hover:text-primary bg-white/5 hover:bg-primary/10'">
+                      <i :class="isFavorited(activeTab.skillData.id) ? 'ph-fill ph-star' : 'ph ph-star'"></i>
+                      {{ isFavorited(activeTab.skillData.id) ? '已收藏' : '收藏' }}
+                    </button>
                   </div>
 
                   <!-- 作者管理区：含当前状态；检测中整卡走 ownerDetecting -->
@@ -881,14 +881,20 @@
                           <span class="text-[13px] text-text-tertiary">当前状态</span>
                           <div class="flex items-center gap-1.5 flex-wrap justify-end">
                             <span class="px-2 py-0.5 rounded text-[11px] font-medium bg-green-500/10 text-green-400 border border-green-500/20">已发布</span>
-                            <span v-if="activeTab.skillData.pendingVersionDetect" class="px-2 py-0.5 rounded text-[11px] font-medium bg-amber-500/10 text-amber-300 border border-amber-500/25">新版本检测中</span>
+                            <span v-if="resolveOwnRecord(activeTab.skillData).pendingVersionDetect" class="px-2 py-0.5 rounded text-[11px] font-medium bg-amber-500/10 text-amber-300 border border-amber-500/25">新版本检测中</span>
+                            <span v-else-if="hasVersionPublishFail(activeTab.skillData)" class="px-2 py-0.5 rounded text-[11px] font-medium bg-red-500/10 text-red-400 border border-red-500/20">新版本发布失败</span>
                           </div>
                         </div>
                       </div>
-                      <div v-if="activeTab.skillData.pendingVersionDetect" class="mt-4 p-3 rounded-lg bg-amber-500/5 border border-amber-500/20 text-[12px] text-text-secondary leading-relaxed">
-                        新版本 v{{ activeTab.skillData.pendingVersion }} 检测中，线上仍为 v{{ activeTab.skillData.version }}。检测完成前暂不可更新版本或下架。
+                      <div v-if="resolveOwnRecord(activeTab.skillData).pendingVersionDetect" class="mt-4 p-3 rounded-lg bg-amber-500/5 border border-amber-500/20 text-[12px] text-text-secondary leading-relaxed">
+                        新版本 v{{ resolveOwnRecord(activeTab.skillData).pendingVersion }} 检测中，线上仍为 v{{ resolveOwnRecord(activeTab.skillData).version }}。检测完成前暂不可更新版本或下架。
                       </div>
-                      <div class="mt-4 space-y-2.5" v-else>
+                      <div v-else-if="hasVersionPublishFail(activeTab.skillData)" class="mt-4 p-4 bg-red-500/5 border border-red-500/20 rounded-xl">
+                        <p class="text-[12px] text-text-tertiary mb-1">失败原因</p>
+                        <p class="text-[13px] text-text-primary leading-relaxed">v{{ resolveOwnRecord(activeTab.skillData).lastUpdateFailVersion || '—' }} 未通过检测，线上仍为 v{{ resolveOwnRecord(activeTab.skillData).version }}。</p>
+                        <p class="text-[13px] text-text-primary leading-relaxed mt-2">{{ resolveOwnRecord(activeTab.skillData).lastUpdateFailReason }}</p>
+                      </div>
+                      <div class="mt-4 space-y-2.5" v-if="!resolveOwnRecord(activeTab.skillData).pendingVersionDetect">
                         <button @click="openUpdateVersion(resolveOwnRecord(activeTab.skillData))" class="w-full h-[36px] rounded-lg bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 text-[13px] font-semibold transition-colors flex items-center justify-center gap-2">
                           <i class="ph-bold ph-cloud-arrow-up"></i> 更新版本
                         </button>
@@ -998,7 +1004,6 @@
                       <div class="space-y-2">
                         <label class="block text-[13px] font-medium text-text-secondary">新版本号 <span class="text-error text-red-500">*</span></label>
                         <input type="text" required v-model="updateVersionData.version" placeholder="例如：1.3.0" class="w-full h-[36px] bg-black/20 border border-border-default rounded-lg px-3 text-[13px] font-mono outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all">
-                        <p class="text-[12px] text-text-tertiary">当前版本 v{{ formatVersion(updateVersionData.currentVersion) }}，已自动递增修订号，可按需修改</p>
                       </div>
                       <div class="space-y-2">
                         <label class="block text-[13px] font-medium text-text-secondary">更新说明 <span class="text-error text-red-500">*</span></label>
@@ -1271,13 +1276,17 @@
         el.innerHTML = '<div style="padding:48px;color:rgba(255,255,255,.85);font:14px/1.6 system-ui">原型加载失败：无法拉取 Vue CDN，请检查网络后刷新。</div>';
       }
     } else {
-    const { createApp, ref, computed, reactive, watch, onUnmounted } = Vue;
+    const { createApp, ref, computed, reactive, watch, onMounted, onUnmounted, nextTick } = Vue;
 
     // Dummy Data mapped to actual departments
-    const ORG_DEPTS = ['全部岗位', '产品经理', '前端开发工程师', 'Java开发工程师', '测试工程师', '平面设计师', '运营专员'];
+    const ORG_DEPTS = [
+      '产品经理', '前端开发工程师', 'Java开发工程师', '测试工程师', '平面设计师', '运营专员',
+      '后端开发工程师', 'iOS开发工程师', 'Android开发工程师', '数据分析师', '交互设计师',
+      '视觉设计师', '品牌经理', '媒介专员', 'Social运营', '广告优化师', '法务专员',
+    ];
     
     const MOCK_SKILLS = [
-      { id: '1', name: '智能代码审查专家', desc: '深度分析 PR/MR 代码，找出潜在的 Bug、性能瓶颈以及不符合规范的写法，并给出修改建议。', category: '开发工具', author: 'You', dept: '前端开发工程师', downloads: '1.2k', favorites: 328, version: '1.2.0', updatedAt: '2026-06-16 14:30', icon: 'ph-duotone ph-code', gradient: 'from-blue-600 to-cyan-500',
+      { id: '1', name: '智能代码审查专家', desc: '深度分析 PR/MR 代码，找出潜在的 Bug、性能瓶颈以及不符合规范的写法，并给出修改建议。', category: '开发工具', author: '管晓', dept: '前端开发工程师', downloads: '1.2k', favorites: 328, version: '1.2.0', updatedAt: '2026-06-16 14:30', icon: 'ph-duotone ph-code', gradient: 'from-blue-600 to-cyan-500',
         history: [
           { version: '1.2.0', date: '2026-06-16 14:30', notes: ['修复了分析深度的容错率问题', '新增了输出语言 lang 字段支持', '优化 Prompt 执行效率，Token 消耗减少 15%'] },
           { version: '1.1.0', date: '2026-06-10 09:15', notes: ['优化 Prompt 执行效率', '更新 examples 目录下的测试用例'] },
@@ -1306,12 +1315,99 @@
           { version: '2.5.0', date: '2026-05-18 16:30', notes: ['新增讨论细节分层输出'] },
           { version: '2.0.0', date: '2026-05-01 10:00', notes: ['重构提炼引擎'] },
         ] },
-      { id: '6', name: 'SQL 慢查询优化', desc: '输入慢查询 SQL 与表结构，自动分析 explain 结果并给出索引建议。', category: '开发工具', author: 'You', dept: 'Java开发工程师', downloads: '920', favorites: 156, version: '1.0.2', updatedAt: '2026-06-05 17:00', icon: 'ph-duotone ph-lightning', gradient: 'from-violet-600 to-fuchsia-500',
+      { id: '6', name: 'SQL 慢查询优化', desc: '输入慢查询 SQL 与表结构，自动分析 explain 结果并给出索引建议。', category: '开发工具', author: '管晓', dept: 'Java开发工程师', downloads: '920', favorites: 156, version: '1.0.2', updatedAt: '2026-06-05 17:00', icon: 'ph-duotone ph-lightning', gradient: 'from-violet-600 to-fuchsia-500',
         history: [
           { version: '1.0.2', date: '2026-06-05 17:00', notes: ['修复 explain 结果解析异常'] },
           { version: '1.0.0', date: '2026-05-28 09:30', notes: ['初始版本发布'] },
         ] },
     ];
+
+    const EXTRA_MOCK_SKILLS = [
+      { id: '7', name: '品牌 KV 延展助手', desc: '根据主 KV 自动延展社媒、商详和广告规格，并给出安全边距建议。', category: '设计创意', author: 'Amy', dept: '视觉设计师', downloads: '1.8k', favorites: 240, version: '1.3.0', updatedAt: '2026-06-15 11:20', icon: 'ph-duotone ph-image', gradient: 'from-amber-500 to-yellow-400' },
+      { id: '8', name: '包装刀版检查', desc: '对照刀版检查出血、安全区和条码位置，输出需修正项。', category: '设计创意', author: 'Maria', dept: '平面设计师', downloads: '640', favorites: 98, version: '1.0.1', updatedAt: '2026-06-09 16:40', icon: 'ph-duotone ph-image', gradient: 'from-amber-500 to-yellow-400' },
+      { id: '9', name: '主图构图建议', desc: '按平台规范给出主体占比、留白和卖点标注位置建议。', category: '设计创意', author: 'Ken', dept: '交互设计师', downloads: '1.1k', favorites: 167, version: '1.2.0', updatedAt: '2026-06-13 09:05', icon: 'ph-duotone ph-image', gradient: 'from-amber-500 to-yellow-400' },
+      { id: '10', name: '需求拆解助手', desc: '把一句话需求拆成用户故事、验收标准和风险备注。', category: '产品管理', author: 'David', dept: '产品经理', downloads: '2.4k', favorites: 310, version: '2.1.0', updatedAt: '2026-06-16 09:10', icon: 'ph-duotone ph-brain', gradient: 'from-purple-600 to-indigo-500' },
+      { id: '11', name: '竞品功能对比表', desc: '输入竞品列表，输出功能覆盖、差异点和跟进建议。', category: '产品管理', author: '赵敏', dept: '产品经理', downloads: '1.5k', favorites: 201, version: '1.4.0', updatedAt: '2026-06-11 14:00', icon: 'ph-duotone ph-chart-bar', gradient: 'from-rose-600 to-pink-400' },
+      { id: '12', name: '版本发布说明生成', desc: '根据提交记录整理面向业务的版本说明，区分新能力和修复。', category: '产品管理', author: '管晓', dept: '前端开发工程师', downloads: '780', favorites: 88, version: '1.0.3', updatedAt: '2026-06-07 18:20', icon: 'ph-duotone ph-files', gradient: 'from-orange-500 to-amber-400' },
+      { id: '13', name: '出差报销核对', desc: '核对行程、发票和制度条款，标出缺票或超标项。', category: '其他', author: 'Nina', dept: '法务专员', downloads: '430', favorites: 54, version: '1.0.0', updatedAt: '2026-06-04 10:15', icon: 'ph-duotone ph-shield-check', gradient: 'from-green-600 to-emerald-400' },
+      { id: '14', name: '会议室预约话术', desc: '按人数、设备和时段生成预约说明，并给出备选时段。', category: '其他', author: 'Tom', dept: '媒介专员', downloads: '290', favorites: 31, version: '1.1.0', updatedAt: '2026-06-03 13:40', icon: 'ph-duotone ph-gear', gradient: 'from-gray-500 to-slate-400' },
+      { id: '15', name: 'API 文档补全', desc: '根据接口定义补全请求示例、错误码和调用注意点。', category: '开发工具', author: 'Chris', dept: '后端开发工程师', downloads: '1.6k', favorites: 219, version: '1.2.1', updatedAt: '2026-06-14 17:25', icon: 'ph-duotone ph-code', gradient: 'from-blue-600 to-cyan-500' },
+      { id: '16', name: 'Git 提交信息规范', desc: '把杂乱提交说明改写成约定格式，并补上影响范围。', category: '开发工具', author: '林晓', dept: '前端开发工程师', downloads: '990', favorites: 142, version: '1.0.4', updatedAt: '2026-06-06 11:50', icon: 'ph-duotone ph-code', gradient: 'from-blue-600 to-cyan-500' },
+      { id: '17', name: '前端无障碍检查', desc: '检查对比度、焦点顺序和替代文本，输出可改项清单。', category: '开发工具', author: '管晓', dept: '前端开发工程师', downloads: '710', favorites: 96, version: '1.1.0', updatedAt: '2026-06-02 15:30', icon: 'ph-duotone ph-shield-check', gradient: 'from-green-600 to-emerald-400' },
+      { id: '18', name: '日志异常归因', desc: '从错误日志中归纳高频堆栈，并给出可能模块和复现条件。', category: '开发工具', author: '王琦', dept: 'Java开发工程师', downloads: '1.3k', favorites: 175, version: '1.0.2', updatedAt: '2026-06-12 08:45', icon: 'ph-duotone ph-lightning', gradient: 'from-violet-600 to-fuchsia-500' },
+      { id: '19', name: '亚马逊 Listing 优化', desc: '按类目规范改写标题、五点和后台关键词，避免违禁词。', category: '内容创作', author: 'Sarah', dept: '运营专员', downloads: '2.8k', favorites: 406, version: '2.2.0', updatedAt: '2026-06-15 19:10', icon: 'ph-duotone ph-pen-nib', gradient: 'from-pink-600 to-rose-400' },
+      { id: '20', name: '短视频口播脚本', desc: '把卖点压成 15 / 30 / 60 秒口播，并标出镜号和字幕节奏。', category: '内容创作', author: '赵敏', dept: 'Social运营', downloads: '2.0k', favorites: 288, version: '1.5.0', updatedAt: '2026-06-13 20:00', icon: 'ph-duotone ph-pen-nib', gradient: 'from-pink-600 to-rose-400' },
+      { id: '21', name: '邮件跟进话术', desc: '按客户阶段生成跟进邮件，控制长度并给出下一问。', category: '内容创作', author: 'Nina', dept: '品牌经理', downloads: '870', favorites: 121, version: '1.0.1', updatedAt: '2026-06-08 12:10', icon: 'ph-duotone ph-pen-nib', gradient: 'from-pink-600 to-rose-400' },
+      { id: '22', name: '独立站 SEO 标题', desc: '为商详和博客生成标题与 meta，兼顾搜索词和品牌语气。', category: '内容创作', author: 'Leo', dept: '运营专员', downloads: '1.4k', favorites: 193, version: '1.3.2', updatedAt: '2026-06-10 08:20', icon: 'ph-duotone ph-globe', gradient: 'from-sky-600 to-cyan-400' },
+      { id: '23', name: '广告投放周报', desc: '汇总花费、转化和素材表现，标出该加预算和该停的计划。', category: '数据分析', author: 'Tom', dept: '广告优化师', downloads: '3.1k', favorites: 457, version: '2.0.0', updatedAt: '2026-06-16 07:50', icon: 'ph-duotone ph-chart-bar', gradient: 'from-rose-600 to-pink-400' },
+      { id: '24', name: '库存周转预警', desc: '结合销量和在途，标出滞销、断货风险和补货建议。', category: '数据分析', author: '王琦', dept: '数据分析师', downloads: '1.0k', favorites: 134, version: '1.1.0', updatedAt: '2026-06-09 09:35', icon: 'ph-duotone ph-database', gradient: 'from-emerald-600 to-teal-400' },
+      { id: '25', name: '问卷开放题聚类', desc: '把开放题回答聚成主题，并摘出代表性原话。', category: '数据分析', author: 'Ken', dept: '数据分析师', downloads: '760', favorites: 109, version: '1.0.0', updatedAt: '2026-06-05 14:15', icon: 'ph-duotone ph-brain', gradient: 'from-purple-600 to-indigo-500' },
+      { id: '26', name: '埋点事件命名', desc: '按对象-行为-位置规则生成事件名，并检查与现有字典冲突。', category: '数据分析', author: '林晓', dept: '产品经理', downloads: '680', favorites: 77, version: '1.2.0', updatedAt: '2026-06-01 16:00', icon: 'ph-duotone ph-gear', gradient: 'from-gray-500 to-slate-400' },
+      { id: '27', name: '周报结构整理助手', desc: '把零散进展整理成本周完成、风险和下周计划。', category: '办公效率', author: '陈晨', dept: '测试工程师', downloads: '4.2k', favorites: 623, version: '1.8.0', updatedAt: '2026-06-15 08:00', icon: 'ph-duotone ph-files', gradient: 'from-orange-500 to-amber-400' },
+      { id: '28', name: '日程冲突提醒', desc: '检查一周会议重叠，标出需改期的场次和可挪时段。', category: '办公效率', author: 'Amy', dept: '品牌经理', downloads: '540', favorites: 62, version: '1.0.2', updatedAt: '2026-06-04 17:45', icon: 'ph-duotone ph-lightning', gradient: 'from-violet-600 to-fuchsia-500' },
+      { id: '29', name: '飞书纪要转待办', desc: '从纪要里抽出待办，补齐负责人和截止日期后输出清单。', category: '办公效率', author: 'David', dept: '产品经理', downloads: '2.2k', favorites: 351, version: '1.4.1', updatedAt: '2026-06-14 13:05', icon: 'ph-duotone ph-files', gradient: 'from-orange-500 to-amber-400' },
+      { id: '30', name: '简历筛选要点', desc: '按岗位要求标出匹配项、缺口和建议面试问题。', category: '办公效率', author: 'Chris', dept: '测试工程师', downloads: '610', favorites: 83, version: '1.0.0', updatedAt: '2026-06-03 09:25', icon: 'ph-duotone ph-files', gradient: 'from-orange-500 to-amber-400' },
+      { id: '31', name: '竞品价格监控器', desc: '跟踪重点 SKU 的站点售价和促销，标出异常波动。', category: '数据分析', author: 'Leo', dept: '运营专员', downloads: '1.9k', favorites: 266, version: '1.6.0', updatedAt: '2026-06-11 10:30', icon: 'ph-duotone ph-database', gradient: 'from-emerald-600 to-teal-400' },
+      { id: '32', name: 'PDF 合同要素抽取', desc: '抽取甲乙方、金额、期限和违约条款，输出核对表。', category: '其他', author: 'Nina', dept: '法务专员', downloads: '520', favorites: 71, version: '1.1.0', updatedAt: '2026-06-07 11:00', icon: 'ph-duotone ph-shield-check', gradient: 'from-green-600 to-emerald-400' },
+    ];
+    EXTRA_MOCK_SKILLS.forEach((s) => {
+      if (!s.history) s.history = [{ version: s.version, date: s.updatedAt, notes: ['初始版本发布'] }];
+    });
+    MOCK_SKILLS.push(...EXTRA_MOCK_SKILLS);
+
+    const AUTHOR_HANDLES = {
+      '管晓': 'you', Sarah: 'sarah', Leo: 'leo', Maria: 'maria', David: 'david', '陈晨': 'chenchen',
+      Amy: 'amy', Ken: 'ken', '林晓': 'linxiao', '王琦': 'wangqi', Nina: 'nina', Tom: 'tom', '赵敏': 'zhaomin', Chris: 'chris',
+    };
+    const AUTHOR_DEPT = {
+      '管晓': '前端开发工程师', Sarah: '运营专员', Leo: '运营专员', Maria: '平面设计师',
+      David: '产品经理', '陈晨': '测试工程师', Amy: '视觉设计师', Ken: '交互设计师',
+      '林晓': '前端开发工程师', '王琦': 'Java开发工程师', Nina: '法务专员', Tom: '广告优化师',
+      '赵敏': '产品经理', Chris: '后端开发工程师',
+    };
+    const SKILL_SLUGS = {
+      '智能代码审查专家': 'code-review-expert',
+      '小红书爆款文案器': 'xhs-copywriter',
+      'Shopify 竞品提取器': 'shopify-competitor-scraper',
+      '多语种本地化翻译': 'i18n-translator',
+      '会议纪要提炼': 'meeting-notes',
+      'SQL 慢查询优化': 'sql-slow-query',
+      '品牌 KV 延展助手': 'kv-extend',
+      '包装刀版检查': 'dieline-check',
+      '主图构图建议': 'main-image-layout',
+      '需求拆解助手': 'req-breakdown',
+      '竞品功能对比表': 'competitor-feature-matrix',
+      '版本发布说明生成': 'release-notes',
+      '出差报销核对': 'expense-check',
+      '会议室预约话术': 'meeting-room-copy',
+      'API 文档补全': 'api-doc-complete',
+      'Git 提交信息规范': 'git-commit-lint',
+      '前端无障碍检查': 'a11y-check',
+      '日志异常归因': 'log-root-cause',
+      '亚马逊 Listing 优化': 'amazon-listing',
+      '短视频口播脚本': 'short-video-script',
+      '邮件跟进话术': 'email-followup',
+      '独立站 SEO 标题': 'seo-title',
+      '广告投放周报': 'ads-weekly-report',
+      '库存周转预警': 'inventory-alert',
+      '问卷开放题聚类': 'survey-cluster',
+      '埋点事件命名': 'event-naming',
+      '周报结构整理助手': 'weekly-report-helper',
+      '智能周报生成器': 'weekly-report-gen',
+      '站点价格波动监控': 'site-price-watch',
+      '劳动合同要点核对': 'labor-contract-check',
+      '日程冲突提醒': 'calendar-conflict',
+      '飞书纪要转待办': 'minutes-to-tasks',
+      '简历筛选要点': 'resume-screen',
+      '竞品价格监控器': 'competitor-price-monitor',
+      '竞品分析报告生成器': 'competitor-analysis-report',
+      'PDF 合同要素抽取': 'pdf-contract-extract',
+    };
+    MOCK_SKILLS.forEach((s) => {
+      s.authorHandle = AUTHOR_HANDLES[s.author] || String(s.author || 'you').toLowerCase();
+      if (AUTHOR_DEPT[s.author]) s.dept = AUTHOR_DEPT[s.author];
+      s.slug = SKILL_SLUGS[s.name] || 'skill';
+    });
 
     createApp({
       setup() {
@@ -1342,18 +1438,51 @@
         const favoriteIds = ref(['2', '5']); // 预置收藏示例（他人技能）
 
         const departments = ORG_DEPTS;
-        const departmentOptions = ORG_DEPTS;
+        const departmentOptions = ['全部岗位', ...ORG_DEPTS];
         const selectedDept = ref('全部岗位');
-        // 默认最多下载：广场优先露出热门技能；关闭态直接显示当前排序规则
-        const sortOptions = ['最多下载', '最多收藏', '最新时间'];
-        const selectedSort = ref('最多下载');
+        const deptSearchQuery = ref('');
+        const deptComboboxDisplay = computed(() => {
+          if (openFilterDropdown.value === 'dept') return deptSearchQuery.value;
+          return selectedDept.value || '全部岗位';
+        });
+        const filteredDeptOptions = computed(() => {
+          const q = deptSearchQuery.value.trim().toLowerCase();
+          if (!q || openFilterDropdown.value !== 'dept') return departmentOptions;
+          return departmentOptions.filter((d) => d.toLowerCase().includes(q));
+        });
+        // 默认最新发布：广场优先按更新时间倒序
+        const sortOptions = ['最新发布', '最多下载', '最多收藏'];
+        const selectedSort = ref('最新发布');
         const openFilterDropdown = ref(null); // 'dept' | 'sort' | 'category' | null
 
+        const closeDeptCombobox = () => {
+          deptSearchQuery.value = '';
+          if (openFilterDropdown.value === 'dept') openFilterDropdown.value = null;
+        };
+        const openDeptCombobox = () => {
+          deptSearchQuery.value = '';
+          openFilterDropdown.value = 'dept';
+        };
+        const toggleDeptCombobox = () => {
+          if (openFilterDropdown.value === 'dept') closeDeptCombobox();
+          else openDeptCombobox();
+        };
+        const onDeptComboboxInput = (e) => {
+          deptSearchQuery.value = e.target.value;
+          openFilterDropdown.value = 'dept';
+        };
+        const clearDeptFilter = () => {
+          selectedDept.value = '全部岗位';
+          deptSearchQuery.value = '';
+          openFilterDropdown.value = null;
+        };
         const toggleFilterDropdown = (key) => {
+          if (key !== 'dept' && openFilterDropdown.value === 'dept') closeDeptCombobox();
           openFilterDropdown.value = openFilterDropdown.value === key ? null : key;
         };
         const selectDeptFilter = (d) => {
-          selectedDept.value = d;
+          selectedDept.value = d || '全部岗位';
+          deptSearchQuery.value = '';
           openFilterDropdown.value = null;
         };
         const selectSortFilter = (s) => {
@@ -1365,6 +1494,15 @@
           openFilterDropdown.value = null;
         };
         const formatVersion = (v) => String(v || '').replace(/^v/i, '');
+        const isSemVer = (v) => /^\d+\.\d+\.\d+$/.test(formatVersion(v).trim());
+        const compareSemVer = (a, b) => {
+          const left = formatVersion(a).split('.').map(Number);
+          const right = formatVersion(b).split('.').map(Number);
+          for (let i = 0; i < 3; i += 1) {
+            if (left[i] !== right[i]) return left[i] - right[i];
+          }
+          return 0;
+        };
         const parseDownloads = (v) => {
           const s = String(v || '0').toLowerCase().replace(/,/g, '');
           if (s.endsWith('k')) return parseFloat(s) * 1000;
@@ -1395,7 +1533,7 @@
         const pendingCloseTabId = ref(null);
 
         // Mock file contents for preview
-        // README：人形说明；skill.md：技能主体。概览优先 README。
+        // README：人形说明；SKILL.md：技能主体。概览优先 README。
         const fileContents = {
           'README.md': {
             type: 'markdown',
@@ -1425,7 +1563,7 @@
 - **待办**：\`@Alice\` 补齐埋点方案 · DDL 周五
 - **讨论细节**：对 Q3 指标口径仍有分歧，已记入 follow-up`
           },
-          'skill.md': {
+          'SKILL.md': {
             type: 'markdown',
             content: `# 智能代码审查专家
 
@@ -1487,7 +1625,7 @@
   "description": "深度代码审查专家",
   "author": "Alex",
   "category": "开发工具",
-  "main": "skill.md",
+  "main": "SKILL.md",
   "config": {
     "depth": 3,
     "lang": "zh-CN",
@@ -1499,7 +1637,7 @@
     "minVersion": "1.0.0"
   },
   "files": [
-    "skill.md",
+    "SKILL.md",
     "skill.json",
     "examples/example1.md",
     "examples/example2.md",
@@ -1633,23 +1771,24 @@ app.get('/api/users', async (req, res) => {
           return data.latestVersion || data.version;
         });
 
-        // 演示：部分技能包含 README；其余仅有 skill.md
+        // 演示：部分技能包含 README；其余仅有 SKILL.md
         const SKILLS_WITH_README = new Set(['2', '5', 'dl-2']);
         const skillPackageHasReadme = computed(() => {
           const id = String(activeTab.value?.skillData?.id || '');
           return SKILLS_WITH_README.has(id);
         });
         const overviewDocContent = computed(() => {
-          // mock 文档的标题与简介跟随当前技能，避免所有技能显示同一篇的标题
-          const name = activeTab.value?.skillData?.name || 'Skill';
-          const desc = activeTab.value?.skillData?.desc || '';
-          if (skillPackageHasReadme.value && fileContents['README.md']) {
-            return fileContents['README.md'].content.replace(/^# .+$/m, `# ${name}`);
+          const sd = activeTab.value?.skillData;
+          const name = sd?.name || 'Skill';
+          const desc = sd?.desc || '';
+          const cat = sd?.category || '其他';
+          const author = sd?.author || '';
+          const dept = sd?.dept || '';
+          const who = author ? `${author}${dept ? `（${dept}）` : ''}` : '';
+          if (skillPackageHasReadme.value) {
+            return `# ${name}\n\n${desc}\n\n## 适用场景\n\n用于「${cat}」相关工作${who ? `，由 ${who} 维护` : ''}。\n\n## 使用方式\n\n1. 复制右侧安装提示词，发给自己的 AI\n2. 安装完成后，按任务提供原文、表格或链接\n3. 按输出结构核对后使用\n`;
           }
-          const base = fileContents['skill.md']?.content || '_暂无概览内容_';
-          let out = base.replace(/^# .+$/m, `# ${name}`);
-          if (desc) out = out.replace(/^> .+$/m, `> ${desc}`);
-          return out;
+          return `# ${name}\n\n> ${desc}\n\n## 功能概述\n\n本技能用于「${cat}」场景，帮助完成与「${name}」相关的结构化产出。\n\n## 使用方式\n\n1. 在 Agent 中安装本技能\n2. 提供任务所需材料\n3. 按返回结果核对后使用\n`;
         });
 
         // 包内文件列表：按实际内容展示（原型差异化；不强制 skill.json）
@@ -1665,7 +1804,7 @@ app.get('/api/users', async (req, res) => {
           if (skillPackageHasReadme.value) {
             entries.push({ kind: 'file', name: 'README.md', size: '3.1KB', key: 'README.md', icon: 'ph-duotone ph-file-text', indent: 0 });
           }
-          entries.push({ kind: 'file', name: 'SKILL.md', size: '2.3KB', key: 'skill.md', icon: 'ph-duotone ph-file-text', indent: 0 });
+          entries.push({ kind: 'file', name: 'SKILL.md', size: '2.3KB', key: 'SKILL.md', icon: 'ph-duotone ph-file-text', indent: 0 });
           entries.push({ kind: 'folder', name: 'examples/', indent: 0 });
           entries.push({ kind: 'file', name: 'example1.md', size: '1.1KB', key: 'example1.md', icon: 'ph-duotone ph-file-text', indent: 1 });
           entries.push({ kind: 'file', name: 'example2.md', size: '0.8KB', key: 'example2.md', icon: 'ph-duotone ph-file-text', indent: 1 });
@@ -1684,8 +1823,12 @@ app.get('/api/users', async (req, res) => {
         const activeVersionHistory = computed(() => {
           const sd = activeTab.value?.skillData;
           if (!sd) return [];
-          const canonical = skills.value.find(s => s.name === sd.name)
-            || mySkillDrafts.find(s => s.name === sd.name)
+          const sameId = (s) => s.id === sd.id;
+          const sameSkill = (s) => s.name === sd.name && s.author === sd.author;
+          const canonical = skills.value.find(sameId)
+            || skills.value.find(sameSkill)
+            || mySkillDrafts.find(sameId)
+            || mySkillDrafts.find(sameSkill)
             || sd;
           if (canonical.history && canonical.history.length) return canonical.history;
           return [{
@@ -1710,10 +1853,8 @@ app.get('/api/users', async (req, res) => {
         const selectDemoZip = () => {
           // 模拟解析包内 SKILL.md frontmatter（name/description），仅新建且字段为空时回填
           if (createMode.value === 'create') {
-            let filled = false;
-            if (!form.value.name.trim()) { form.value.name = '智能周报生成器'; filled = true; }
-            if (!form.value.desc.trim()) { form.value.desc = '汇总本周 Git 提交、会议纪要与待办完成情况，自动生成结构化周报。'; filled = true; }
-            if (filled) showToast('已解析 SKILL.md，自动回填名称与描述，可按需修改', 'info');
+            if (!form.value.name.trim()) form.value.name = '智能周报生成器';
+            if (!form.value.desc.trim()) form.value.desc = '汇总本周 Git 提交、会议纪要与待办完成情况，自动生成结构化周报。';
           }
           const base = (form.value.name || 'skill-package').replace(/\s+/g, '-').slice(0, 28);
           const ver = createMode.value === 'updateVersion'
@@ -1721,42 +1862,57 @@ app.get('/api/users', async (req, res) => {
             : '0.1.0';
           uploadedFileName.value = `${base}-v${ver}.zip`;
           simulatedUploaded.value = true;
+          showToast('上传成功');
         };
 
         // Mine Skills：检测中 / 已发布 / 已下架 / 发布失败（异步自动检测）
         const mySkillDrafts = reactive([
           {
             id: 'my-1', name: '智能代码审查专家', desc: '深度分析 PR/MR 代码，找出潜在的 Bug、性能瓶颈以及不符合规范的写法，并给出修改建议。',
-            category: '开发工具', author: 'You', dept: '前端开发工程师',
+            category: '开发工具', author: '管晓', dept: '前端开发工程师',
             version: '1.2.0', icon: 'ph-duotone ph-code', gradient: 'from-blue-600 to-cyan-500',
             status: '已发布', downloads: '1.2k', favorites: 328, updatedAt: '2026-06-16 14:30',
+            authorHandle: 'you', slug: 'code-review-expert',
             pendingVersionDetect: true, pendingVersion: '1.2.1', pendingChangelog: '修复边界场景误报',
           },
           {
-            id: 'my-6', name: '周报结构整理助手', desc: '汇总本周提交与会议纪要，输出结构化周报草稿。',
-            category: '办公效率', author: 'You', dept: '前端开发工程师',
+            id: 'my-7', name: '版本发布说明生成', desc: '根据提交记录整理面向业务的版本说明，区分新能力和修复。',
+            category: '产品管理', author: '管晓', dept: '前端开发工程师',
+            version: '1.0.3', icon: 'ph-duotone ph-files', gradient: 'from-orange-500 to-amber-400',
+            status: '已发布', downloads: '780', favorites: 88, updatedAt: '2026-06-07 18:20',
+            authorHandle: 'you', slug: 'release-notes-gen',
+          },
+          {
+            id: 'my-6', name: '智能周报生成器', desc: '汇总本周提交与会议纪要，输出结构化周报草稿。',
+            category: '办公效率', author: '管晓', dept: '前端开发工程师',
             version: '1.0.0', icon: 'ph-duotone ph-notepad', gradient: 'from-amber-600 to-orange-400',
             status: '检测中', favorites: 0, submitTime: '2026-08-06 15:20', updatedAt: '2026-08-06 15:20',
+            authorHandle: 'you', slug: 'weekly-report-gen',
           },
           {
             id: 'my-3', name: 'SQL 慢查询优化', desc: '输入慢查询 SQL 与表结构，自动分析 explain 结果并给出索引建议。',
-            category: '开发工具', author: 'You', dept: 'Java开发工程师',
+            category: '开发工具', author: '管晓', dept: '前端开发工程师',
             version: '1.0.2', icon: 'ph-duotone ph-lightning', gradient: 'from-violet-600 to-fuchsia-500',
             status: '已发布', downloads: '920', favorites: 156, updatedAt: '2026-06-05 17:00',
+            authorHandle: 'you', slug: 'sql-slow-query',
+            lastUpdateFailVersion: '1.0.3',
+            lastUpdateFailReason: '自动检测未通过：SKILL.md 缺少兼容性说明；安全扫描命中未声明的外链。',
           },
           {
-            id: 'my-4', name: '竞品价格监控器', desc: '定时抓取竞品价格变动，生成对比报告并推送钉钉通知。',
-            category: '数据分析', author: 'You', dept: '运营专员',
+            id: 'my-4', name: '站点价格波动监控', desc: '定时抓取竞品价格变动，生成对比报告并推送钉钉通知。',
+            category: '数据分析', author: '管晓', dept: '前端开发工程师',
             version: '1.0.0', icon: 'ph-duotone ph-chart-bar', gradient: 'from-rose-600 to-pink-400',
             status: '发布失败', favorites: 0, submitTime: '2026-06-12 10:00', updatedAt: '2026-06-12 15:20',
             failReason: '自动检测未通过：skill.json 缺少 compatibility 字段说明；安全检测命中未声明的外链风险。',
+            authorHandle: 'you', slug: 'site-price-watch',
           },
           {
             id: 'my-5', name: '竞品分析报告生成器', desc: '输入竞品链接，自动抓取并生成结构化的竞品分析报告。',
-            category: '数据分析', author: 'You', dept: '运营专员',
+            category: '数据分析', author: '管晓', dept: '前端开发工程师',
             version: '1.0.0', icon: 'ph-duotone ph-files', gradient: 'from-sky-600 to-cyan-400',
             status: '发布失败', favorites: 0, submitTime: '2026-06-17 14:30', updatedAt: '2026-06-17 14:31',
             failReason: '自动检测未通过：兼容性声明不完整，且安全扫描命中可疑命令模式。',
+            authorHandle: 'you', slug: 'competitor-analysis-report',
           },
         ]);
 
@@ -1777,8 +1933,8 @@ app.get('/api/users', async (req, res) => {
             downloadState: 'latest', downloadedAt: '2026-06-10 11:45', updatedAt: '2026-06-10 11:45',
           },
           {
-            id: 'dl-3', name: 'PDF 合同要素抽取', desc: '上传采购/销售合同 PDF，自动抽取金额、账期、违约条款等关键要素并生成核对清单。',
-            category: '办公效率', author: '陈晨', dept: '测试工程师',
+            id: 'dl-3', name: '劳动合同要点核对', desc: '上传劳动合同 PDF，抽取期限、薪资和违约条款，生成核对清单。',
+            category: '其他', author: '陈晨', dept: '测试工程师',
             version: '1.2.0', favorites: 96, downloads: '430',
             icon: 'ph-duotone ph-shield-check', gradient: 'from-green-600 to-emerald-400',
             downloadState: 'unpublished', downloadedAt: '2026-06-08 08:30', updatedAt: '2026-06-08 08:30',
@@ -1816,13 +1972,14 @@ app.get('/api/users', async (req, res) => {
         }
 
         // Methods
+        const CURRENT_USER_NAME = '管晓';
         const CURRENT_USER_DEPT = '前端开发工程师';
 
         const filteredSkills = computed(() => {
           const list = skills.value.filter(s => {
             if (s.unlisted) return false; // 已下架的技能不在广场露出
             const matchCat = activeCategory.value === '全部' || s.category === activeCategory.value;
-            const matchDept = selectedDept.value === '全部岗位' || s.dept === selectedDept.value;
+            const matchDept = !selectedDept.value || selectedDept.value === '全部岗位' || s.dept === selectedDept.value;
             const q = searchQuery.value.toLowerCase();
             const matchSearch = !q
               || s.name.toLowerCase().includes(q)
@@ -1830,7 +1987,7 @@ app.get('/api/users', async (req, res) => {
             return matchCat && matchSearch && matchDept;
           });
           return [...list].sort((a, b) => {
-            if (selectedSort.value === '最新时间') {
+            if (selectedSort.value === '最新发布') {
               return String(b.updatedAt || '').localeCompare(String(a.updatedAt || ''));
             }
             if (selectedSort.value === '最多收藏') {
@@ -1839,6 +1996,44 @@ app.get('/api/users', async (req, res) => {
             return parseDownloads(b.downloads) - parseDownloads(a.downloads);
           });
         });
+
+        const PLAZA_PAGE_SIZE = 8;
+        const plazaListRef = ref(null);
+        const plazaVisibleCount = ref(PLAZA_PAGE_SIZE);
+        const plazaLoadingMore = ref(false);
+        const visiblePlazaSkills = computed(() => filteredSkills.value.slice(0, plazaVisibleCount.value));
+        const plazaHasMore = computed(() => plazaVisibleCount.value < filteredSkills.value.length);
+        const loadMorePlaza = () => {
+          if (!plazaHasMore.value || plazaLoadingMore.value) return;
+          plazaLoadingMore.value = true;
+          setTimeout(() => {
+            plazaVisibleCount.value += PLAZA_PAGE_SIZE;
+            plazaLoadingMore.value = false;
+            nextTick(ensurePlazaScrollable);
+          }, 320);
+        };
+        const ensurePlazaScrollable = () => {
+          const el = plazaListRef.value;
+          if (!el || !plazaHasMore.value || plazaLoadingMore.value) return;
+          if (el.scrollHeight <= el.clientHeight + 8) loadMorePlaza();
+        };
+        const onPlazaScroll = () => {
+          const el = plazaListRef.value;
+          if (!el || !plazaHasMore.value) return;
+          if (el.scrollTop + el.clientHeight >= el.scrollHeight - 96) loadMorePlaza();
+        };
+        const resetPlazaPaging = () => {
+          plazaVisibleCount.value = PLAZA_PAGE_SIZE;
+          nextTick(() => {
+            if (plazaListRef.value) plazaListRef.value.scrollTop = 0;
+            ensurePlazaScrollable();
+          });
+        };
+        watch([activeCategory, searchQuery, selectedDept, selectedSort], resetPlazaPaging);
+        watch(mainTab, (tab) => {
+          if (tab === 'discover') nextTick(ensurePlazaScrollable);
+        });
+        onMounted(() => nextTick(ensurePlazaScrollable));
 
         const isFavorited = (id) => favoriteIds.value.includes(id);
 
@@ -1861,8 +2056,17 @@ app.get('/api/users', async (req, res) => {
           market.downloads = formatDownloads(parseDownloads(market.downloads) + 1);
         };
 
-        const isOwnSkill = (skill) => !!skill && skill.author === 'You';
-        const resolveOwnRecord = (skill) => mySkillDrafts.find(s => s.id === skill.id || s.name === skill.name) || skill;
+        const isOwnSkill = (skill) => !!skill && (skill.author === CURRENT_USER_NAME || skill.authorHandle === 'you');
+        const resolveOwnRecord = (skill) => {
+          if (!skill) return {};
+          return mySkillDrafts.find(s => s.id === skill.id)
+            || mySkillDrafts.find(s => s.name === skill.name && s.author === skill.author)
+            || skill;
+        };
+        const hasVersionPublishFail = (skill) => {
+          const own = resolveOwnRecord(skill);
+          return !!own && own.status === '已发布' && !own.pendingVersionDetect && !!own.lastUpdateFailReason;
+        };
 
         const syncDetailTabsForSkill = (skill) => {
           if (!skill) return;
@@ -1880,6 +2084,9 @@ app.get('/api/users', async (req, res) => {
 
         const openDetailView = (skill, options = {}) => {
           closeCardMenu();
+          if (skill && !skill.downloadState && isOwnSkill(skill)) {
+            skill = resolveOwnRecord(skill);
+          }
           let mode = options.mode || 'view';
           if (!options.mode) {
             if (skill.downloadState) mode = 'downloaded';
@@ -2007,7 +2214,7 @@ app.get('/api/users', async (req, res) => {
                 tb.mode = 'ownerUnpublished';
               }
             });
-            showToast(`「${skill.name}」已下架，重新上架需再次发布`, 'info');
+            showToast('已下架');
           }
           actionConfirm.value = { show: false, type: '', skill: null };
         };
@@ -2041,7 +2248,8 @@ app.get('/api/users', async (req, res) => {
 
         const onDocumentClick = () => {
           if (cardMenu.value.show) closeCardMenu();
-          if (openFilterDropdown.value) openFilterDropdown.value = null;
+          if (openFilterDropdown.value === 'dept') closeDeptCombobox();
+          else if (openFilterDropdown.value) openFilterDropdown.value = null;
         };
 
         watch(() => cardMenu.value.show || !!openFilterDropdown.value, (needListen) => {
@@ -2145,7 +2353,7 @@ app.get('/api/users', async (req, res) => {
         const triggerDownload = () => {
           const skill = activeTab.value?.skillData;
           if (!skill) {
-            showToast('技能包下载中...', 'info');
+            showToast('下载成功');
             return;
           }
           // 若本地有旧版本且广场有更新，下载取最新版；与广场入口同一「下载」按钮
@@ -2183,7 +2391,7 @@ app.get('/api/users', async (req, res) => {
             });
           }
           bumpDownloads(skill);
-          showToast(`「${skill.name}」已下载，可在「我的下载」查看`);
+          showToast('下载成功');
         };
 
         const downloadLatest = (skill) => {
@@ -2200,7 +2408,7 @@ app.get('/api/users', async (req, res) => {
             activeTab.value.skillData.downloadedAt = nowDateTime();
           }
           bumpDownloads(skill);
-          showToast(`已更新到「${skill.name}」v${skill.latestVersion}`);
+          showToast('下载成功');
         };
 
         const redownloadOriginal = (skill) => {
@@ -2209,13 +2417,41 @@ app.get('/api/users', async (req, res) => {
           if (activeTab.value?.skillData?.id === skill.id) {
             activeTab.value.skillData.downloadedAt = nowDateTime();
           }
-          showToast(`正在重新下载「${skill.name}」v${skill.version}...`, 'info');
+          showToast('下载成功');
         };
 
         const nowDateTime = () => new Date().toISOString().slice(0, 16).replace('T', ' ');
 
-        const copyCliCommand = () => {
-          showToast('命令已复制到剪贴板！');
+        const INSTALL_GUIDE_URL = 'https://skillhub.zhiyan.cn/install/skillhub.md';
+        const slugFromName = (name) => {
+          if (SKILL_SLUGS[name]) return SKILL_SLUGS[name];
+          const ascii = String(name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+          return ascii || 'skill';
+        };
+        const authorHandleOf = (s) => s.authorHandle || AUTHOR_HANDLES[s.author] || String(s.author || 'you').toLowerCase().replace(/\s+/g, '');
+        const slugOf = (s) => s.slug || slugFromName(s.name);
+        const installRefOf = (s) => `@${authorHandleOf(s)}/${slugOf(s)}`;
+        const installPromptText = (s) => `请根据 ${INSTALL_GUIDE_URL}, 安装 ${installRefOf(s)}。`;
+        const uniqueSlugForAuthor = (handle, base) => {
+          const taken = new Set(
+            [...skills.value, ...mySkillDrafts]
+              .filter((x) => authorHandleOf(x) === handle)
+              .map((x) => slugOf(x))
+          );
+          if (!taken.has(base)) return base;
+          let n = 2;
+          while (taken.has(`${base}-${n}`)) n += 1;
+          return `${base}-${n}`;
+        };
+        const copyInstallPrompt = (skill) => {
+          const text = installPromptText(skill);
+          const success = () => showToast('已复制');
+          const failed = () => showToast('复制失败，请手动复制提示词', 'error');
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(success).catch(failed);
+          } else {
+            failed();
+          }
         };
 
         const openFilePreviewModal = (filename) => {
@@ -2232,12 +2468,12 @@ app.get('/api/users', async (req, res) => {
 
         const copyFileContent = (file) => {
           navigator.clipboard.writeText(file.content).then(() => {
-            showToast('内容已复制到剪贴板！');
+            showToast('已复制');
           });
         };
 
         const downloadFile = (file) => {
-          showToast(`文件 ${file.name} 下载中...`, 'info');
+          showToast('下载成功');
         };
 
         // Simple Markdown → HTML renderer
@@ -2294,12 +2530,13 @@ app.get('/api/users', async (req, res) => {
             if (kind === 'updateVersion') {
               if (target.pendingVersion !== payload.version) return; // 已被更新的提交覆盖则忽略
               if (!detect.ok) {
+                target.lastUpdateFailVersion = target.pendingVersion;
+                target.lastUpdateFailReason = detect.reason || '自动检测未通过';
                 target.pendingVersionDetect = false;
                 target.pendingVersion = null;
                 target.pendingChangelog = null;
-                target.lastUpdateFailReason = detect.reason || '自动检测未通过';
                 syncDetailTabsForSkill(target);
-                showToast(`版本更新失败，仍保留 v${target.version}：${target.lastUpdateFailReason}`, 'error');
+                showToast('新版本发布失败', 'error');
                 return;
               }
               const newVersion = payload.version;
@@ -2307,6 +2544,7 @@ app.get('/api/users', async (req, res) => {
               target.updatedAt = updatedAt;
               target.failReason = null;
               target.lastUpdateFailReason = null;
+              target.lastUpdateFailVersion = null;
               target.pendingVersionDetect = false;
               target.pendingVersion = null;
               target.pendingChangelog = null;
@@ -2320,7 +2558,7 @@ app.get('/api/users', async (req, res) => {
               });
               syncDownloadsHasUpdate(target.name, target.id, newVersion);
               syncDetailTabsForSkill(target);
-              showToast(`新版本 v${newVersion} 已发布到 Skill 广场。`);
+              showToast('已发布');
               return;
             }
 
@@ -2331,7 +2569,7 @@ app.get('/api/users', async (req, res) => {
               target.failReason = detect.reason || '自动检测未通过';
               target.updatedAt = updatedAt;
               syncDetailTabsForSkill(target);
-              showToast(`发布失败：${target.failReason}`, 'error');
+              showToast('发布失败', 'error');
               return;
             }
             if (!target.version || String(target.version).startsWith('0.')) {
@@ -2348,7 +2586,7 @@ app.get('/api/users', async (req, res) => {
             });
             syncDownloadsHasUpdate(target.name, target.id, target.version);
             syncDetailTabsForSkill(target);
-            showToast('检测通过，技能已发布到 Skill 广场。');
+            showToast('已发布');
           }, DETECT_DELAY_MS);
         };
 
@@ -2362,6 +2600,8 @@ app.get('/api/users', async (req, res) => {
               desc: skill.desc,
               category: skill.category,
               author: skill.author,
+              authorHandle: skill.authorHandle || authorHandleOf(skill),
+              slug: skill.slug || slugFromName(skill.name),
               dept: skill.dept,
               version,
               icon: skill.icon,
@@ -2380,6 +2620,8 @@ app.get('/api/users', async (req, res) => {
             market.gradient = skill.gradient;
             market.version = version;
             market.updatedAt = updatedAt;
+            market.authorHandle = market.authorHandle || skill.authorHandle || authorHandleOf(skill);
+            market.slug = market.slug || skill.slug || slugFromName(skill.name);
             market.history = market.history || [];
             if (!market.history.some(h => h.version === version)) {
               market.history.unshift(historyEntry);
@@ -2430,6 +2672,10 @@ app.get('/api/users', async (req, res) => {
             showToast('请输入新版本号！', 'error');
             return;
           }
+          if (createMode.value === 'updateVersion' && !isSemVer(updateVersionData.value.version)) {
+            showToast('版本号须为 x.y.z', 'error');
+            return;
+          }
           if (createMode.value === 'updateVersion' && !String(updateVersionData.value.changelog || '').trim()) {
             showToast('请填写更新说明！', 'error');
             return;
@@ -2448,9 +2694,15 @@ app.get('/api/users', async (req, res) => {
               return;
             }
             const newVersion = formatVersion(updateVersionData.value.version);
+            if (compareSemVer(newVersion, target.version) <= 0) {
+              showToast(`新版本号须高于 v${formatVersion(target.version)}`, 'error');
+              return;
+            }
             target.pendingVersionDetect = true;
             target.pendingVersion = newVersion;
             target.pendingChangelog = updateVersionData.value.changelog;
+            target.lastUpdateFailReason = null;
+            target.lastUpdateFailVersion = null;
             target.submitTime = submittedAt;
             scheduleDetectResolve(target.id, 'updateVersion', {
               version: newVersion,
@@ -2459,7 +2711,7 @@ app.get('/api/users', async (req, res) => {
               icon: form.value.icon || target.icon,
               gradient: form.value.gradient || target.gradient,
             });
-            showToast('已提交检测，可在我的技能查看进度');
+            showToast('已提交检测');
             goMineSkills();
             return;
           }
@@ -2483,7 +2735,7 @@ app.get('/api/users', async (req, res) => {
             const market = skills.value.find(s => s.id === target.id || s.name === target.name);
             if (market) market.unlisted = true;
             scheduleDetectResolve(target.id, 'republish');
-            showToast('已提交检测，可在我的技能查看进度');
+            showToast('已提交检测');
             goMineSkills();
             return;
           }
@@ -2495,7 +2747,9 @@ app.get('/api/users', async (req, res) => {
             name: form.value.name,
             desc: form.value.desc,
             category: form.value.category,
-            author: 'You',
+            author: '管晓',
+            authorHandle: 'you',
+            slug: uniqueSlugForAuthor('you', slugFromName(form.value.name)),
             dept: CURRENT_USER_DEPT,
             version: '1.0.0',
             icon: form.value.icon,
@@ -2509,22 +2763,22 @@ app.get('/api/users', async (req, res) => {
           };
           mySkillDrafts.unshift(newSkill);
           scheduleDetectResolve(newId, 'create');
-          showToast('已提交检测，可在我的技能查看进度');
+          showToast('已提交检测');
           goMineSkills();
         };
 
         return {
-          categories, activeCategory, searchQuery, filteredSkills, iconOptions,
-          mainTab, mineSubTab, mineSearchQuery, departments, departmentOptions, selectedDept, sortOptions, selectedSort, openFilterDropdown, toggleFilterDropdown, selectDeptFilter, selectSortFilter, selectFormCategory, formatVersion,
+          categories, activeCategory, searchQuery, filteredSkills, visiblePlazaSkills, plazaListRef, onPlazaScroll, iconOptions,
+          mainTab, mineSubTab, mineSearchQuery, departments, departmentOptions, selectedDept, deptSearchQuery, deptComboboxDisplay, filteredDeptOptions, sortOptions, selectedSort, openFilterDropdown, toggleFilterDropdown, openDeptCombobox, toggleDeptCombobox, onDeptComboboxInput, clearDeptFilter, selectDeptFilter, selectSortFilter, selectFormCategory, formatVersion,
           myPublishedSkills, myFavoriteSkills, myDownloadedSkills,
           tabs, activeTabId, activeTab, detailHeaderVersion, activeVersionHistory, overviewDocContent, skillPackageHasReadme, packageZipName, activePackageFiles, requestCloseTab, doCloseTab, currentDetailSubTab,
           openDetailView, openCreateView,
-          editDraft, deleteDraft, openUpdateVersion, unpublishSkill, isOwnSkill, resolveOwnRecord,
+          editDraft, deleteDraft, openUpdateVersion, unpublishSkill, isOwnSkill, resolveOwnRecord, hasVersionPublishFail,
           cardMenu, openCardMenu, closeCardMenu,
           actionConfirm, executeActionConfirm, cancelActionConfirm,
           isFavorited, toggleFavorite,
           form, createMode, updateVersionData, isSubmitting, simulatedUploaded, uploadedFileName, clearUploadedFile, selectDemoZip, publishSubmitLabel, submitCreate,
-          toast, triggerDownload, downloadLatest, redownloadOriginal, copyCliCommand, selectedFile, previewFileData, showFilePreviewModal, openFilePreviewModal, closeFilePreviewModal, copyFileContent, downloadFile, renderMarkdown, showCloseConfirm, confirmCloseCreate, discardAndClose
+          toast, triggerDownload, downloadLatest, redownloadOriginal, installPromptText, copyInstallPrompt, selectedFile, previewFileData, showFilePreviewModal, openFilePreviewModal, closeFilePreviewModal, copyFileContent, downloadFile, renderMarkdown, showCloseConfirm, confirmCloseCreate, discardAndClose
         }
       }
     }).mount('#app');
